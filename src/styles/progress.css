@@ -361,6 +361,19 @@
 }
 
 .progress-phase-node {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.progress-phase-node:focus-visible {
+  outline: 2px solid var(--dev-accent-strong);
+  outline-offset: 4px;
+}
+
+.progress-phase-node {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -429,6 +442,64 @@
 
 .progress-phase-connector.is-future {
   opacity: 0.4;
+}
+
+.progress-phase-details {
+  margin-top: 0.6rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--dev-radius-lg);
+  border: 1px solid var(--dev-border-subtle);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.progress-phase-details__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.progress-phase-details__pill {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.progress-phase-details__metric {
+  font-size: 0.8rem;
+  color: var(--dev-text-soft);
+}
+
+.progress-phase-details__badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.progress-phase-details__badge--documented {
+  background: rgba(0, 160, 80, 0.12);
+  color: var(--dev-ok);
+}
+
+.progress-phase-details__badge--missing {
+  background: rgba(255, 180, 0, 0.18);
+  color: var(--dev-warn);
+}
+
+.progress-phase-details__body {
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.progress-phase-details__copy {
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* ===== Checklist metrics ===== */

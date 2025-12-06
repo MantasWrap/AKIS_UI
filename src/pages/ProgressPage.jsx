@@ -96,7 +96,7 @@ function PhaseDonutKPI({ percentComplete, label }) {
   );
 }
 
-function PhaseTimeline({ phases, currentPhaseId }) {
+function PhaseTimeline({ phases, currentPhaseId, onInspectPhase }) {
   const currentIndex = phases.findIndex((p) => p.id === currentPhaseId);
 
   return (
@@ -107,9 +107,16 @@ function PhaseTimeline({ phases, currentPhaseId }) {
           const isPast = currentIndex !== -1 && index < currentIndex;
           const isFuture = currentIndex !== -1 && index > currentIndex;
 
+          const handleInspect = () => {
+            if (onInspectPhase) {
+              onInspectPhase(pill.id);
+            }
+          };
+
           return (
             <Fragment key={pill.id}>
-              <div
+              <button
+                type="button"
                 className={[
                   'progress-phase-node',
                   isCurrent ? 'is-current' : '',
@@ -118,10 +125,14 @@ function PhaseTimeline({ phases, currentPhaseId }) {
                 ]
                   .filter(Boolean)
                   .join(' ')}
+                onMouseEnter={handleInspect}
+                onFocus={handleInspect}
+                onClick={handleInspect}
+                aria-pressed={isCurrent}
               >
                 <div className="progress-phase-node__circle">{pill.label}</div>
                 <div className="progress-phase-node__label">Phase {pill.label}</div>
-              </div>
+              </button>
               {index < phases.length - 1 && (
                 <div
                   className={[
@@ -281,6 +292,7 @@ export default function ProgressPage() {
     nextSteps: false,
   });
   const [expandedNextStep, setExpandedNextStep] = useState(null);
+  const [inspectedPhaseId, setInspectedPhaseId] = useState(null);
 
   useEffect(() => {
     loadData({ fresh: false, topic: activeTopic });
@@ -382,6 +394,17 @@ export default function ProgressPage() {
       activePhaseRaw.includes('3') ? 'phase_3' :
       activePhaseRaw.includes('4') ? 'phase_4' :
       'phase_0');
+  const phaseSnapshotsById = useMemo(() => {
+    const map = {};
+    if (Array.isArray(summary?.phases)) {
+      summary.phases.forEach((phaseSnapshot) => {
+        if (phaseSnapshot?.phaseId) {
+          map[phaseSnapshot.phaseId] = phaseSnapshot;
+        }
+      });
+    }
+    return map;
+  }, [summary]);
   const CURRENT_PHASE_ID = currentPhaseId;
   const currentPhaseSnapshot =
     Array.isArray(summary?.phases)
@@ -416,10 +439,23 @@ export default function ProgressPage() {
         : plugPlayStatusBadge === 'late'
           ? 'Late'
           : null;
+  useEffect(() => {
+    setInspectedPhaseId((prev) => {
+      if (!prev) {
+        return currentPhaseId;
+      }
+      if (!phaseSnapshotsById[prev]) {
+        return currentPhaseId;
+      }
+      return prev;
+    });
+  }, [currentPhaseId, phaseSnapshotsById]);
+
   const currentPhaseSubtitle = currentPhaseLabel;
   const lastUpdateText = latestEntry
     ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
     : 'No updates recorded yet in CODEX_Progress_Log.md';
+  const inspectedPhase = phaseSnapshotsById[inspectedPhaseId] || currentPhaseSnapshot || null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -513,7 +549,55 @@ export default function ProgressPage() {
               </div>
             </div>
             <div className="progress-current-phase__timeline">
-              <PhaseTimeline phases={PHASE_PILLS} currentPhaseId={CURRENT_PHASE_ID} />
+              <PhaseTimeline
+                phases={PHASE_PILLS}
+                currentPhaseId={CURRENT_PHASE_ID}
+                onInspectPhase={setInspectedPhaseId}
+              />
+              {inspectedPhase && (
+                <div className="progress-phase-details">
+                  <div className="progress-phase-details__header">
+                    <span className="progress-phase-details__pill">
+                      {(inspectedPhase.phaseId || '').replace('phase_', 'Phase ')} · {inspectedPhase.name || '—'}
+                    </span>
+                    {typeof inspectedPhase.checklist?.percent === 'number' && (
+                      <span className="progress-phase-details__metric">
+                        {inspectedPhase.checklist.percent}% checklist
+                      </span>
+                    )}
+                    {inspectedPhase.roadmapStatus && (
+                      <span
+                        className={`progress-phase-details__badge progress-phase-details__badge--${inspectedPhase.roadmapStatus}`}
+                      >
+                        {inspectedPhase.roadmapStatus === 'documented'
+                          ? 'Roadmap documented'
+                          : 'Roadmap missing'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="progress-phase-details__body">
+                    <p className="progress-phase-details__copy">
+                      {inspectedPhase.phaseId === 'phase_0' &&
+                        'Phase 0 builds the fake hardware and integration scaffolding so Plug & Play is a simple migration step.'}
+                      {inspectedPhase.phaseId === 'phase_1' &&
+                        'Phase 1 validates the conveyor + PLC wiring and gets the first real items flowing through.'}
+                      {inspectedPhase.phaseId === 'phase_2' &&
+                        'Phase 2 hardens the PLC integration for stable production operation.'}
+                      {inspectedPhase.phaseId === 'phase_3' &&
+                        'Phase 3 expands the AI model to multiclass garment detection and routing.'}
+                      {inspectedPhase.phaseId === 'phase_4' &&
+                        'Phase 4 focuses on scaling and subscription-ready deployments.'}
+                      {![
+                        'phase_0',
+                        'phase_1',
+                        'phase_2',
+                        'phase_3',
+                        'phase_4',
+                      ].includes(inspectedPhase.phaseId || '') && 'Phase details coming soon.'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             {devInfoOpen.currentPhase && (
               <div className="progress-devinfo-panel">
