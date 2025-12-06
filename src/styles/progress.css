@@ -107,7 +107,7 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
   gap: 1.4rem;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 @media (max-width: 900px) {
@@ -121,6 +121,11 @@
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+}
+
+.progress-current-phase__right {
+  justify-content: flex-start;
+  gap: 0.7rem;
 }
 
 .progress-card-body--list {
@@ -179,7 +184,7 @@
 }
 
 .progress-current-phase__legend {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   padding: 0.7rem 0.9rem;
   border-radius: var(--dev-radius-lg);
   background: linear-gradient(
