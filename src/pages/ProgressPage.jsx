@@ -13,9 +13,6 @@ const PHASE_PILLS = [
   { id: 'phase_4', label: '4' },
 ];
 
-// TODO: derive this from summary.activePhase once phase metadata is available.
-const CURRENT_PHASE_ID = 'phase_0';
-
 function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children }) {
   return (
     <div
@@ -52,6 +49,94 @@ function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children })
           Dev info
         </button>
       )}
+    </div>
+  );
+}
+
+function PhaseDonutKPI({ percentComplete, label }) {
+  const safePercent = Number.isFinite(percentComplete) ? Math.min(100, Math.max(0, percentComplete)) : 0;
+  const radius = 38;
+  const strokeWidth = 8;
+  const normalizedRadius = radius - strokeWidth / 2;
+  const circumference = 2 * Math.PI * normalizedRadius;
+  const offset = circumference * (1 - safePercent / 100);
+
+  return (
+    <div className="progress-donut">
+      <svg
+        className="progress-donut__svg"
+        width={(radius + strokeWidth) * 2}
+        height={(radius + strokeWidth) * 2}
+      >
+        <circle
+          className="progress-donut__bg"
+          strokeWidth={strokeWidth}
+          r={normalizedRadius}
+          cx={radius + strokeWidth}
+          cy={radius + strokeWidth}
+        />
+        <circle
+          className="progress-donut__fg"
+          strokeWidth={strokeWidth}
+          r={normalizedRadius}
+          cx={radius + strokeWidth}
+          cy={radius + strokeWidth}
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="progress-donut__center">
+        <div className="progress-donut__value">
+          {Number.isFinite(percentComplete) ? `${Math.round(Math.max(0, 100 - safePercent))}%` : '—'}
+        </div>
+        <div className="progress-donut__label">left</div>
+      </div>
+      <div className="progress-donut__caption">{label}</div>
+    </div>
+  );
+}
+
+function PhaseTimeline({ phases, currentPhaseId }) {
+  const currentIndex = phases.findIndex((p) => p.id === currentPhaseId);
+
+  return (
+    <div className="progress-phase-track progress-phase-track--compact">
+      <div className="progress-phase-row">
+        {phases.map((pill, index) => {
+          const isCurrent = index === currentIndex;
+          const isPast = currentIndex !== -1 && index < currentIndex;
+          const isFuture = currentIndex !== -1 && index > currentIndex;
+
+          return (
+            <Fragment key={pill.id}>
+              <div
+                className={[
+                  'progress-phase-node',
+                  isCurrent ? 'is-current' : '',
+                  isPast ? 'is-past' : '',
+                  isFuture ? 'is-future' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <div className="progress-phase-node__circle">{pill.label}</div>
+                <div className="progress-phase-node__label">Phase {pill.label}</div>
+              </div>
+              {index < phases.length - 1 && (
+                <div
+                  className={[
+                    'progress-phase-connector',
+                    isPast ? 'is-past' : '',
+                    isFuture ? 'is-future' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -249,19 +334,6 @@ export default function ProgressPage() {
       : 'All phases have roadmap files; milestones may still evolve.';
   }
 
-  const chunkedPhaseRows = useMemo(() => {
-    const perRow = 3;
-    const rows = [];
-    let idx = 0;
-    while (idx < PHASE_PILLS.length) {
-      const remaining = PHASE_PILLS.length - idx;
-      const rowSize = Math.min(perRow, remaining);
-      rows.push(PHASE_PILLS.slice(idx, idx + rowSize));
-      idx += rowSize;
-    }
-    return rows;
-  }, []);
-
   async function loadData({ fresh, topic }) {
     setLoading(true);
     setError(null);
@@ -302,11 +374,49 @@ export default function ProgressPage() {
   };
 
   const activePhaseRaw = summary?.activePhase || 'Phase 0';
-  const currentPhaseLabel = 'Phase 0 – PreLaunch';
+  const currentPhaseId =
+    summary?.activePhaseId ||
+    (activePhaseRaw.includes('0') ? 'phase_0' :
+      activePhaseRaw.includes('1') ? 'phase_1' :
+      activePhaseRaw.includes('2') ? 'phase_2' :
+      activePhaseRaw.includes('3') ? 'phase_3' :
+      activePhaseRaw.includes('4') ? 'phase_4' :
+      'phase_0');
+  const CURRENT_PHASE_ID = currentPhaseId;
+  const currentPhaseSnapshot =
+    Array.isArray(summary?.phases)
+      ? summary.phases.find((p) => p.phaseId === currentPhaseId)
+      : null;
+  const currentPhaseLabel =
+    currentPhaseSnapshot?.name
+      ? `Phase ${
+        (currentPhaseSnapshot?.phaseId || currentPhaseId).replace('phase_', '')
+      } – ${currentPhaseSnapshot.name}`
+      : activePhaseRaw || 'Current phase';
+  const currentPhasePercentComplete =
+    typeof currentPhaseSnapshot?.checklist?.percent === 'number'
+      ? currentPhaseSnapshot.checklist.percent
+      : null;
   let focusText = null;
   if (typeof activePhaseRaw === 'string' && activePhaseRaw.includes('1')) {
     focusText = 'Current focus: bridge to Phase 1 (PLC & conveyor integration)';
   }
+  const plugPlayMeta = summary?.plugPlay || null;
+  const plugPlayPercent =
+    typeof plugPlayMeta?.percent === 'number' ? plugPlayMeta.percent : null;
+  const plugPlayEtaLabel = plugPlayMeta?.eta
+    ? `ETA · ${plugPlayMeta.eta}`
+    : 'ETA · not enough data yet';
+  const plugPlayStatusBadge = plugPlayMeta?.status || null;
+  const plugPlayStatusText =
+    plugPlayStatusBadge === 'on_track'
+      ? 'On track'
+      : plugPlayStatusBadge === 'at_risk'
+        ? 'At risk'
+        : plugPlayStatusBadge === 'late'
+          ? 'Late'
+          : null;
+  const currentPhaseSubtitle = currentPhaseLabel;
   const lastUpdateText = latestEntry
     ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
     : 'No updates recorded yet in CODEX_Progress_Log.md';
@@ -340,7 +450,7 @@ export default function ProgressPage() {
           <div className="dev-card progress-kpi-card progress-kpi-card--accent-primary">
             <CardHeader
               title="Current phase"
-              subtitle="Phase 0 · PreLaunch"
+              subtitle={currentPhaseSubtitle}
               onToggleDevInfo={() =>
                 setDevInfoOpen((prev) => ({
                   ...prev,
@@ -349,44 +459,69 @@ export default function ProgressPage() {
               }
               devInfoOpen={devInfoOpen.currentPhase}
             />
-          <div className="progress-card-body">
-            <div className="progress-current-phase">
-              <div className="progress-current-phase__panel">
-                <div className="progress-current-phase__panel-accent" />
-                <div className="progress-current-phase__content">
-                  <div className="progress-primary-title">{currentPhaseLabel}</div>
-                  {focusText && (
-                    <div className="progress-focus-line">{focusText}</div>
-                  )}
-                  <div className="progress-micro-muted">{lastUpdateText}</div>
+            <div className="progress-card-body progress-card-body--current-phase">
+              <div className="progress-current-phase__left">
+                <div className="progress-current-phase__panel">
+                  <div className="progress-current-phase__panel-accent" />
+                  <div className="progress-current-phase__content">
+                    <div className="progress-primary-title">{currentPhaseLabel}</div>
+                    {focusText && (
+                      <div className="progress-focus-line">{focusText}</div>
+                    )}
+                    <div className="progress-micro-muted">{lastUpdateText}</div>
+                  </div>
+                </div>
+                <div className="progress-plugplay-strip">
+                  <div className="progress-plugplay-strip__label">Plug &amp; Play readiness</div>
+                  <div className="progress-plugplay-strip__values">
+                    <span className="progress-plugplay-strip__percent">
+                      {plugPlayPercent != null ? `${plugPlayPercent}%` : '—'}
+                    </span>
+                    <span className="progress-plugplay-strip__eta">
+                      {plugPlayEtaLabel}
+                    </span>
+                    {plugPlayStatusBadge && plugPlayStatusText && (
+                      <span
+                        className={`progress-plugplay-strip__badge progress-plugplay-strip__badge--${plugPlayStatusBadge}`}
+                      >
+                        {plugPlayStatusText}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="progress-phase-track progress-phase-track--compact">
-                {chunkedPhaseRows.map((row, rowIdx) => (
-                  <div className="progress-phase-row" key={`phase-row-${rowIdx}`}>
-                    {row.map((pill, idx) => {
-                      const isCurrent = pill.id === CURRENT_PHASE_ID;
-                      return (
-                        <Fragment key={pill.id}>
-                          <div className={`progress-phase-node ${isCurrent ? 'is-current' : ''}`}>
-                            <div className="progress-phase-node__circle">{pill.label}</div>
-                            <div className="progress-phase-node__label">Phase {pill.label}</div>
-                          </div>
-                          {idx < row.length - 1 && <div className="progress-phase-connector" />}
-                        </Fragment>
-                      );
-                    })}
+              <div className="progress-current-phase__right">
+                <PhaseDonutKPI percentComplete={currentPhasePercentComplete} label="Phase completion" />
+                <div className="progress-current-phase__legend">
+                  <div className="progress-current-phase__legend-row">
+                    <span className="progress-current-phase__legend-swatch progress-current-phase__legend-swatch--done" />
+                    <span>Done</span>
+                    <span className="progress-current-phase__legend-value">
+                      {Number.isFinite(currentPhasePercentComplete) ? `${currentPhasePercentComplete}%` : '—'}
+                    </span>
                   </div>
-                ))}
+                  <div className="progress-current-phase__legend-row">
+                    <span className="progress-current-phase__legend-swatch progress-current-phase__legend-swatch--left" />
+                    <span>Left</span>
+                    <span className="progress-current-phase__legend-value">
+                      {Number.isFinite(currentPhasePercentComplete)
+                        ? `${Math.max(0, 100 - currentPhasePercentComplete)}%`
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+            <div className="progress-current-phase__timeline">
+              <PhaseTimeline phases={PHASE_PILLS} currentPhaseId={CURRENT_PHASE_ID} />
+            </div>
             {devInfoOpen.currentPhase && (
               <div className="progress-devinfo-panel">
                 <div className="progress-devinfo-panel__title">Data sources</div>
                 <ul className="progress-devinfo-panel__list">
-                  <li>docs/EN/PHASES/Phase_0_PreLaunch/Phase_0_Technical_Workplan.md</li>
+                  <li>docs/EN/PHASES/Phase0_Integration_Checklist.md</li>
                   <li>docs/EN/CODEX/CODEX_Progress_Log.md</li>
+                  {/* Add Plug&Play doc reference later if you create one */}
                 </ul>
               </div>
             )}

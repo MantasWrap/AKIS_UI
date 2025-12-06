@@ -103,6 +103,26 @@
   width: 100%;
 }
 
+.progress-card-body--current-phase {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 1.4rem;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .progress-card-body--current-phase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.progress-current-phase__left,
+.progress-current-phase__right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
 .progress-card-body--list {
   gap: 0.75rem;
 }
@@ -113,12 +133,6 @@
 }
 
 /* ===== Current phase panel & phase track ===== */
-
-.progress-current-phase {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
 
 .progress-current-phase__panel {
   position: relative;
@@ -164,7 +178,160 @@
   margin-top: 0.45rem;
 }
 
-/* Phase pill track */
+.progress-current-phase__legend {
+  margin-top: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--dev-radius-lg);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.05)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.progress-current-phase__legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.progress-current-phase__legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  margin-right: 0.4rem;
+}
+
+.progress-current-phase__legend-swatch--done {
+  background: var(--dev-accent-soft);
+}
+
+.progress-current-phase__legend-swatch--left {
+  background: var(--dev-border-subtle);
+}
+
+.progress-current-phase__legend-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-plugplay-strip {
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--dev-radius-lg);
+  border: 1px solid var(--dev-border-subtle);
+  background: rgba(0, 0, 0, 0.015);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.progress-plugplay-strip__label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dev-text-soft);
+}
+
+.progress-plugplay-strip__values {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.progress-plugplay-strip__percent {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.progress-plugplay-strip__eta {
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.progress-plugplay-strip__badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.progress-plugplay-strip__badge--on_track {
+  background: rgba(0, 160, 80, 0.12);
+  color: var(--dev-ok);
+}
+
+.progress-plugplay-strip__badge--at_risk {
+  background: rgba(255, 180, 0, 0.18);
+  color: var(--dev-warn);
+}
+
+.progress-plugplay-strip__badge--late {
+  background: rgba(200, 40, 40, 0.17);
+  color: var(--dev-error);
+}
+
+.progress-donut {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.progress-donut__svg {
+  display: block;
+}
+
+.progress-donut__bg {
+  fill: none;
+  stroke: var(--dev-border-subtle);
+  opacity: 0.6;
+}
+
+.progress-donut__fg {
+  fill: none;
+  stroke: var(--dev-accent-strong);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.progress-donut__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 2px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.progress-donut__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.progress-donut__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+}
+
+.progress-donut__caption {
+  font-size: 0.75rem;
+  color: var(--dev-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 
 .progress-phase-track {
   display: flex;
@@ -174,24 +341,27 @@
 }
 
 .progress-phase-track--compact {
-  margin-top: 0;
-  padding: 0 2.25rem;
-  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding: 0 0.4rem;
+}
+
+.progress-current-phase__timeline {
+  margin-top: 0.7rem;
 }
 
 .progress-phase-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
+  gap: 0.7rem;
 }
 
 .progress-phase-node {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 58px;
+  gap: 0.3rem;
+  min-width: 64px;
 }
 
 .progress-phase-node__circle {
@@ -202,7 +372,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--dev-text-muted);
@@ -210,28 +380,50 @@
 }
 
 .progress-phase-node__label {
-  font-size: 0.8rem;
-  color: var(--dev-text-muted);
-  white-space: nowrap;
+  font-size: 0.7rem;
+  color: var(--dev-text-soft);
+}
+
+.progress-phase-node.is-past .progress-phase-node__circle {
+  border-color: var(--dev-accent-soft);
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--dev-text-soft);
 }
 
 .progress-phase-node.is-current .progress-phase-node__circle {
-  background: linear-gradient(135deg, var(--dev-accent), var(--dev-accent-soft));
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.4);
+  border-color: var(--dev-accent-strong);
+  background: radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.95), var(--dev-bg-soft));
+  box-shadow: 0 0 0 3px rgba(0, 180, 120, 0.25);
+  transform: scale(1.08);
+  color: var(--dev-text-strong);
 }
 
-.progress-phase-node.is-current .progress-phase-node__label {
-  color: var(--dev-text-primary);
-  font-weight: 600;
+.progress-phase-node.is-future .progress-phase-node__circle {
+  border-style: dashed;
+  opacity: 0.5;
 }
 
 .progress-phase-connector {
-  flex: 0 0 18px;
-  height: 2px;
+  flex: 1;
+  height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.4), rgba(148, 163, 184, 0.9), rgba(148, 163, 184, 0.2));
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.1)
+  );
+}
+
+.progress-phase-connector.is-past {
+  background: linear-gradient(
+    to right,
+    var(--dev-accent-soft),
+    var(--dev-accent-strong)
+  );
+}
+
+.progress-phase-connector.is-future {
+  opacity: 0.4;
 }
 
 /* ===== Checklist metrics ===== */
