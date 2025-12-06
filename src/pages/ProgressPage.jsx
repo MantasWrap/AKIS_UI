@@ -96,7 +96,7 @@ function PhaseDonutKPI({ percentComplete, label }) {
   );
 }
 
-function PhaseTimeline({ phases, currentPhaseId, onInspectPhase }) {
+function PhaseTimeline({ phases, currentPhaseId, inspectedPhaseId, onInspectPhase }) {
   const currentIndex = phases.findIndex((p) => p.id === currentPhaseId);
 
   return (
@@ -106,6 +106,7 @@ function PhaseTimeline({ phases, currentPhaseId, onInspectPhase }) {
           const isCurrent = index === currentIndex;
           const isPast = currentIndex !== -1 && index < currentIndex;
           const isFuture = currentIndex !== -1 && index > currentIndex;
+          const isInspected = pill.id === inspectedPhaseId;
 
           const handleInspect = () => {
             if (onInspectPhase) {
@@ -122,6 +123,7 @@ function PhaseTimeline({ phases, currentPhaseId, onInspectPhase }) {
                   isCurrent ? 'is-current' : '',
                   isPast ? 'is-past' : '',
                   isFuture ? 'is-future' : '',
+                  isInspected ? 'is-inspected' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -456,6 +458,8 @@ export default function ProgressPage() {
     ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
     : 'No updates recorded yet in CODEX_Progress_Log.md';
   const inspectedPhase = phaseSnapshotsById[inspectedPhaseId] || currentPhaseSnapshot || null;
+  const inspectedPhaseIndexRaw = PHASE_PILLS.findIndex((p) => p.id === inspectedPhaseId);
+  const inspectedPhaseIndex = inspectedPhaseIndexRaw >= 0 ? inspectedPhaseIndexRaw : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -552,10 +556,14 @@ export default function ProgressPage() {
               <PhaseTimeline
                 phases={PHASE_PILLS}
                 currentPhaseId={CURRENT_PHASE_ID}
+                inspectedPhaseId={inspectedPhaseId}
                 onInspectPhase={setInspectedPhaseId}
               />
               {inspectedPhase && (
-                <div className="progress-phase-details">
+                <div
+                  className="progress-phase-details"
+                  style={{ '--phase-index': inspectedPhaseIndex }}
+                >
                   <div className="progress-phase-details__header">
                     <span className="progress-phase-details__pill">
                       {(inspectedPhase.phaseId || '').replace('phase_', 'Phase ')} · {inspectedPhase.name || '—'}
