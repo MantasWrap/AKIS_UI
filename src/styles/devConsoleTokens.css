@@ -1,0 +1,36 @@
+:root {
+  /* Backgrounds */
+  --dev-bg: #f3f4f6;
+  --dev-bg-card: #ffffff;
+  --dev-bg-soft: #f9fafb;
+
+  /* Borders & radii */
+  --dev-border-subtle: #e5e7eb;
+  --dev-border-strong: #d1d5db;
+  --dev-radius-sm: 8px;
+  --dev-radius-lg: 12px;
+  --dev-radius-pill: 9999px;
+
+  /* Shadows */
+  --dev-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  /* Accent + brand colors */
+  --dev-accent: #16a34a;
+  --dev-accent-soft: rgba(22, 163, 74, 0.12);
+  --dev-accent-strong: #15803d;
+  --dev-accent-alt: #0d9488;
+
+  /* Text */
+  --dev-text-primary: #111827;
+  --dev-text-muted: #6b7280;
+  --dev-text-soft: #4b5563;
+
+  /* Semantic states */
+  --dev-ok: #22c55e;
+  --dev-warn: #eab308;
+  --dev-error: #ef4444;
+  --dev-unknown: #6b7280;
+
+  /* Typography */
+  --dev-font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}

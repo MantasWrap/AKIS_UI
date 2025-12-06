@@ -1,0 +1,1 @@
+~/akis-deploy-remote.sh
