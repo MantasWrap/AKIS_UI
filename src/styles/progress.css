@@ -29,6 +29,10 @@
   align-items: stretch;
 }
 
+.progress-row--split.progress-row--aios-split {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .progress-row--split > * {
   min-width: 0;
 }
@@ -103,6 +107,10 @@
   width: 100%;
 }
 
+.progress-card-body--aios {
+  gap: 1.1rem;
+}
+
 .progress-card-body--current-phase {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
@@ -139,6 +147,172 @@
 .progress-card-note {
   font-size: 0.9rem;
   color: var(--dev-text-muted);
+}
+
+/* ===== Progress header badge ===== */
+
+.progress-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.progress-header-text {
+  flex: 1;
+  min-width: 220px;
+}
+
+.progress-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.progress-aios-badge {
+  border: 1px solid var(--dev-border-subtle);
+  background: var(--dev-bg-soft);
+  border-radius: var(--dev-radius-pill);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--dev-text-soft);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.progress-aios-badge:hover,
+.progress-aios-badge:focus-visible {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: var(--dev-accent);
+  color: var(--dev-text-primary);
+  outline: none;
+}
+
+.progress-aios-badge:focus-visible {
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
+}
+
+.progress-aios-badge--static {
+  cursor: default;
+  border-color: var(--dev-border-subtle);
+  background: var(--dev-bg-soft);
+  color: var(--dev-text-muted);
+  padding: 0.3rem 0.75rem;
+}
+
+.progress-aios-badge--static:hover,
+.progress-aios-badge--static:focus-visible {
+  background: var(--dev-bg-soft);
+  border-color: var(--dev-border-subtle);
+  color: var(--dev-text-muted);
+  box-shadow: none;
+}
+
+/* ===== AI OS pipeline summary card ===== */
+
+.progress-aios-pipeline-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.progress-aios-pipeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.08);
+}
+
+.progress-aios-pipeline-card:focus-visible {
+  outline: 2px solid var(--dev-accent);
+  outline-offset: 3px;
+}
+
+.progress-aios-stage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.progress-aios-stage-chip {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-pill);
+  padding: 0.45rem 0.8rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 70px;
+}
+
+.progress-aios-stage-chip.is-current {
+  border-color: var(--dev-accent);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.progress-aios-stage-chip.is-done {
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.progress-aios-stage-chip.is-in_progress {
+  border-color: rgba(59, 130, 246, 0.55);
+}
+
+.progress-aios-stage-chip.is-up_next {
+  border-style: dashed;
+}
+
+.progress-aios-stage-chip.is-future {
+  opacity: 0.6;
+}
+
+.progress-aios-stage-chip__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.progress-aios-stage-chip__status {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+}
+
+.progress-aios-stage-chip__empty {
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.progress-aios-stage-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.progress-aios-stage-summary__eyebrow {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.progress-aios-stage-summary__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.progress-aios-stage-summary__copy {
+  font-size: 0.92rem;
+  color: var(--dev-text-soft);
+  margin: 0;
+}
+
+.progress-aios-stage-summary__next {
+  font-size: 0.88rem;
+  color: var(--dev-text-muted);
+  margin: 0;
 }
 
 /* ===== Current phase panel & phase track ===== */

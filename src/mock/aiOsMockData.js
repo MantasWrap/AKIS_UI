@@ -9,6 +9,8 @@ export const aiOsMockData = {
   status: {
     version: 'AI OS 0.1',
     stage: 'Stage A0',
+    stageCode: 'A0',
+    badgeLabel: 'AI OS 0.1 · Stage A0',
     build: 'Owner preview · build 1462',
     highlights: [
       'UI Boss assistant online for owner UI decisions.',

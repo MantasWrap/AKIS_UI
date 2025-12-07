@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import '../../styles/aios.css';
-import { aiOsMockData } from '../../mock/aiOsMockData';
+import { useAiOsMockData } from '../../hooks/useAiOsMockData';
 
 export default function AiOsPipelinePage() {
-  const { pipeline } = aiOsMockData;
-  const [selectedStageId, setSelectedStageId] = useState(pipeline.currentStageId || pipeline.stages[0]?.id);
+  const { pipeline } = useAiOsMockData();
+  const safeStages = useMemo(() => pipeline?.stages || [], [pipeline]);
+  const defaultStageId = pipeline?.currentStageId || safeStages[0]?.id;
+  const [selectedStageId, setSelectedStageId] = useState(defaultStageId);
 
   const selectedStage = useMemo(
-    () => pipeline.stages.find((stage) => stage.id === selectedStageId) || pipeline.stages[0],
-    [pipeline.stages, selectedStageId],
+    () => safeStages.find((stage) => stage.id === selectedStageId) || safeStages[0],
+    [safeStages, selectedStageId],
   );
 
   return (
@@ -19,11 +21,11 @@ export default function AiOsPipelinePage() {
             <h2 className="aios-card-title">AI dev pipeline</h2>
             <p className="aios-card-subtitle">Derived from AI_Development_Pipeline.md</p>
           </div>
-          <span className="aios-tag">Current stage · {pipeline.stage}</span>
+          <span className="aios-tag">Current stage · {pipeline?.stage}</span>
         </div>
 
         <div className="aios-stage-grid">
-          {pipeline.stages.map((stage) => (
+          {safeStages.map((stage) => (
             <button
               key={stage.id}
               type="button"

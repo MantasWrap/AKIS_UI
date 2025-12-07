@@ -3,6 +3,8 @@ import {
   getProgressSummary,
   getProgressTimeline,
 } from '../api/client';
+import { useAiOsMockData } from '../hooks/useAiOsMockData';
+import { emitNavigation } from '../modules/navigationBus';
 import '../styles/progress.css';
 
 const PHASE_PILLS = [
@@ -315,6 +317,26 @@ export default function ProgressPage() {
   const [expandedNextStep, setExpandedNextStep] = useState(null);
   const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
   const [hoveredPhaseId, setHoveredPhaseId] = useState(null);
+  const { overview: aiOsOverview, pipeline: aiOsPipeline } = useAiOsMockData();
+  const aiOsBadgeLabel = aiOsOverview?.badgeLabel
+    || [aiOsOverview?.version, aiOsOverview?.stage].filter(Boolean).join(' · ')
+    || null;
+  const aiOsStageList = aiOsPipeline?.stages || [];
+  const aiOsCurrentStage =
+    aiOsStageList.find((stage) => stage.id === aiOsPipeline?.currentStageId) || aiOsStageList[0] || null;
+  const aiOsStageChips = aiOsStageList.slice(0, 4);
+  const aiOsStageStateCopy = {
+    done: 'Complete',
+    in_progress: 'In progress',
+    up_next: 'Planned',
+    future: 'Future',
+  };
+  const aiOsPipelineSubtitle = aiOsPipeline?.status || 'Stage-by-stage AI OS delivery tracker.';
+  const aiOsPipelineCurrentSummary =
+    aiOsCurrentStage?.summary || aiOsCurrentStage?.description || 'AI OS pipeline mock data loading.';
+  const aiOsPipelineNextLine = aiOsPipeline?.next
+    ? `Next: ${aiOsPipeline.next}${aiOsPipeline?.eta ? ` · ${aiOsPipeline.eta}` : ''}`
+    : null;
 
   useEffect(() => {
     loadData({ fresh: false, topic: activeTopic });
@@ -404,6 +426,9 @@ export default function ProgressPage() {
 
   const handleRefresh = () => {
     loadData({ fresh: true, topic: activeTopic });
+  };
+  const navigateToAiOsPipeline = () => {
+    emitNavigation('aiOsPipeline');
   };
 
   const activePhaseRaw = summary?.activePhase || 'Phase 0';
@@ -506,21 +531,33 @@ export default function ProgressPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="dev-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
+        <div className="progress-header-row">
+          <div className="progress-header-text">
             <h2 className="dev-card-title" style={{ margin: 0 }}>Progress &amp; roadmap</h2>
             <p className="dev-card-subtitle" style={{ margin: 0 }}>
               Live readiness from CODEX progress log and phase checklists.
             </p>
           </div>
-          <button
-            type="button"
-            className={`dev-pill-button ${loading ? '' : 'active'}`}
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            {loading ? 'Loading…' : 'Refresh'}
-          </button>
+          <div className="progress-header-actions">
+            {aiOsBadgeLabel && (
+              <button
+                type="button"
+                className="progress-aios-badge"
+                onClick={navigateToAiOsPipeline}
+                title="View AI OS development pipeline"
+              >
+                {aiOsBadgeLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              className={`dev-pill-button ${loading ? '' : 'active'}`}
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              {loading ? 'Loading…' : 'Refresh'}
+            </button>
+          </div>
         </div>
         {error && (
           <p style={{ marginTop: '0.75rem', color: 'var(--dev-text-muted)' }}>{error}</p>
@@ -651,7 +688,7 @@ export default function ProgressPage() {
           </div>
         </div>
 
-        <div className="progress-row progress-row--split">
+        <div className="progress-row progress-row--split progress-row--aios-split">
           <div className="dev-card progress-kpi-card progress-kpi-card--accent-success">
             <CardHeader
               title="Phase 0 checklist"
@@ -798,6 +835,70 @@ export default function ProgressPage() {
                 </ul>
               </div>
             )}
+          </div>
+
+          <div
+            className="dev-card progress-kpi-card progress-kpi-card--accent-neutral progress-aios-pipeline-card"
+            role="button"
+            tabIndex={0}
+            onClick={navigateToAiOsPipeline}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                navigateToAiOsPipeline();
+              }
+            }}
+            aria-label="Open AI OS development pipeline"
+          >
+            <CardHeader
+              title="AI OS – Development pipeline"
+              subtitle={aiOsPipelineSubtitle}
+            >
+              {aiOsBadgeLabel && (
+                <span className="progress-aios-badge progress-aios-badge--static">
+                  {aiOsBadgeLabel}
+                </span>
+              )}
+            </CardHeader>
+            <div className="progress-card-body progress-card-body--aios">
+              <div className="progress-aios-stage-chips" role="list">
+                {aiOsStageChips.length > 0 ? (
+                  aiOsStageChips.map((stage) => {
+                    const displayLabel = stage.label ? stage.label.replace('Stage ', '') : stage.id;
+                    return (
+                      <div
+                        key={stage.id}
+                        className={[
+                          'progress-aios-stage-chip',
+                          stage.state ? `is-${stage.state}` : '',
+                          stage.id === aiOsCurrentStage?.id ? 'is-current' : '',
+                        ].filter(Boolean).join(' ')}
+                        role="listitem"
+                      >
+                        <span className="progress-aios-stage-chip__label">{displayLabel}</span>
+                        <span className="progress-aios-stage-chip__status">
+                          {aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned'}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="progress-aios-stage-chip__empty">Pipeline data coming soon.</span>
+                )}
+              </div>
+              <div className="progress-aios-stage-summary">
+                <div className="progress-aios-stage-summary__eyebrow">Current stage</div>
+                <div className="progress-aios-stage-summary__title">
+                  {aiOsCurrentStage ? `${aiOsCurrentStage.label} · ${aiOsCurrentStage.name}` : 'Pipeline pending'}
+                </div>
+                <p className="progress-aios-stage-summary__copy">{aiOsPipelineCurrentSummary}</p>
+                {aiOsPipelineNextLine && (
+                  <p className="progress-aios-stage-summary__next">
+                    {aiOsPipelineNextLine}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

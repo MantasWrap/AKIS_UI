@@ -1,10 +1,23 @@
 import { useCallback, useMemo, useState } from 'react';
 import '../../styles/aios.css';
-import { aiOsMockData } from '../../mock/aiOsMockData';
+import { useAiOsMockData } from '../../hooks/useAiOsMockData';
 import { emitNavigation } from '../../modules/navigationBus';
 
 export default function AiOsHomePage() {
-  const { status, usage, agents, modes, pipeline, costs } = aiOsMockData;
+  const {
+    overview,
+    usage,
+    agents,
+    modes,
+    pipeline,
+    costs,
+  } = useAiOsMockData();
+  const heroHighlights = overview?.highlights || [];
+  const heroBadgeLabel = overview?.badgeLabel
+    || [overview?.version, overview?.stage].filter(Boolean).join(' · ')
+    || 'AI OS mock';
+  const readinessValue = typeof overview?.readiness === 'number' ? `${overview.readiness}%` : '—';
+  const heroBuild = overview?.build || 'AI OS mock readiness preview';
   const usageRanges = usage?.ranges || {};
   const initialRange = usage?.defaultRange && usageRanges[usage.defaultRange]
     ? usage.defaultRange
@@ -41,18 +54,18 @@ export default function AiOsHomePage() {
         <div className="aios-hero-header">
           <div>
             <p className="aios-card-subtitle">AI OS status</p>
-            <h2 className="aios-card-title">{status.build}</h2>
+            <h2 className="aios-card-title">{heroBuild}</h2>
           </div>
-          <span className="aios-tag">{`${status.version} · ${status.stage}`}</span>
+          <span className="aios-tag">{heroBadgeLabel}</span>
         </div>
         <div className="aios-hero-body">
           <div className="aios-hero-status">
             <div>
-              <div className="aios-highlight">{status.readiness}%</div>
+              <div className="aios-highlight">{readinessValue}</div>
               <div className="aios-highlight-sub">Overall readiness</div>
             </div>
             <ul className="aios-list aios-hero-list">
-              {status.highlights.map((highlight) => (
+              {heroHighlights.map((highlight) => (
                 <li key={highlight}>
                   <span className="aios-dot" />
                   {highlight}
