@@ -876,15 +876,18 @@ export default function ProgressPage() {
                           .filter(Boolean)
                           .join(' ')}
                       >
-                        <div className={[
-                          'progress-aios-stage-pill',
-                          isCurrent ? 'progress-aios-stage-pill--current' : '',
-                        ].filter(Boolean).join(' ')}
+                        <div
+                          className={[
+                            'progress-aios-stage-pill',
+                            isCurrent ? 'progress-aios-stage-pill--current' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
                         >
                           <span className="progress-aios-stage-pill-code">{displayCode}</span>
                           <span className="progress-aios-stage-pill-label">{stageStatusLabel}</span>
                         </div>
-                        <div className="progress-aios-stage-row-name">{stage.label}</div>
+                        <div className="progress-aios-stage-row-subtitle">{stage.label}</div>
                       </div>
                     );
                   })
