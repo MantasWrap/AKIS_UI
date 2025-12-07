@@ -97,6 +97,9 @@ export const aiOsMockData = {
         canTouchBackend: false,
         usesMockDataByDefault: true,
         canEditDocs: true,
+        startupMessageLabel: 'Designer chat startup (CHAT&CODEX UI v1)',
+        startupDocPath: 'docs/EN/SYSTEM/Designer_Chat_Startup_Template_Codex.md',
+        startupMessageSnippet: 'You are the UI Boss for the AKIS Dev Console. Prioritise UI/UX work with mock data.',
       },
       {
         id: 'qa-scribe',
@@ -121,6 +124,9 @@ export const aiOsMockData = {
         canTouchBackend: false,
         usesMockDataByDefault: true,
         canEditDocs: true,
+        startupMessageLabel: 'QA Scribe startup template',
+        startupDocPath: 'docs/EN/SYSTEM/CODEX_Progress_Log_QA_Template.md',
+        startupMessageSnippet: 'Summarise CODEX log entries, flag risks, and keep checklist progress tidy.',
       },
       {
         id: 'pipeline-scout',
@@ -145,6 +151,9 @@ export const aiOsMockData = {
         canTouchBackend: true,
         usesMockDataByDefault: false,
         canEditDocs: true,
+        startupMessageLabel: 'Pipeline scout mission brief',
+        startupDocPath: 'docs/EN/AI/AI_Development_Pipeline.md',
+        startupMessageSnippet: 'Monitor AI OS stages A0–A3 and raise readiness blockers.',
       },
       {
         id: 'ops-bridge',
@@ -169,6 +178,9 @@ export const aiOsMockData = {
         canTouchBackend: true,
         usesMockDataByDefault: true,
         canEditDocs: false,
+        startupMessageLabel: 'Ops bridge runtime prompt',
+        startupDocPath: 'docs/EN/SYSTEM/AI_Ops_Voice_Startup.md',
+        startupMessageSnippet: 'Coordinate PLC/Jetson runtime missions and translate owner intents into ops steps.',
       },
     ],
     filters: [

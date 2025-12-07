@@ -634,6 +634,199 @@
   font-size: 0.95rem;
 }
 
+.aios-agent-focus-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.aios-agent-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.aios-agent-tile {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: #fff;
+  min-width: 220px;
+  flex: 1 0 220px;
+  cursor: pointer;
+  box-shadow: var(--dev-shadow-soft);
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  text-align: left;
+}
+
+.aios-agent-tile.is-selected {
+  border-color: var(--dev-accent);
+  box-shadow: 0 18px 30px rgba(15, 76, 57, 0.12);
+}
+
+.aios-agent-tile.is-dimmed {
+  opacity: 0.45;
+  filter: blur(0.3px);
+  pointer-events: none;
+}
+
+.aios-agent-tile-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.aios-agent-tile-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.aios-agent-tile-role {
+  font-size: 0.82rem;
+  color: var(--dev-text-muted);
+  margin-top: 0.2rem;
+}
+
+.aios-agent-tile-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+}
+
+.aios-agent-status {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-soft);
+}
+
+.aios-agent-detail-panel {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 18px;
+  padding: 1.25rem;
+  background: var(--dev-bg-card);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aios-agent-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 960px) {
+  .aios-agent-detail-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+
+.aios-agent-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+
+.aios-agent-focus-exit {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.aios-agent-detail-startup {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.aios-agent-detail-startup-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.aios-agent-detail-startup-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.aios-agent-detail-startup-header p {
+  margin: 0;
+  color: var(--dev-text-muted);
+  font-size: 0.85rem;
+}
+
+.aios-agent-detail-doc {
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-agent-detail-startup-snippet {
+  font-size: 0.9rem;
+  margin: 0;
+  color: var(--dev-text-soft);
+}
+
+.aios-agent-detail-startup-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.aios-agent-detail-startup-actions button {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.aios-agent-detail-startup-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-agent-detail-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.aios-agent-delete-btn {
+  border: none;
+  background: transparent;
+  color: #b42318;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.aios-agent-placeholder {
+  border: 1px dashed var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1.2rem;
+  text-align: center;
+  color: var(--dev-text-muted);
+}
+
 .aios-mini-chart {
   display: flex;
   align-items: flex-end;

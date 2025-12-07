@@ -736,6 +736,12 @@ textarea {
   align-items: center;
 }
 
+.dev-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .dev-chip {
   border-radius: var(--dev-radius-pill);
   padding: 0.3rem 0.75rem;
@@ -968,6 +974,371 @@ textarea {
   font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-size: 0.85rem;
   color: #0f172a;
+}
+
+/* Dev Control Center */
+.dev-ctrl-wrapper {
+  position: relative;
+}
+
+.dev-ctrl-center {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dev-ctrl-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--dev-border-subtle);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease, transform 80ms ease;
+}
+
+.dev-ctrl-icon.is-active {
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.dev-ctrl-icon:active {
+  transform: scale(0.95);
+}
+
+.dev-ctrl-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 60;
+}
+
+.dev-ctrl-panel-container {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  z-index: 61;
+  width: min(420px, calc(100% - 32px));
+}
+
+.dev-ctrl-panel {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: min(70vh, 520px);
+}
+
+.dev-ctrl-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.dev-ctrl-panel-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.dev-ctrl-panel-header p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-ctrl-panel-close {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.dev-ctrl-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dev-ctrl-ghost-btn {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.dev-ctrl-panel-scroll {
+  overflow-y: auto;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-right: 0.25rem;
+}
+
+.dev-ctrl-panel-footer {
+  text-align: center;
+}
+
+.dev-ctrl-link {
+  border: none;
+  background: transparent;
+  color: var(--dev-accent);
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.dev-ctrl-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dev-ctrl-chip {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.dev-ctrl-chip.is-active {
+  border-color: var(--dev-accent);
+  color: var(--dev-accent);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.dev-ctrl-notification {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.dev-ctrl-notification--warning {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(250, 204, 21, 0.12);
+}
+
+.dev-ctrl-notification--task {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dev-ctrl-notification--hint {
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+.dev-ctrl-notification-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dev-ctrl-notification-head time {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-ctrl-notification p {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.dev-ctrl-empty {
+  border: 1px dashed var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 0.9rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-ctrl-search-bar {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dev-ctrl-search-bar input {
+  border: none;
+  flex: 1;
+  font-size: 0.9rem;
+  background: transparent;
+}
+
+.dev-ctrl-search-section header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.dev-ctrl-search-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dev-ctrl-search-section li button {
+  width: 100%;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.35rem;
+  cursor: pointer;
+}
+
+.dev-ctrl-search-path {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-ctrl-note {
+  border-radius: var(--dev-radius-lg);
+  padding: 0.8rem;
+  border: 1px solid var(--dev-border-subtle);
+  background: #fff;
+}
+
+.dev-ctrl-note--green {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.dev-ctrl-note--yellow {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.dev-ctrl-note--blue {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.dev-ctrl-note header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.dev-ctrl-note header button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dev-ctrl-note p {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.dev-ctrl-note footer {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-ctrl-panel-scroll.dev-ctrl-notes-scroll {
+  max-height: 40vh;
+}
+
+.dev-ctrl-note-form {
+  border-top: 1px solid var(--dev-border-subtle);
+  padding-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dev-ctrl-note-form input,
+.dev-ctrl-note-form textarea {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.dev-ctrl-note-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.dev-ctrl-note-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dev-ctrl-note-color {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.dev-ctrl-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dev-ctrl-color-dot span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.dev-ctrl-color-dot:nth-child(1) span {
+  background: rgba(34, 197, 94, 0.8);
+}
+
+.dev-ctrl-color-dot:nth-child(2) span {
+  background: rgba(245, 158, 11, 0.8);
+}
+
+.dev-ctrl-color-dot:nth-child(3) span {
+  background: rgba(59, 130, 246, 0.8);
+}
+
+.dev-ctrl-color-dot.is-active {
+  border-color: var(--dev-accent);
+}
+
+.dev-ctrl-primary-btn {
+  border: none;
+  border-radius: 999px;
+  background: var(--dev-accent);
+  color: #fff;
+  padding: 0.35rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 @media (max-width: 960px) {

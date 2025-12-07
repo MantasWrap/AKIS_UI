@@ -8,6 +8,7 @@ import packageJson from '../../package.json';
 import { API_BASE } from '../api/client';
 import { DESIGN_CONFIG } from '../design/designConfig';
 import { MODULES } from '../modules/moduleRegistry.js';
+import DevControlCenter from '../components/devControl/DevControlCenter.jsx';
 
 const APP_VERSION = packageJson.version || 'dev';
 const DEFAULT_ENV = {
@@ -227,13 +228,16 @@ export default function DevConsoleLayout({
             <h1>{pageTitle}</h1>
             <p style={{ margin: 0, color: 'var(--dev-text-muted)' }}>{pageSubtitle}</p>
           </div>
-          <div className="dev-chip-row">
-            {environmentChips.map((chip) => (
-              <span key={chip.label} className="dev-chip">
-                <strong style={{ color: 'var(--dev-text-soft)', marginRight: '0.35rem' }}>{chip.label}:</strong>
-                {chip.value}
-              </span>
-            ))}
+          <div className="dev-header-right">
+            <div className="dev-chip-row">
+              {environmentChips.map((chip) => (
+                <span key={chip.label} className="dev-chip">
+                  <strong style={{ color: 'var(--dev-text-soft)', marginRight: '0.35rem' }}>{chip.label}:</strong>
+                  {chip.value}
+                </span>
+              ))}
+            </div>
+            <DevControlCenter />
           </div>
         </div>
 

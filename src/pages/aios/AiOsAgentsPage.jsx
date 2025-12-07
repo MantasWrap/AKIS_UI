@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '../../styles/aios.css';
 import { useAiOsMockData } from '../../hooks/useAiOsMockData';
 
@@ -24,13 +24,23 @@ const TIER_LABELS = {
 };
 
 const PRESET_CUSTOM = 'custom';
+const tierRank = {
+  os_supervisor: 0,
+  domain_boss: 1,
+  boss: 1,
+  implementer: 2,
+  default: 3,
+};
+
 const DEFAULT_NEW_AGENT = {
+  id: '',
+  name: 'New agent',
+  role: 'Describe this agent',
   tier: 'implementer',
   type: 'implementer',
-  role: 'New agent – describe focus',
-  name: 'New agent',
+  status: 'Draft',
   monthlyCost: 0,
-  notes: 'Mock creation · not persisted.',
+  notes: 'Mock-only agent placeholder.',
   uiCreativityLevel: 'medium',
   backendPlanningBias: 'medium',
   docsEditBias: 'medium',
@@ -38,13 +48,9 @@ const DEFAULT_NEW_AGENT = {
   canTouchBackend: false,
   usesMockDataByDefault: true,
   canEditDocs: true,
-};
-const tierRank = {
-  os_supervisor: 0,
-  domain_boss: 1,
-  boss: 1,
-  implementer: 2,
-  default: 3,
+  startupMessageLabel: 'Mock startup template',
+  startupDocPath: 'docs/EN/SYSTEM/Agent_Startup_Template.md',
+  startupMessageSnippet: 'Explain what this agent focuses on when a session begins.',
 };
 
 const sliderIndex = (levels, value) => {
@@ -88,26 +94,29 @@ export default function AiOsAgentsPage() {
   } = useAiOsMockData();
 
   const roster = useMemo(() => agents?.roster || [], [agents]);
-  const filterOptions = agents?.filters || [{ id: 'all', label: 'All agents' }];
-  const creativityLevels = agents?.creativityLevels || BASE_LEVELS;
-  const biasLevels = agents?.biasLevels || BASE_LEVELS;
 
-  const [filter, setFilter] = useState(filterOptions[0]?.id || 'all');
+  const [agentsState, setAgentsState] = useState(() => roster);
+
   const [settingsState, setSettingsState] = useState({});
-  const [expandedAgentIds, setExpandedAgentIds] = useState(() => new Set());
+  const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState('name');
-  const [customAgents, setCustomAgents] = useState([]);
+  const [selectedAgentId, setSelectedAgentId] = useState(null);
+  const [copiedAgentId, setCopiedAgentId] = useState(null);
+
+  const creativityLevels = agents?.creativityLevels || BASE_LEVELS;
+  const biasLevels = agents?.biasLevels || BASE_LEVELS;
+  const filterOptions = agents?.filters || [{ id: 'all', label: 'All agents' }];
 
   const baseSettings = useMemo(
-    () => buildInitialSettings(roster, modePresets),
-    [roster, modePresets],
+    () => buildInitialSettings(agentsState, modePresets),
+    [agentsState, modePresets],
   );
 
-  const combinedAgents = useMemo(
-    () => [...customAgents, ...roster],
-    [customAgents, roster],
-  );
+  const mapSliderValue = (levels, index) => {
+    const safeIndex = Math.min(Math.max(Number(index), 0), levels.length - 1);
+    return levels[safeIndex]?.id || levels[0]?.id || 'medium';
+  };
 
   const updateAgentSettings = (agentId, partial) => {
     setSettingsState((prev) => ({
@@ -117,11 +126,6 @@ export default function AiOsAgentsPage() {
         ...partial,
       },
     }));
-  };
-
-  const mapSliderValue = (levels, index) => {
-    const safeIndex = Math.min(Math.max(Number(index), 0), levels.length - 1);
-    return levels[safeIndex]?.id || levels[0]?.id || 'medium';
   };
 
   const handleNameChange = (agentId, value) => {
@@ -164,19 +168,10 @@ export default function AiOsAgentsPage() {
     });
   };
 
-  const toggleAgentExpanded = (agentId) => {
-    setExpandedAgentIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(agentId)) next.delete(agentId);
-      else next.add(agentId);
-      return next;
-    });
-  };
-
   const handleCreateAgent = () => {
     const id = `mock-agent-${Date.now()}`;
-    const template = { ...DEFAULT_NEW_AGENT, id, name: `${DEFAULT_NEW_AGENT.name} ${customAgents.length + 1}` };
-    setCustomAgents((prev) => [template, ...prev]);
+    const template = { ...DEFAULT_NEW_AGENT, id, name: `${DEFAULT_NEW_AGENT.name} ${agentsState.length + 1}` };
+    setAgentsState((prev) => [template, ...prev]);
     updateAgentSettings(id, {
       name: template.name,
       uiCreativityLevel: template.uiCreativityLevel,
@@ -188,16 +183,35 @@ export default function AiOsAgentsPage() {
       canEditDocs: template.canEditDocs,
       presetId: PRESET_CUSTOM,
     });
-    setExpandedAgentIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
+    setSelectedAgentId(id);
+  };
+
+  const handleDeleteAgent = (agentId) => {
+    const agent = agentsState.find((item) => item.id === agentId);
+    const label = agent?.name || 'this agent';
+    if (!window.confirm(`Delete ${label}? This action is mock-only.`)) {
+      return;
+    }
+    setAgentsState((prev) => prev.filter((item) => item.id !== agentId));
+    setSettingsState((prev) => {
+      const next = { ...prev };
+      delete next[agentId];
       return next;
     });
+    if (selectedAgentId === agentId) {
+      setSelectedAgentId(null);
+    }
+  };
+
+  const presetLabel = (settings) => {
+    if (!settings || !settings.presetId) return 'Custom';
+    if (settings.presetId === PRESET_CUSTOM) return 'Custom';
+    return modePresets.find((preset) => preset.id === settings.presetId)?.label || 'Preset';
   };
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredAgents = useMemo(() => {
-    const byType = combinedAgents.filter((agent) => {
+    const byType = agentsState.filter((agent) => {
       if (filter === 'all') return true;
       return agent.type === filter || agent.tier === filter;
     });
@@ -209,8 +223,7 @@ export default function AiOsAgentsPage() {
         || agent.notes?.toLowerCase().includes(normalizedSearch)
       );
     });
-
-    const sorted = [...bySearch].sort((a, b) => {
+    return [...bySearch].sort((a, b) => {
       if (sortKey === 'tier') {
         const aRank = tierRank[a.tier] ?? tierRank.default;
         const bRank = tierRank[b.tier] ?? tierRank.default;
@@ -222,19 +235,37 @@ export default function AiOsAgentsPage() {
       }
       return (a.name || '').localeCompare(b.name || '');
     });
+  }, [agentsState, filter, normalizedSearch, sortKey]);
 
-    return sorted;
-  }, [combinedAgents, filter, sortKey, normalizedSearch]);
+  const selectedAgent = selectedAgentId
+    ? agentsState.find((agent) => agent.id === selectedAgentId)
+    : null;
+  const selectedAgentVisible = selectedAgent
+    ? filteredAgents.some((agent) => agent.id === selectedAgent.id)
+    : false;
 
   const getAgentSettings = (agentId) => ({
     ...(baseSettings[agentId] || {}),
     ...(settingsState[agentId] || {}),
   });
 
-  const presetLabel = (settings) => {
-    if (!settings || !settings.presetId) return 'Custom';
-    if (settings.presetId === PRESET_CUSTOM) return 'Custom';
-    return modePresets.find((preset) => preset.id === settings.presetId)?.label || 'Preset';
+  const handleCopyStartup = (agent) => {
+    const payload = agent.startupMessageSnippet
+      || `Startup message placeholder for ${agent.name}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(payload).catch(() => {});
+    }
+    setCopiedAgentId(agent.id);
+  };
+
+  useEffect(() => {
+    if (!copiedAgentId) return;
+    const timer = setTimeout(() => setCopiedAgentId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [copiedAgentId]);
+
+  const handleOpenStartupDoc = (agent) => {
+    console.log('Mock doc open:', agent.startupDocPath);
   };
 
   return (
@@ -245,10 +276,10 @@ export default function AiOsAgentsPage() {
             <div>
               <h2 className="aios-card-title">AI OS · Agents</h2>
               <p className="aios-card-subtitle">
-                Configure behaviour presets. Controls are mock-only until OS-config APIs land.
+                Focus an agent to edit behaviour sliders, presets, and startup guidance. All controls are mock-only.
               </p>
             </div>
-            <span className="aios-tag">{agents?.total ?? roster.length} total</span>
+            <span className="aios-tag">{agentsState.length} total</span>
           </div>
           <button type="button" className="aios-agents-create-btn" onClick={handleCreateAgent}>
             New agent
@@ -262,7 +293,10 @@ export default function AiOsAgentsPage() {
                 key={option.id}
                 type="button"
                 className={`aios-chip ${filter === option.id ? 'is-active' : ''}`}
-                onClick={() => setFilter(option.id)}
+                onClick={() => {
+                  setFilter(option.id);
+                  setSelectedAgentId(null);
+                }}
                 aria-pressed={filter === option.id}
               >
                 {option.label}
@@ -275,12 +309,18 @@ export default function AiOsAgentsPage() {
               className="aios-agents-search"
               placeholder="Search agents"
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setSelectedAgentId(null);
+              }}
             />
             <select
               className="aios-agents-sort"
               value={sortKey}
-              onChange={(event) => setSortKey(event.target.value)}
+              onChange={(event) => {
+                setSortKey(event.target.value);
+                setSelectedAgentId(null);
+              }}
             >
               <option value="name">Name A–Z</option>
               <option value="tier">Tier</option>
@@ -294,156 +334,181 @@ export default function AiOsAgentsPage() {
             No agents match your filters. Clear search or switch filters to see more.
           </div>
         ) : (
-          <div className="aios-agents-grid">
-            {filteredAgents.map((agent) => {
-              const settings = getAgentSettings(agent.id);
-              const uiSliderIndex = sliderIndex(creativityLevels, settings.uiCreativityLevel);
-              const backendSliderIndex = sliderIndex(biasLevels, settings.backendPlanningBias);
-              const docsSliderIndex = sliderIndex(biasLevels, settings.docsEditBias);
-              const uiLevelMeta = creativityLevels[uiSliderIndex] || creativityLevels[0];
-              const tierLabel = TIER_LABELS[agent.tier] || agent.tier || agent.type;
-              const activePreset = settings.presetId && settings.presetId !== PRESET_CUSTOM
-                ? modePresets.find((preset) => preset.id === settings.presetId)
-                : null;
-              const expanded = expandedAgentIds.has(agent.id);
-              const detailsId = `${agent.id}-details`;
-
-              return (
-                <div key={agent.id} className={`aios-agent-card ${expanded ? 'is-expanded' : ''}`}>
+          <div className="aios-agent-focus-layout">
+            <div className="aios-agent-tiles" role="tablist" aria-label="Agent selection">
+              {filteredAgents.map((agent) => {
+                const settings = getAgentSettings(agent.id);
+                const tierLabel = TIER_LABELS[agent.tier] || agent.tier || agent.type;
+                const isSelected = selectedAgentId === agent.id;
+                const dimmed = selectedAgentId && !isSelected;
+                return (
                   <button
+                    key={agent.id}
                     type="button"
-                    className="aios-agent-card-header-button"
-                    onClick={() => toggleAgentExpanded(agent.id)}
-                    aria-expanded={expanded}
-                    aria-controls={detailsId}
+                    className={[
+                      'aios-agent-tile',
+                      isSelected ? 'is-selected' : '',
+                      dimmed ? 'is-dimmed' : '',
+                    ].filter(Boolean).join(' ')}
+                    aria-pressed={isSelected}
+                    onClick={() => setSelectedAgentId((prev) => (prev === agent.id ? null : agent.id))}
                   >
-                    <div className="aios-agent-card-header-main">
-                      <div className="aios-agent-card-title">{settings.name || agent.name}</div>
-                      <div className="aios-agent-role-row">
-                        <span className="aios-agent-role">{agent.role}</span>
-                        <span className={`aios-agent-tier aios-agent-tier--${agent.tier || 'default'}`}>
-                          {tierLabel}
-                        </span>
-                      </div>
+                    <div className="aios-agent-tile-top">
+                      <span className="aios-agent-tile-name">{settings.name || agent.name}</span>
+                      <span className={`aios-agent-tier aios-agent-tier--${agent.tier || 'default'}`}>
+                        {tierLabel}
+                      </span>
                     </div>
-                    <div className="aios-agent-card-header-meta">
+                    <div className="aios-agent-tile-role">{agent.role}</div>
+                    <div className="aios-agent-tile-meta">
                       <span className="aios-agent-preset-pill">{presetLabel(settings)}</span>
-                      <span className={`aios-agent-card-chevron ${expanded ? 'is-open' : ''}`} aria-hidden="true" />
+                      <span className="aios-agent-status">{agent.status}</span>
                     </div>
                   </button>
+                );
+              })}
+            </div>
 
-                  <div className="aios-agent-name-block">
-                    <label className="aios-detail-label" htmlFor={`${agent.id}-name`}>Agent name</label>
-                    <div className="aios-agent-name-edit">
-                      <input
-                        id={`${agent.id}-name`}
-                        className="aios-agent-name-input"
-                        value={settings.name || agent.name}
-                        onChange={(event) => handleNameChange(agent.id, event.target.value)}
-                      />
-                      <span className="aios-agent-edit-hint">mock edit</span>
+            {selectedAgentVisible ? (
+              <div className="aios-agent-detail-panel">
+                <div className="aios-agent-detail-header">
+                  <div>
+                    <label className="aios-detail-label" htmlFor={`${selectedAgent.id}-focused-name`}>Agent name</label>
+                    <input
+                      id={`${selectedAgent.id}-focused-name`}
+                      className="aios-agent-name-input"
+                      value={getAgentSettings(selectedAgent.id).name || selectedAgent.name}
+                      onChange={(event) => handleNameChange(selectedAgent.id, event.target.value)}
+                    />
+                    <div className="aios-agent-role-row">
+                      <span className="aios-agent-role">{selectedAgent.role}</span>
+                      <span className={`aios-agent-tier aios-agent-tier--${selectedAgent.tier || 'default'}`}>
+                        {TIER_LABELS[selectedAgent.tier] || selectedAgent.tier || selectedAgent.type}
+                      </span>
                     </div>
                   </div>
-
-                  {expanded && (
-                    <div id={detailsId}>
-                      <section className="aios-agent-card-modes">
-                        <div className="aios-agent-preset-row">
-                          <div className="aios-detail-label">Mode preset</div>
-                          <select
-                            className="aios-agent-preset-select"
-                            value={settings.presetId || PRESET_CUSTOM}
-                            onChange={(event) => handlePresetChange(agent.id, event.target.value)}
-                          >
-                            <option value={PRESET_CUSTOM}>Custom</option>
-                            {modePresets.map((preset) => (
-                              <option key={preset.id} value={preset.id}>
-                                {preset.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="aios-agent-preset-caption">
-                          {activePreset ? activePreset.description : 'Adjust sliders to fine-tune behaviour.'}
-                        </div>
-
-                        <div className="aios-agent-slider-block">
-                          <div className="aios-agent-slider-row">
-                            <div className="aios-agent-slider-label">
-                              <span>UI Creativity</span>
-                              <span className="aios-agent-slider-level">{uiLevelMeta?.label}</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={creativityLevels.length - 1}
-                              value={uiSliderIndex}
-                              className="aios-agent-slider"
-                              onChange={(event) => handleSliderChange(agent.id, 'uiCreativityLevel', event.target.value)}
-                            />
-                            <div className="aios-agent-slider-caption">{uiLevelMeta?.description}</div>
-                          </div>
-
-                          <div className="aios-agent-slider-row">
-                            <div className="aios-agent-slider-label">
-                              <span>Backend planning</span>
-                              <span className="aios-agent-slider-level">
-                                {biasLevels[backendSliderIndex]?.label}
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={biasLevels.length - 1}
-                              value={backendSliderIndex}
-                              className="aios-agent-slider"
-                              onChange={(event) => handleSliderChange(agent.id, 'backendPlanningBias', event.target.value)}
-                            />
-                          </div>
-
-                          <div className="aios-agent-slider-row">
-                            <div className="aios-agent-slider-label">
-                              <span>Docs edit focus</span>
-                              <span className="aios-agent-slider-level">
-                                {biasLevels[docsSliderIndex]?.label}
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={biasLevels.length - 1}
-                              value={docsSliderIndex}
-                              className="aios-agent-slider"
-                              onChange={(event) => handleSliderChange(agent.id, 'docsEditBias', event.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </section>
-
-                      <section className="aios-agent-card-perms">
-                        {TOGGLES.map((toggle) => (
-                          <label key={toggle.id} className="aios-agent-perm-row">
-                            <input
-                              type="checkbox"
-                              checked={!!settings[toggle.id]}
-                              onChange={() => handleToggleChange(agent.id, toggle.id)}
-                            />
-                            <span>{toggle.label}</span>
-                          </label>
-                        ))}
-                      </section>
-
-                      <footer className="aios-agent-card-footer">
-                        <span className="aios-agent-mock-tag">Mock only · no persistence</span>
-                        <button type="button" className="aios-agent-profiles-link">
-                          View profiles
-                        </button>
-                      </footer>
-                    </div>
-                  )}
+                  <div className="aios-agent-detail-actions">
+                    <span className="aios-agent-preset-pill">{presetLabel(getAgentSettings(selectedAgent.id))}</span>
+                    <button type="button" className="aios-agent-focus-exit" onClick={() => setSelectedAgentId(null)}>
+                      Back to overview
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+
+                <section className="aios-agent-card-modes">
+                  <div className="aios-agent-preset-row">
+                    <div className="aios-detail-label">Mode preset</div>
+                    <select
+                      className="aios-agent-preset-select"
+                      value={getAgentSettings(selectedAgent.id).presetId || PRESET_CUSTOM}
+                      onChange={(event) => handlePresetChange(selectedAgent.id, event.target.value)}
+                    >
+                      <option value={PRESET_CUSTOM}>Custom</option>
+                      {modePresets.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="aios-agent-preset-caption">
+                    {(() => {
+                      const settings = getAgentSettings(selectedAgent.id);
+                      if (settings.presetId === PRESET_CUSTOM || !settings.presetId) {
+                        return 'Adjust sliders to fine-tune behaviour.';
+                      }
+                      const preset = modePresets.find((item) => item.id === settings.presetId);
+                      return preset?.description || 'Adjust sliders to fine-tune behaviour.';
+                    })()}
+                  </div>
+
+                  {['uiCreativityLevel', 'backendPlanningBias', 'docsEditBias'].map((key) => {
+                    const settings = getAgentSettings(selectedAgent.id);
+                    const sliderIdx = sliderIndex(
+                      key === 'uiCreativityLevel' ? creativityLevels : biasLevels,
+                      settings[key],
+                    );
+                    const levels = key === 'uiCreativityLevel' ? creativityLevels : biasLevels;
+                    return (
+                      <div key={key} className="aios-agent-slider-row">
+                        <div className="aios-agent-slider-label">
+                          <span>
+                            {key === 'uiCreativityLevel' && 'UI Creativity'}
+                            {key === 'backendPlanningBias' && 'Backend planning'}
+                            {key === 'docsEditBias' && 'Docs focus'}
+                          </span>
+                          <span className="aios-agent-slider-level">{levels[sliderIdx]?.label}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={levels.length - 1}
+                          value={sliderIdx}
+                          className="aios-agent-slider"
+                          onChange={(event) => handleSliderChange(selectedAgent.id, key, event.target.value)}
+                        />
+                        {key === 'uiCreativityLevel' && (
+                          <div className="aios-agent-slider-caption">{levels[sliderIdx]?.description}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </section>
+
+                <section className="aios-agent-card-perms">
+                  {TOGGLES.map((toggle) => (
+                    <label key={toggle.id} className="aios-agent-perm-row">
+                      <input
+                        type="checkbox"
+                        checked={!!getAgentSettings(selectedAgent.id)[toggle.id]}
+                        onChange={() => handleToggleChange(selectedAgent.id, toggle.id)}
+                      />
+                      <span>{toggle.label}</span>
+                    </label>
+                  ))}
+                </section>
+
+                <section className="aios-agent-detail-startup">
+                  <div className="aios-agent-detail-startup-header">
+                    <div>
+                      <h4>Startup message</h4>
+                      <p>{selectedAgent.startupMessageLabel}</p>
+                    </div>
+                    <span className="aios-agent-detail-doc">{selectedAgent.startupDocPath}</span>
+                  </div>
+                  <p className="aios-agent-detail-startup-snippet">
+                    {selectedAgent.startupMessageSnippet}
+                  </p>
+                  <div className="aios-agent-detail-startup-actions">
+                    <button type="button" onClick={() => handleCopyStartup(selectedAgent)}>
+                      {copiedAgentId === selectedAgent.id ? 'Copied!' : 'Copy to clipboard'}
+                    </button>
+                    <button type="button" onClick={() => handleOpenStartupDoc(selectedAgent)}>
+                      Open in docs
+                    </button>
+                  </div>
+                  <p className="aios-agent-detail-startup-hint">
+                    Mock only – copying/opening uses placeholder data until OS-config wiring lands.
+                  </p>
+                </section>
+
+                <footer className="aios-agent-card-footer">
+                  <span className="aios-agent-mock-tag">Mock only · no persistence</span>
+                  <div className="aios-agent-detail-footer-actions">
+                    <button type="button" className="aios-agent-delete-btn" onClick={() => handleDeleteAgent(selectedAgent.id)}>
+                      Delete agent
+                    </button>
+                    <button type="button" className="aios-agent-profiles-link">
+                      View profiles
+                    </button>
+                  </div>
+                </footer>
+              </div>
+            ) : (
+              <div className="aios-agent-placeholder">
+                Select an agent tile to open focus mode and edit behaviour controls.
+              </div>
+            )}
           </div>
         )}
 
