@@ -74,6 +74,8 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
  * @property {NavSection} navSection
  */
 
+export const DEFAULT_MODULE_KEY = 'status';
+
 const MODULE_FLAGS = (DESIGN_CONFIG && DESIGN_CONFIG.modules) || {};
 
 function resolveEnabled(key, defaultValue = true) {

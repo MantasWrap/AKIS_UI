@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import StatusPage from './pages/StatusPage.jsx';
 import DevConsoleLayout from './layouts/DevConsoleLayout.jsx';
 import {
   getModuleByKey,
   getNavModules,
   getPageMetaMap,
+  DEFAULT_MODULE_KEY,
 } from './modules/moduleRegistry.js';
 import { subscribeNavigation } from './modules/navigationBus.js';
 
@@ -33,32 +34,50 @@ const FUTURE_NAV_ITEMS = [
 ];
 
 const PAGE_META = getPageMetaMap();
+const DEFAULT_VIEW = DEFAULT_MODULE_KEY;
 
 function App() {
-  const [view, setView] = useState('status');
+  const [view, setView] = useState(DEFAULT_VIEW);
+
+  const handleNavigate = useCallback((nextKey) => {
+    if (!nextKey) return;
+    const module = getModuleByKey(nextKey);
+    if (!module) {
+      console.warn(`[App] Attempted to navigate to unknown module key: ${nextKey}`);
+      setView(DEFAULT_VIEW);
+      return;
+    }
+    setView(nextKey);
+  }, [setView]);
+
   useEffect(() => {
     const unsubscribe = subscribeNavigation((key) => {
-      if (getModuleByKey(key)) {
-        setView(key);
+      if (key) {
+        handleNavigate(key);
       }
     });
     return unsubscribe;
-  }, []);
-  const activeMeta = useMemo(() => PAGE_META[view] || PAGE_META.status, [view]);
+  }, [handleNavigate]);
+
+  const moduleFromView = useMemo(() => getModuleByKey(view), [view]);
+  const activeModule = moduleFromView || getModuleByKey(DEFAULT_VIEW);
+
+  const activeMeta = useMemo(
+    () => activeModule?.pageMeta || PAGE_META[DEFAULT_VIEW],
+    [activeModule],
+  );
 
   const page = useMemo(() => {
-    const module = getModuleByKey(view) || getModuleByKey('status');
-    if (!module) return <StatusPage />;
-    const Component = module.component;
+    const Component = activeModule?.component || StatusPage;
     return <Component />;
-  }, [view]);
+  }, [activeModule]);
 
   return (
     <DevConsoleLayout
       navSections={NAV_SECTIONS}
       futureNavItems={FUTURE_NAV_ITEMS}
-      activeKey={view}
-      onNavigate={setView}
+      activeKey={activeModule?.key || DEFAULT_VIEW}
+      onNavigate={handleNavigate}
       pageTitle={activeMeta.title}
       pageSubtitle={activeMeta.subtitle}
     >
