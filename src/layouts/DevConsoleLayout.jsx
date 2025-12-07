@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { API_BASE } from '../api/client';
@@ -14,6 +15,14 @@ const DEFAULT_ENV = {
   lineId: 'LINE_01',
 };
 
+function buildInitialSectionState(sections) {
+  const map = {};
+  sections.forEach((section) => {
+    map[section.key] = false;
+  });
+  return map;
+}
+
 export default function DevConsoleLayout({
   navSections = [],
   futureNavItems = [],
@@ -25,6 +34,7 @@ export default function DevConsoleLayout({
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState(() => buildInitialSectionState(navSections));
   const profileRef = useRef(null);
 
   const sidebarBranding = DESIGN_CONFIG.sidebarBranding;
@@ -59,6 +69,13 @@ export default function DevConsoleLayout({
     return acc;
   }, {});
 
+  const handleSectionToggle = (sectionKey) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !(prev[sectionKey] ?? false),
+    }));
+  };
+
   const toggleSidebar = () => {
     if (!sidebarCollapsed && profileOpen) {
       setProfileOpen(false);
@@ -88,30 +105,52 @@ export default function DevConsoleLayout({
 
         <div className="dev-sidebar-body">
           <div className="dev-sidebar-nav">
-            {navSections.map((section) => (
-              <div key={section.key}>
-                <div className="dev-nav-section-label">{section.label}</div>
-                {section.items.map((item) => {
-                  const Icon = iconMap[item.key];
-                  return (
-                    <button
-                      key={item.key}
-                      className={`dev-nav-button ${activeKey === item.key ? 'active' : ''}`}
-                      onClick={() => onNavigate(item.key)}
-                      aria-label={item.label}
-                      title={item.label}
-                    >
-                      {Icon && (
-                        <span className="dev-nav-icon" aria-hidden="true">
-                          <Icon size={18} />
-                        </span>
-                      )}
-                      <span className="dev-nav-label">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+            {navSections.map((section) => {
+              const isCollapsed = collapsedSections[section.key] ?? false;
+              const sectionHasActive = section.items.some((item) => item.key === activeKey);
+              return (
+                <div key={section.key} className="dev-nav-section">
+                  <button
+                    type="button"
+                    className={`dev-nav-section-toggle ${sectionHasActive ? 'has-active' : ''}`}
+                    aria-expanded={!isCollapsed}
+                    onClick={() => handleSectionToggle(section.key)}
+                  >
+                    <span className="dev-nav-section-label">{section.label}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`dev-section-caret ${!isCollapsed ? 'rotated' : ''}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <div
+                    className={`dev-nav-section-items ${isCollapsed ? 'collapsed' : ''}`}
+                    aria-hidden={isCollapsed}
+                  >
+                    {section.items.map((item) => {
+                      const Icon = iconMap[item.key];
+                      return (
+                        <button
+                          key={item.key}
+                          className={`dev-nav-button ${activeKey === item.key ? 'active' : ''}`}
+                          onClick={() => onNavigate(item.key)}
+                          aria-label={item.label}
+                          title={item.label}
+                          tabIndex={isCollapsed ? -1 : 0}
+                        >
+                          {Icon && (
+                            <span className="dev-nav-icon" aria-hidden="true">
+                              <Icon size={18} />
+                            </span>
+                          )}
+                          <span className="dev-nav-label">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
             {futureNavItems?.length ? (
               <div>
                 <div className="dev-nav-section-label">Future modules</div>
@@ -133,21 +172,11 @@ export default function DevConsoleLayout({
             ) : null}
           </div>
 
-          {!profileOpen && <div className="dev-sidebar-divider dev-profile-divider" />}
-
+          <div className="dev-sidebar-divider dev-profile-divider" />
           <div
             ref={profileRef}
             className={`dev-profile-card ${profileOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
           >
-            {profileOpen && (
-              <div className="dev-profile-panel">
-                {profileMenu.map((item) => (
-                  <button key={item} type="button" className="dev-profile-menu-item">
-                    {item}
-                  </button>
-                ))}
-              </div>
-            )}
             <button
               type="button"
               className="dev-profile-header"
@@ -165,7 +194,19 @@ export default function DevConsoleLayout({
                   </div>
                 )}
               </div>
+              {!sidebarCollapsed && (
+                <span className={`dev-section-caret ${profileOpen ? 'rotated' : ''}`} aria-hidden="true">
+                  <ChevronDown size={14} />
+                </span>
+              )}
             </button>
+            <div className={`dev-profile-panel ${profileOpen ? 'expanded' : ''}`} aria-hidden={!profileOpen}>
+              {profileMenu.map((item) => (
+                <button key={item} type="button" className="dev-profile-menu-item">
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

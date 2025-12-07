@@ -18,7 +18,7 @@
 }
 
 .aios-card {
-  padding: 1.5rem;
+  padding: 1.65rem;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -57,6 +57,14 @@
   margin: 0.15rem 0 0;
   font-size: 0.9rem;
   color: var(--dev-text-muted);
+}
+
+.aios-card-eyebrow {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+  margin: 0;
 }
 
 .aios-tag {
@@ -150,6 +158,10 @@
   background: var(--dev-bg-soft);
 }
 
+.aios-breakdown--compact {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
 .aios-progress {
   width: 100%;
   height: 0.45rem;
@@ -163,6 +175,54 @@
   background: var(--dev-accent);
 }
 
+.aios-home {
+  gap: 1.75rem;
+}
+
+.aios-hero-card {
+  gap: 1.5rem;
+}
+
+.aios-hero-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.aios-hero-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.aios-hero-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-hero-list {
+  margin-top: 0.2rem;
+}
+
+.aios-hero-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.aios-hero-usage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.aios-home-row {
+  gap: 1.25rem;
+}
+
 .aios-mini-chart {
   display: flex;
   align-items: flex-end;
@@ -174,6 +234,10 @@
   flex: 1;
   border-radius: var(--dev-radius-sm);
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.15));
+}
+
+.aios-mini-chart--calm span {
+  background: linear-gradient(180deg, rgba(30, 136, 229, 0.35), rgba(30, 136, 229, 0.08));
 }
 
 .aios-usage-metrics {
@@ -266,6 +330,12 @@
   background: rgba(249, 115, 22, 0.12);
   padding: 0.5rem 0.75rem;
   border-radius: var(--dev-radius-md);
+}
+
+.aios-home-costs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .aios-stage-list {
@@ -735,6 +805,10 @@
 
 @media (max-width: 900px) {
   .aios-modes-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aios-hero-body {
     grid-template-columns: minmax(0, 1fr);
   }
 }

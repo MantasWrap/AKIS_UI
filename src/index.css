@@ -136,8 +136,25 @@ textarea {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 1.35rem;
+  gap: 1.2rem;
   padding: 0.2rem 0.15rem;
+}
+
+.dev-nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dev-nav-section-toggle {
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
 }
 
 .dev-nav-section-label {
@@ -145,9 +162,40 @@ textarea {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--dev-text-muted);
-  margin-bottom: 0.35rem;
   padding-left: 0.1rem;
-  transition: opacity 0.2s ease;
+  transition: color 0.2s ease;
+}
+
+.dev-nav-section-toggle.has-active .dev-nav-section-label {
+  color: var(--dev-accent-strong);
+}
+
+.dev-section-caret {
+  color: var(--dev-text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.dev-section-caret.rotated {
+  transform: rotate(-180deg);
+}
+
+.dev-nav-section-toggle.has-active .dev-section-caret {
+  color: var(--dev-accent-strong);
+}
+
+.dev-nav-section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow: hidden;
+  max-height: 460px;
+  transition: max-height 0.22s ease, opacity 0.2s ease;
+}
+
+.dev-nav-section-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .dev-nav-button {

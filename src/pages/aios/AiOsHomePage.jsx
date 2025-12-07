@@ -4,7 +4,7 @@ import { aiOsMockData } from '../../mock/aiOsMockData';
 import { emitNavigation } from '../../modules/navigationBus';
 
 export default function AiOsHomePage() {
-  const { status, usage, plan, agents, modes, pipeline, costs } = aiOsMockData;
+  const { status, usage, agents, modes, pipeline, costs } = aiOsMockData;
   const usageRanges = usage?.ranges || {};
   const initialRange = usage?.defaultRange && usageRanges[usage.defaultRange]
     ? usage.defaultRange
@@ -36,97 +36,86 @@ export default function AiOsHomePage() {
   );
 
   return (
-    <div className="aios-page">
-      <div className="aios-grid aios-grid--two">
-        <div className="dev-card aios-card">
-          <div className="aios-card-header">
-            <div>
-              <h2 className="aios-card-title">AI OS status</h2>
-              <p className="aios-card-subtitle">{status.build}</p>
-            </div>
-            <span className="aios-tag">{`${status.version} · ${status.stage}`}</span>
-          </div>
+    <div className="aios-page aios-home">
+      <div className="dev-card aios-card aios-hero-card">
+        <div className="aios-hero-header">
           <div>
-            <div className="aios-highlight">{status.readiness}%</div>
-            <div className="aios-highlight-sub">overall readiness</div>
+            <p className="aios-card-subtitle">AI OS status</p>
+            <h2 className="aios-card-title">{status.build}</h2>
           </div>
-          <ul className="aios-list">
-            {status.highlights.map((highlight) => (
-              <li key={highlight}>
-                <span className="aios-dot" />
-                {highlight}
-              </li>
-            ))}
-          </ul>
+          <span className="aios-tag">{`${status.version} · ${status.stage}`}</span>
         </div>
-
-        <div className="dev-card aios-card">
-          <div className="aios-card-header">
+        <div className="aios-hero-body">
+          <div className="aios-hero-status">
             <div>
-              <h2 className="aios-card-title">Usage overview</h2>
-              <p className="aios-card-subtitle">{activeUsage.window}</p>
+              <div className="aios-highlight">{status.readiness}%</div>
+              <div className="aios-highlight-sub">Overall readiness</div>
             </div>
-            <span className="aios-tag">{activeUsage.delta}</span>
+            <ul className="aios-list aios-hero-list">
+              {status.highlights.map((highlight) => (
+                <li key={highlight}>
+                  <span className="aios-dot" />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="aios-chip-group" role="group" aria-label="Usage time range">
-            {usageKeys.map((key) => {
-              const rangeMeta = usageRanges[key];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={`aios-chip ${range === key ? 'is-active' : ''}`}
-                  onClick={() => handleRangeChange(key)}
-                  aria-pressed={range === key}
-                >
-                  {rangeMeta.label || key}
-                </button>
-              );
-            })}
-          </div>
-          <div className="aios-mini-chart">
-            {miniChartHeights.map((height, index) => (
-              <span key={`usage-bar-${index}`} style={{ height: `${height}%` }} />
-            ))}
-          </div>
-          <div className="aios-usage-metrics">
-            <div>
-              <div className="aios-detail-label">Cost</div>
-              <div className="aios-highlight-sub">{activeUsage.cost}</div>
-            </div>
-            <div>
-              <div className="aios-detail-label">Tokens</div>
-              <div className="aios-highlight-sub">{activeUsage.tokens}</div>
-            </div>
-          </div>
-          <div className="aios-breakdown">
-            {(activeUsage.breakdown || []).map((item) => (
-              <div key={item.label} className="aios-breakdown-item">
-                <div className="aios-card-subtitle" style={{ marginTop: 0 }}>{item.label}</div>
-                <div style={{ fontSize: '1rem', fontWeight: 600 }}>{item.value}</div>
+          <div className="aios-hero-usage">
+            <div className="aios-hero-usage-head">
+              <div>
+                <p className="aios-card-subtitle">{activeUsage.window}</p>
+                <div className="aios-highlight-sub">Range change reflects mock data</div>
               </div>
-            ))}
+              <span className="aios-tag">{activeUsage.delta}</span>
+            </div>
+            <div className="aios-chip-group" role="group" aria-label="Usage time range">
+              {usageKeys.map((key) => {
+                const rangeMeta = usageRanges[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`aios-chip ${range === key ? 'is-active' : ''}`}
+                    onClick={() => handleRangeChange(key)}
+                    aria-pressed={range === key}
+                  >
+                    {rangeMeta.label || key}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="aios-mini-chart aios-mini-chart--calm">
+              {miniChartHeights.map((height, index) => (
+                <span key={`usage-bar-${index}`} style={{ height: `${height}%` }} />
+              ))}
+            </div>
+            <div className="aios-usage-metrics">
+              <div>
+                <div className="aios-detail-label">Cost</div>
+                <div className="aios-highlight-sub">{activeUsage.cost}</div>
+              </div>
+              <div>
+                <div className="aios-detail-label">Tokens</div>
+                <div className="aios-highlight-sub">{activeUsage.tokens}</div>
+              </div>
+            </div>
+            <div className="aios-breakdown aios-breakdown--compact">
+              {(activeUsage.breakdown || []).map((item) => (
+                <div key={item.label} className="aios-breakdown-item">
+                  <div className="aios-card-subtitle" style={{ marginTop: 0 }}>{item.label}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 600 }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="aios-grid aios-grid--three">
-        <div className="dev-card aios-card">
-          <div className="aios-card-header">
-            <div>
-              <h3 className="aios-card-title">Limits &amp; plan</h3>
-              <p className="aios-card-subtitle">{plan.plan}</p>
-            </div>
-            <span className="aios-tag">{plan.status}</span>
-          </div>
-          <div className="aios-highlight">{plan.budget}</div>
-          <div className="aios-highlight-sub">{plan.burn}</div>
-        </div>
-
+      <div className="aios-grid aios-grid--two aios-home-row">
         <div className="dev-card aios-card aios-card--interactive" {...navCardProps('aiOsAgents')}>
           <div className="aios-card-header">
             <div>
-              <h3 className="aios-card-title">Agents</h3>
+              <h3 className="aios-card-title">Agents overview</h3>
               <p className="aios-card-subtitle">UI Boss leads owner UX</p>
             </div>
             <span className="aios-tag">{agents.total} agents</span>
@@ -149,7 +138,7 @@ export default function AiOsHomePage() {
         <div className="dev-card aios-card aios-card--interactive" {...navCardProps('aiOsModes')}>
           <div className="aios-card-header">
             <div>
-              <h3 className="aios-card-title">Modes</h3>
+              <h3 className="aios-card-title">AI modes</h3>
               <p className="aios-card-subtitle">Communication surfaces</p>
             </div>
             <span className="aios-tag">{modes.total} modes</span>
@@ -168,7 +157,7 @@ export default function AiOsHomePage() {
         </div>
       </div>
 
-      <div className="aios-grid aios-grid--two">
+      <div className="aios-grid aios-grid--two aios-home-row">
         <div className="dev-card aios-card aios-card--interactive" {...navCardProps('aiOsPipeline')}>
           <div className="aios-card-header">
             <div>
@@ -204,9 +193,14 @@ export default function AiOsHomePage() {
             </div>
             <span className="aios-tag">{costs.delta}</span>
           </div>
-          <div>
-            <div className="aios-highlight">{costs.monthly}</div>
-            <div className="aios-highlight-sub">monthly, ceiling {costs.budgetCeiling}</div>
+          <div className="aios-home-costs">
+            <div>
+              <div className="aios-highlight">{costs.monthly}</div>
+              <div className="aios-highlight-sub">Monthly · ceiling {costs.budgetCeiling}</div>
+            </div>
+            <div className="aios-warning">
+              Top agent: {costs.topAgent} ({costs.topAgentCost})
+            </div>
           </div>
           <div className="aios-breakdown">
             {costs.breakdown.map((entry) => (
@@ -215,9 +209,6 @@ export default function AiOsHomePage() {
                 <div style={{ fontSize: '1rem', fontWeight: 600 }}>{entry.value}</div>
               </div>
             ))}
-          </div>
-          <div className="aios-warning">
-            Top agent: {costs.topAgent} ({costs.topAgentCost})
           </div>
         </div>
       </div>
