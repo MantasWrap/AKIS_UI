@@ -113,7 +113,7 @@
 }
 
 .progress-card-body--aios {
-  gap: 1.25rem;
+  gap: 0.9rem;
 }
 
 .progress-card-body--current-phase {
@@ -178,42 +178,32 @@
 }
 
 .progress-aios-badge {
-  border: 1px solid var(--dev-border-subtle);
-  background: var(--dev-bg-soft);
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
   border-radius: var(--dev-radius-pill);
-  padding: 0.35rem 0.85rem;
-  font-size: 0.85rem;
-  color: var(--dev-text-soft);
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--dev-text-primary);
+  white-space: nowrap;
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
-.progress-aios-badge:hover,
-.progress-aios-badge:focus-visible {
-  background: rgba(34, 197, 94, 0.12);
+.progress-aios-badge--clickable {
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.progress-aios-badge--clickable:hover,
+.progress-aios-badge--clickable:focus-visible {
+  background: rgba(34, 197, 94, 0.2);
   border-color: var(--dev-accent);
-  color: var(--dev-text-primary);
   outline: none;
 }
 
-.progress-aios-badge:focus-visible {
+.progress-aios-badge--clickable:focus-visible {
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
-}
-
-.progress-aios-badge--static {
-  cursor: default;
-  border-color: var(--dev-border-subtle);
-  background: var(--dev-bg-soft);
-  color: var(--dev-text-muted);
-  padding: 0.3rem 0.75rem;
-}
-
-.progress-aios-badge--static:hover,
-.progress-aios-badge--static:focus-visible {
-  background: var(--dev-bg-soft);
-  border-color: var(--dev-border-subtle);
-  color: var(--dev-text-muted);
-  box-shadow: none;
 }
 
 /* ===== AI OS pipeline summary card ===== */
@@ -233,105 +223,63 @@
   outline-offset: 3px;
 }
 
-.progress-aios-pipeline-stages {
+.progress-aios-card-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.progress-aios-stage-row {
-  display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 0.25rem;
-  padding: 0.2rem 0;
+  gap: 0.75rem;
 }
 
-.progress-aios-stage-pill {
-  border-radius: var(--dev-radius-pill);
-  border: 1px solid var(--dev-border-subtle);
-  padding: 0.25rem 0.9rem;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.progress-aios-stepbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.progress-aios-stepbar-segment {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.progress-aios-stepbar-segment--complete {
+  background: rgba(34, 197, 94, 0.35);
+}
+
+.progress-aios-stepbar-segment--active {
+  background: var(--dev-accent);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+}
+
+.progress-aios-meta {
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.progress-aios-current {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.progress-aios-current-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+}
+
+.progress-aios-current-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.progress-aios-current-summary,
+.progress-aios-next {
   font-size: 0.85rem;
   color: var(--dev-text-soft);
-  background: var(--dev-bg-soft);
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.progress-aios-stage-pill--current {
-  border-color: var(--dev-accent);
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--dev-text-primary);
-  font-weight: 600;
-}
-
-.progress-aios-stage-pill-code {
-  font-weight: 600;
-  color: inherit;
-}
-
-.progress-aios-stage-pill-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dev-text-muted);
-}
-
-.progress-aios-stage-pill--current .progress-aios-stage-pill-label {
-  color: var(--dev-text-primary);
-}
-
-.progress-aios-stage-row-subtitle {
-  font-size: 0.78rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--dev-text-muted);
-}
-
-.progress-aios-stage-row--current .progress-aios-stage-row-subtitle {
-  color: var(--dev-text-primary);
-  font-weight: 600;
-}
-
-.progress-aios-stage-pill--empty {
-  border-style: dashed;
-  color: var(--dev-text-muted);
-  font-weight: 500;
-}
-
-.progress-aios-stage-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.progress-aios-stage-summary__eyebrow {
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  color: var(--dev-text-muted);
-}
-
-.progress-aios-stage-summary__title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--dev-text-primary);
-}
-
-.progress-aios-stage-summary__copy {
-  font-size: 0.92rem;
-  color: var(--dev-text-soft);
-  margin: 0;
-}
-
-.progress-aios-stage-summary__next {
-  font-size: 0.88rem;
-  color: var(--dev-text-muted);
-  margin: 0;
 }
 
 /* ===== Current phase panel & phase track ===== */

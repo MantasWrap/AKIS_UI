@@ -318,24 +318,26 @@ export default function ProgressPage() {
   const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
   const [hoveredPhaseId, setHoveredPhaseId] = useState(null);
   const { overview: aiOsOverview, pipeline: aiOsPipeline } = useAiOsMockData();
-  const aiOsBadgeLabel = aiOsOverview?.badgeLabel
-    || [aiOsOverview?.version, aiOsOverview?.stage].filter(Boolean).join(' · ')
-    || null;
   const aiOsStageList = aiOsPipeline?.stages || [];
   const aiOsCurrentStage =
     aiOsStageList.find((stage) => stage.id === aiOsPipeline?.currentStageId) || aiOsStageList[0] || null;
-  const aiOsStageStateCopy = {
-    done: 'Complete',
-    in_progress: 'In progress',
-    up_next: 'Planned',
-    future: 'Future',
-  };
+  const aiOsCompletedStages = aiOsStageList.filter((stage) => stage.state === 'done').length;
+  const aiOsInProgressStages = aiOsStageList.filter((stage) => stage.state === 'in_progress').length;
+  const aiOsNextStage =
+    aiOsStageList.find((stage) => stage.state === 'in_progress')
+    || aiOsStageList.find((stage) => stage.state === 'up_next')
+    || null;
+  const aiOsTotalStages = aiOsStageList.length;
+  const aiOsBadgeLabel = aiOsOverview?.badgeLabel
+    || `AI OS ${aiOsOverview?.version || '0.1'} · Stage ${aiOsCurrentStage?.label?.split(' ')[1] || 'A0'}`;
   const aiOsPipelineSubtitle = aiOsPipeline?.status || 'Stage-by-stage AI OS delivery tracker.';
   const aiOsPipelineCurrentSummary =
     aiOsCurrentStage?.summary || aiOsCurrentStage?.description || 'AI OS pipeline mock data loading.';
-  const aiOsPipelineNextLine = aiOsPipeline?.next
-    ? `Next: ${aiOsPipeline.next}${aiOsPipeline?.eta ? ` · ${aiOsPipeline.eta}` : ''}`
-    : null;
+  const aiOsPipelineNextLine = aiOsNextStage
+    ? `Next: ${aiOsNextStage.label} – ${aiOsNextStage.summary}`
+    : aiOsPipeline?.next
+      ? `Next: ${aiOsPipeline.next}${aiOsPipeline?.eta ? ` · ${aiOsPipeline.eta}` : ''}`
+      : null;
 
   useEffect(() => {
     loadData({ fresh: false, topic: activeTopic });
@@ -541,7 +543,7 @@ export default function ProgressPage() {
             {aiOsBadgeLabel && (
               <button
                 type="button"
-                className="progress-aios-badge"
+                className="progress-aios-badge progress-aios-badge--clickable"
                 onClick={navigateToAiOsPipeline}
                 title="View AI OS development pipeline"
               >
@@ -849,62 +851,44 @@ export default function ProgressPage() {
             }}
             aria-label="Open AI OS development pipeline"
           >
-            <CardHeader
-              title="AI OS – Development pipeline"
-              subtitle={aiOsPipelineSubtitle}
-            >
-              {aiOsBadgeLabel && (
-                <span className="progress-aios-badge progress-aios-badge--static">
-                  {aiOsBadgeLabel}
-                </span>
-              )}
-            </CardHeader>
             <div className="progress-card-body progress-card-body--aios">
-              <div className="progress-aios-pipeline-stages">
-                {aiOsStageList.length > 0 ? (
-                  aiOsStageList.map((stage) => {
-                    const displayCode = stage.label ? stage.label.replace('Stage ', '') : stage.id;
-                    const stageStatusLabel = (aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned').toUpperCase();
-                    const isCurrent = stage.id === aiOsCurrentStage?.id;
-                    return (
-                      <div
-                        key={stage.id}
-                        className={[
-                          'progress-aios-stage-row',
-                          isCurrent ? 'progress-aios-stage-row--current' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        <div
-                          className={[
-                            'progress-aios-stage-pill',
-                            isCurrent ? 'progress-aios-stage-pill--current' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                        >
-                          <span className="progress-aios-stage-pill-code">{displayCode}</span>
-                          <span className="progress-aios-stage-pill-label">{stageStatusLabel}</span>
-                        </div>
-                        <div className="progress-aios-stage-row-subtitle">{stage.label}</div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <span className="progress-aios-stage-pill progress-aios-stage-pill--empty">
-                    Pipeline data coming soon.
-                  </span>
+              <div className="progress-aios-card-header">
+                <div>
+                  <h3 className="progress-card-title">AI OS – Development pipeline</h3>
+                  <p className="progress-card-subtitle">{aiOsPipelineSubtitle}</p>
+                </div>
+                {aiOsBadgeLabel && (
+                  <span className="progress-aios-badge">{aiOsBadgeLabel}</span>
                 )}
               </div>
-              <div className="progress-aios-stage-summary">
-                <div className="progress-aios-stage-summary__eyebrow">Current stage</div>
-                <div className="progress-aios-stage-summary__title">
-                  {aiOsCurrentStage ? `${aiOsCurrentStage.label} · ${aiOsCurrentStage.name}` : 'Pipeline pending'}
+              <div className="progress-aios-stepbar" aria-hidden="true">
+                {aiOsStageList.map((stage) => (
+                  <span
+                    key={stage.id}
+                    className={[
+                      'progress-aios-stepbar-segment',
+                      stage.state === 'done' ? 'progress-aios-stepbar-segment--complete' : '',
+                      stage.id === aiOsCurrentStage?.id ? 'progress-aios-stepbar-segment--active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  />
+                ))}
+              </div>
+              <div className="progress-aios-meta">
+                <span>{aiOsCompletedStages} of {aiOsTotalStages} stages complete</span>
+                {aiOsInProgressStages > 0 && (
+                  <span> · {aiOsInProgressStages} in progress</span>
+                )}
+              </div>
+              <div className="progress-aios-current">
+                <div className="progress-aios-current-label">Current stage</div>
+                <div className="progress-aios-current-title">
+                  {aiOsCurrentStage ? `${aiOsCurrentStage.label} – ${aiOsCurrentStage.name}` : 'Pipeline pending'}
                 </div>
-                <p className="progress-aios-stage-summary__copy">{aiOsPipelineCurrentSummary}</p>
+                <p className="progress-aios-current-summary">{aiOsPipelineCurrentSummary}</p>
                 {aiOsPipelineNextLine && (
-                  <p className="progress-aios-stage-summary__next">
+                  <p className="progress-aios-next">
                     {aiOsPipelineNextLine}
                   </p>
                 )}
