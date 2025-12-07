@@ -99,20 +99,29 @@ export default function AiOsModesPage() {
             <span className="aios-tag">{modePresets.length} presets</span>
           </div>
 
-          <div className="aios-mode-presets-grid">
+          <div className="aios-mode-gallery">
             {modePresets.map((preset) => (
-              <div key={preset.id} className="aios-mode-preset-card">
-                <div className="aios-mode-preset-head">
+              <div key={preset.id} className="aios-mode-card">
+                <div className="aios-mode-card-header">
                   <span className="aios-pill">{preset.label}</span>
-                  <span className="aios-mode-preset-id">{preset.id}</span>
+                  <span className="aios-mode-card-id">{preset.id}</span>
                 </div>
-                <p className="aios-mode-preset-description">{preset.description}</p>
-                <div className="aios-mode-preset-levels">
-                  <span>UI {levelLabel(preset.uiCreativityLevel)}</span>
-                  <span>Backend {levelLabel(preset.backendPlanningBias)}</span>
-                  <span>Docs {levelLabel(preset.docsEditBias)}</span>
+                <p className="aios-mode-card-description">{preset.description}</p>
+                <div className="aios-mode-card-sliders">
+                  <div className="aios-mode-card-slider-row">
+                    <span>UI creativity</span>
+                    <span className="aios-mode-card-slider-level">{levelLabel(preset.uiCreativityLevel)}</span>
+                  </div>
+                  <div className="aios-mode-card-slider-row">
+                    <span>Backend planning</span>
+                    <span className="aios-mode-card-slider-level">{levelLabel(preset.backendPlanningBias)}</span>
+                  </div>
+                  <div className="aios-mode-card-slider-row">
+                    <span>Docs focus</span>
+                    <span className="aios-mode-card-slider-level">{levelLabel(preset.docsEditBias)}</span>
+                  </div>
                 </div>
-                <div className="aios-mode-preset-flags">
+                <div className="aios-mode-card-flags">
                   {TOGGLE_SUMMARY.map((toggle) => (
                     <span
                       key={toggle.id}
@@ -122,6 +131,14 @@ export default function AiOsModesPage() {
                     </span>
                   ))}
                 </div>
+                {preset.recommendedAgents?.length ? (
+                  <div className="aios-mode-card-meta">
+                    Recommended for: {preset.recommendedAgents.join(', ')}
+                  </div>
+                ) : null}
+                <footer className="aios-mode-card-footer">
+                  Mock preset · no persistence
+                </footer>
               </div>
             ))}
           </div>

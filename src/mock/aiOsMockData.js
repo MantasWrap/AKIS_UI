@@ -203,6 +203,7 @@ export const aiOsMockData = {
       canTouchBackend: false,
       usesMockDataByDefault: true,
       canEditDocs: true,
+      recommendedAgents: ['UI Boss', 'Codex UI implementer'],
     },
     {
       id: 'BACKEND_PLANNING',
@@ -215,6 +216,7 @@ export const aiOsMockData = {
       canTouchBackend: true,
       usesMockDataByDefault: false,
       canEditDocs: true,
+      recommendedAgents: ['Ops Bridge', 'Pipeline Scout'],
     },
     {
       id: 'DOCS_CLEANUP',
@@ -227,6 +229,7 @@ export const aiOsMockData = {
       canTouchBackend: false,
       usesMockDataByDefault: false,
       canEditDocs: true,
+      recommendedAgents: ['QA Scribe'],
     },
     {
       id: 'BALANCED',
@@ -239,6 +242,7 @@ export const aiOsMockData = {
       canTouchBackend: true,
       usesMockDataByDefault: true,
       canEditDocs: true,
+      recommendedAgents: ['All agents'],
     },
   ],
   modes: {
