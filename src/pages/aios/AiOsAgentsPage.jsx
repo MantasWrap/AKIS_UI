@@ -1,27 +1,83 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '../../styles/aios.css';
-import { aiOsMockData } from '../../mock/aiOsMockData';
+import { useAiOsMockData } from '../../hooks/useAiOsMockData';
+
+const DEFAULT_CREATIVITY_LEVELS = [
+  { id: 'off', label: 'Off', description: 'Do not touch UI unless explicitly asked.' },
+  { id: 'low', label: 'Low', description: 'Backend/system work prioritized; UI only when necessary.' },
+  { id: 'medium', label: 'Med', description: 'Balanced between UI/UX and backend/system tasks.' },
+  { id: 'high', label: 'High', description: 'Bias toward UI, still references docs/specs.' },
+  { id: 'max', label: 'Max', description: 'Maximum UI focus, mock data allowed, avoid backend unless requested.' },
+];
+
+const TOGGLES = [
+  { id: 'canEditReact', label: 'Can edit React UI' },
+  { id: 'canTouchBackend', label: 'Can propose backend changes' },
+  { id: 'usesMockDataByDefault', label: 'Uses mock data by default' },
+  { id: 'canEditDocs', label: 'Can modify docs/specs' },
+];
+
+function buildInitialSettings(roster) {
+  return roster.reduce((acc, agent) => {
+    acc[agent.id] = {
+      name: agent.name,
+      uiCreativityLevel: agent.uiCreativityLevel || 'medium',
+      canEditReact: agent.canEditReact ?? false,
+      canTouchBackend: agent.canTouchBackend ?? false,
+      usesMockDataByDefault: agent.usesMockDataByDefault ?? true,
+      canEditDocs: agent.canEditDocs ?? false,
+    };
+    return acc;
+  }, {});
+}
 
 export default function AiOsAgentsPage() {
-  const { agents } = aiOsMockData;
-  const filterOptions = agents.filters || [{ id: 'all', label: 'All agents' }];
+  const { agents } = useAiOsMockData();
+  const roster = useMemo(() => agents?.roster || [], [agents]);
+  const filterOptions = agents?.filters || [{ id: 'all', label: 'All agents' }];
+  const creativityLevels = agents?.creativityLevels || DEFAULT_CREATIVITY_LEVELS;
   const [filter, setFilter] = useState(filterOptions[0]?.id || 'all');
-  const [expandedAgentId, setExpandedAgentId] = useState(null);
+  const [settingsState, setSettingsState] = useState(() => buildInitialSettings(roster));
+
+  useEffect(() => {
+    setSettingsState(buildInitialSettings(roster));
+  }, [roster]);
 
   const filteredAgents = useMemo(() => {
-    if (filter === 'all') return agents.roster;
-    return agents.roster.filter((agent) => agent.type === filter);
-  }, [agents.roster, filter]);
+    if (filter === 'all') return roster;
+    return roster.filter((agent) => agent.type === filter);
+  }, [roster, filter]);
 
-  const toggleAgent = (agentId) => {
-    setExpandedAgentId((prev) => (prev === agentId ? null : agentId));
+  const handleNameChange = (agentId, value) => {
+    setSettingsState((prev) => ({
+      ...prev,
+      [agentId]: {
+        ...prev[agentId],
+        name: value,
+      },
+    }));
   };
 
-  const handleRowKey = (event, agentId) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      toggleAgent(agentId);
-    }
+  const handleSliderChange = (agentId, index) => {
+    const safeIndex = Math.min(Math.max(Number(index), 0), creativityLevels.length - 1);
+    const level = creativityLevels[safeIndex]?.id || creativityLevels[0]?.id || 'medium';
+    setSettingsState((prev) => ({
+      ...prev,
+      [agentId]: {
+        ...prev[agentId],
+        uiCreativityLevel: level,
+      },
+    }));
+  };
+
+  const handleToggleChange = (agentId, field) => {
+    setSettingsState((prev) => ({
+      ...prev,
+      [agentId]: {
+        ...prev[agentId],
+        [field]: !prev[agentId]?.[field],
+      },
+    }));
   };
 
   return (
@@ -30,9 +86,11 @@ export default function AiOsAgentsPage() {
         <div className="aios-card-header">
           <div>
             <h2 className="aios-card-title">AI OS · Agents</h2>
-            <p className="aios-card-subtitle">Owner-level AI collaborators pulled from docs specs.</p>
+            <p className="aios-card-subtitle">
+              Owner-level AI collaborators pulled from docs specs. Settings are mock-only until OS-config API ships.
+            </p>
           </div>
-          <span className="aios-tag">{agents.total} total</span>
+          <span className="aios-tag">{agents?.total ?? roster.length} total</span>
         </div>
 
         <div className="aios-chip-group" role="group" aria-label="Agent type filter">
@@ -49,65 +107,86 @@ export default function AiOsAgentsPage() {
           ))}
         </div>
 
-        <div className="aios-table">
-          <div className="aios-table-row aios-table-row--head">
-            <span>Agent</span>
-            <span>Focus</span>
-            <span>Status</span>
-            <span>Cost</span>
-          </div>
+        <div className="aios-agents-grid">
           {filteredAgents.map((agent) => {
-            const isOpen = expandedAgentId === agent.id;
+            const settings = settingsState[agent.id] || {};
+            const sliderIndex = Math.max(
+              0,
+              creativityLevels.findIndex((level) => level.id === settings.uiCreativityLevel),
+            );
+            const activeLevel = creativityLevels[sliderIndex] || creativityLevels[0];
             return (
-              <div key={agent.id} className="aios-table-entry">
-                <button
-                  type="button"
-                  className={`aios-table-row aios-table-row--interactive ${isOpen ? 'is-open' : ''}`}
-                  onClick={() => toggleAgent(agent.id)}
-                  onKeyDown={(event) => handleRowKey(event, agent.id)}
-                  aria-expanded={isOpen}
-                >
-                  <span>
-                    <strong>{agent.name}</strong>
-                    <div className="aios-table-subline">{agent.role}</div>
-                  </span>
-                  <span>{agent.focus}</span>
-                  <span>
-                    <span className="aios-pill">{agent.status}</span>
-                  </span>
-                  <span>
-                    {agent.cost}
-                    <div className="aios-table-subline">{agent.actions} actions</div>
-                  </span>
-                </button>
-                {isOpen && (
-                  <div className="aios-agent-details">
-                    <div>
-                      <div className="aios-detail-label">Conversation profile</div>
-                      <div>{agent.conversationProfile}</div>
-                    </div>
-                    <div>
-                      <div className="aios-detail-label">Permissions</div>
-                      <div>{agent.permissionProfile}</div>
-                    </div>
-                    <div>
-                      <div className="aios-detail-label">Primary mode</div>
-                      <div>{agent.primaryMode}</div>
-                    </div>
-                    <div>
-                      <div className="aios-detail-label">Monthly cost</div>
-                      <div>${agent.monthlyCost}</div>
-                    </div>
-                    <div>
-                      <div className="aios-detail-label">Token usage</div>
-                      <div>{agent.tokenUsage}</div>
-                    </div>
-                    <div>
-                      <div className="aios-detail-label">Notes</div>
-                      <div>{agent.notes}</div>
-                    </div>
+              <div key={agent.id} className="aios-agent-card">
+                <div className="aios-agent-card-head">
+                  <div className="aios-agent-name-block">
+                    <label className="aios-detail-label" htmlFor={`${agent.id}-name`}>Agent name</label>
+                    <input
+                      id={`${agent.id}-name`}
+                      className="aios-agent-name-input"
+                      value={settings.name || agent.name}
+                      onChange={(event) => handleNameChange(agent.id, event.target.value)}
+                    />
                   </div>
-                )}
+                  <span className="aios-tag">{agent.status}</span>
+                </div>
+                <div className="aios-agent-role">{agent.role}</div>
+                <div className="aios-agent-meta">
+                  <div>
+                    <div className="aios-detail-label">Conversation profile</div>
+                    <div>{agent.conversationProfile}</div>
+                  </div>
+                  <div>
+                    <div className="aios-detail-label">Permissions</div>
+                    <div>{agent.permissionProfile}</div>
+                  </div>
+                </div>
+                <div className="aios-agent-slider-block">
+                  <div className="aios-detail-label">UI Creativity</div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={creativityLevels.length - 1}
+                    value={sliderIndex}
+                    className="aios-agent-slider"
+                    onChange={(event) => handleSliderChange(agent.id, event.target.value)}
+                  />
+                  <div className="aios-agent-slider-labels">
+                    {creativityLevels.map((level, index) => (
+                      <span
+                        key={level.id}
+                        className={index === sliderIndex ? 'is-active' : ''}
+                      >
+                        {level.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="aios-agent-slider-caption">
+                    UI focus: <strong>{activeLevel?.label || '—'}</strong> – {activeLevel?.description}
+                  </div>
+                </div>
+                <div className="aios-agent-toggles">
+                  {TOGGLES.map((toggle) => (
+                    <label key={toggle.id} className="aios-toggle">
+                      <input
+                        type="checkbox"
+                        checked={!!settings[toggle.id]}
+                        onChange={() => handleToggleChange(agent.id, toggle.id)}
+                      />
+                      <span>{toggle.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="aios-agent-mock-note">Mock controls · not persisted yet</div>
+                <div className="aios-agent-footer">
+                  <div>
+                    <div className="aios-detail-label">Primary mode</div>
+                    <div>{agent.primaryMode}</div>
+                  </div>
+                  <div>
+                    <div className="aios-detail-label">Monthly cost</div>
+                    <div>${agent.monthlyCost}</div>
+                  </div>
+                </div>
               </div>
             );
           })}
