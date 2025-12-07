@@ -7,6 +7,9 @@ export default function AiOsSecurityPage() {
   const [toggles, setToggles] = useState(security.toggles);
   const [docProfile, setDocProfile] = useState(security.docExposure.profile);
   const roleGridTemplate = `minmax(240px, 280px) repeat(${security.capabilities.length}, minmax(110px, 1fr))`;
+  const activeDocProfileLabel = security.docExposure.options.find(
+    (option) => option.id === docProfile,
+  )?.label || docProfile;
 
   const handleToggle = (toggleId) => {
     setToggles((prev) =>
@@ -46,6 +49,9 @@ export default function AiOsSecurityPage() {
                 <strong>{chip.value}</strong>
               </span>
             ))}
+          </div>
+          <div className="aios-security-profile-label">
+            Doc exposure profile: <strong>{activeDocProfileLabel}</strong>
           </div>
           <div className="aios-security-updated">Last refreshed · {security.summary.updatedAt}</div>
         </div>

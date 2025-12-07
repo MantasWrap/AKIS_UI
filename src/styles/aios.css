@@ -727,12 +727,13 @@
   position: relative;
   border-radius: 18px;
   padding: 1.35rem;
-  background: linear-gradient(145deg, #ffffff 0%, #f4fffb 70%);
-  border: 1.5px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(244, 255, 251, 0.92));
+  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.18);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  backdrop-filter: blur(6px);
   outline: 1px solid transparent;
   transition: box-shadow 0.2s ease, border-color 0.2s ease, outline-color 0.2s ease;
 }
@@ -843,7 +844,7 @@
   margin-top: 1rem;
   padding: 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
@@ -852,13 +853,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .aios-section-title {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   color: var(--dev-text-primary);
 }
 
@@ -1470,6 +1474,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 0.5rem;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
@@ -1483,6 +1488,26 @@
   grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: flex-start;
+}
+
+@media (max-width: 1280px) {
+  .aios-missions-layout {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .aios-missions-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+  }
+  .aios-missions-list {
+    order: 1;
+  }
+  .aios-mission-detail {
+    order: 2;
+  }
 }
 
 .aios-missions-list {
@@ -1596,7 +1621,7 @@
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .aios-mission-detail-head {
@@ -1648,7 +1673,7 @@
 .aios-mission-detail-section {
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   padding: 1rem 0 0;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .aios-mission-detail-section header {
@@ -1664,7 +1689,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .aios-mission-step {
@@ -1712,7 +1737,7 @@
 .aios-mission-agent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: 0.85rem;
   margin-top: 0.75rem;
 }
 
@@ -1721,7 +1746,7 @@
   border-radius: var(--dev-radius-md);
   padding: 0.85rem;
   background: rgba(248, 250, 252, 0.9);
-  min-height: 160px;
+  min-height: 150px;
 }
 
 .aios-mission-agent-card header {
@@ -1757,7 +1782,7 @@
 .aios-mission-files {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.85rem;
+  gap: 0.75rem;
   margin-top: 0.7rem;
 }
 
@@ -1778,7 +1803,7 @@
   font-size: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .aios-mission-empty {
@@ -1870,16 +1895,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
+  align-items: stretch;
 }
 
 .aios-security-pill {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: var(--dev-radius-lg);
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.1rem;
   background: linear-gradient(130deg, rgba(15, 23, 42, 0.03), rgba(255, 255, 255, 0.95));
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   min-height: 150px;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
@@ -1917,6 +1943,7 @@
   border-radius: var(--dev-radius-lg);
   padding: 0.75rem 0.85rem;
   background: rgba(248, 250, 252, 0.9);
+  align-items: center;
 }
 
 .aios-security-chip {
@@ -1955,6 +1982,12 @@
   text-align: right;
 }
 
+.aios-security-profile-label {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: var(--dev-text-soft);
+}
+
 .aios-security-section {
   border: 1px solid var(--dev-border-subtle);
   border-radius: var(--dev-radius-lg);
@@ -1978,7 +2011,11 @@
   display: grid;
   grid-template-columns: var(--role-grid-template, minmax(220px, 1fr));
   border-bottom: 1px solid var(--dev-border-subtle);
-  min-width: 720px;
+  min-width: 690px;
+}
+
+.aios-role-row:nth-child(even) {
+  background: rgba(15, 23, 42, 0.02);
 }
 
 .aios-role-row:last-child {
