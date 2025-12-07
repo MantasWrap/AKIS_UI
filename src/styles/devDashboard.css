@@ -1,0 +1,194 @@
+.dev-dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dev-dashboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dev-dashboard-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.dev-dashboard-pill-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.dev-dashboard-pill {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.08), #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dev-dashboard-pill .pill-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dev-dashboard-pill .pill-label {
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.dev-dashboard-pill .pill-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--dev-text-soft);
+}
+
+.dev-dashboard-pill .pill-meta {
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.dev-controller-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--dev-text-soft);
+}
+
+.dev-controller-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+}
+
+.dev-controller-field {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.dev-controller-field dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+  margin: 0 0 0.2rem;
+}
+
+.dev-controller-field dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.dev-controller-field dd.is-placeholder {
+  color: rgba(15, 23, 42, 0.5);
+}
+
+.dev-controller-footnote {
+  font-size: 0.82rem;
+  color: var(--dev-text-muted);
+  border-top: 1px dashed var(--dev-border-subtle);
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+}
+
+.dev-endpoint-base {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.dev-endpoint-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.dev-endpoint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dev-endpoint-item {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: rgba(0, 0, 0, 0.015);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dev-endpoint-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.dev-endpoint-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.dev-endpoint-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-endpoint-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--dev-text-soft);
+  word-break: break-all;
+}
+
+.dev-endpoint-docs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dev-endpoint-docs li {
+  border: 1px dashed var(--dev-border-subtle);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .dev-dashboard-card-header {
+    flex-direction: column;
+  }
+
+  .dev-endpoint-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

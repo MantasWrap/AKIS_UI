@@ -1,0 +1,141 @@
+.live-mode-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.live-mode-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.live-mode-hero-copy {
+  max-width: 320px;
+  font-size: 0.95rem;
+  color: var(--dev-text-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.live-mode-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.live-mode-section-sub {
+  margin: 0;
+  color: var(--dev-text-muted);
+  max-width: 360px;
+  font-size: 0.9rem;
+}
+
+.live-mode-signal-strip {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-mode-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.live-mode-signal-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: rgba(0, 0, 0, 0.015);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.live-mode-signal-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.35rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+.live-mode-signal-metric {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.live-mode-signal-helper {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-log-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-mode-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.live-mode-log-row {
+  display: flex;
+  gap: 0.75rem;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+}
+
+.live-mode-log-pill {
+  border-radius: var(--dev-radius-pill);
+  padding: 0.15rem 0.7rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  align-self: flex-start;
+}
+
+.live-mode-log-pill.level-info {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.live-mode-log-pill.level-warn {
+  background: rgba(234, 179, 8, 0.15);
+  color: #92400e;
+}
+
+.live-mode-log-pill.level-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.live-mode-log-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-log-message {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .live-mode-section-head {
+    flex-direction: column;
+  }
+}

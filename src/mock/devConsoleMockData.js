@@ -123,3 +123,167 @@ export const devNotesMock = [
     context: 'aiOsMissions',
   },
 ];
+
+export const devDashboardMock = {
+  hero: {
+    eyebrow: 'System cockpit · Phase 0 mock',
+    body: 'Environment surfaces stay calm until real telemetry connects. Swap in /api/health + /api/health/ready later.',
+  },
+  systemOverview: [
+    {
+      id: 'controller',
+      label: 'Controller & DB',
+      status: 'ok',
+      statusLabel: 'Stable',
+      description: 'Responding in 210 ms avg latency.',
+      meta: 'Last ping 4m ago',
+    },
+    {
+      id: 'jetson',
+      label: 'Jetson runtime',
+      status: 'waiting',
+      statusLabel: 'Waiting',
+      description: 'Runner not broadcasting metrics yet.',
+      meta: 'Start dev runner to sync',
+    },
+    {
+      id: 'mqtt',
+      label: 'MQTT bridge',
+      status: 'waiting',
+      statusLabel: 'Standby',
+      description: 'Listening for conveyor events.',
+      meta: 'Bridge idle · port 1883',
+    },
+    {
+      id: 'db',
+      label: 'Database',
+      status: 'ok',
+      statusLabel: 'Ready',
+      description: 'Mock schema connected.',
+      meta: 'Cockroach mock · read-only',
+    },
+  ],
+  controllerHealth: {
+    summary: 'No live controller connected – showing mock telemetry until pipelines wire up.',
+    fields: [
+      { id: 'controllerHost', label: 'Controller host', value: 'owner-dev-controller.local' },
+      { id: 'dbHost', label: 'DB host', value: 'cockroach-mock.ak.is' },
+      { id: 'dbName', label: 'DB name', value: 'ak_is_dev' },
+      { id: 'uptime', label: 'Uptime', value: '—', placeholder: true },
+      { id: 'lastDeploy', label: 'Last deploy', value: '2024-06-12 · Phase 0 shell' },
+      { id: 'notes', label: 'Notes', value: 'Phase 0 scaffold only – connect controller doctor later.' },
+    ],
+    emptyState: 'Real health data appears once /api/health + /api/health/ready return JSON. Until then, keep pilots calm with this summary.',
+  },
+  endpoints: {
+    apiBase: 'https://owner-dev.ak.is',
+    list: [
+      {
+        id: 'healthLive',
+        label: 'Health (live)',
+        path: '/api/health',
+        description: 'Controller heartbeat + DB handshake.',
+      },
+      {
+        id: 'healthReady',
+        label: 'Health (ready)',
+        path: '/api/health/ready',
+        description: 'Jetson + MQTT readiness summary.',
+      },
+      {
+        id: 'runtime',
+        label: 'Debug runtime status',
+        path: '/api/debug/runtime-status',
+        description: 'Counters for controller → Jetson pipeline.',
+      },
+      {
+        id: 'items',
+        label: 'Runtime items',
+        path: '/api/items',
+        description: 'Paged item_events_log view.',
+      },
+    ],
+    docs: [
+      {
+        id: 'uxSpec',
+        label: 'React UX spec',
+        description: 'Source of truth for cockpit layouts.',
+        path: 'docs/EN/FRONTEND/React_Apps_and_UX_Spec.md',
+      },
+      {
+        id: 'designSystem',
+        label: 'Dev Console design system',
+        description: 'Tokens + badge semantics.',
+        path: 'docs/EN/FRONTEND/DevConsole_Design_System.md',
+      },
+    ],
+  },
+};
+
+export const liveModeMock = {
+  streamStatus: {
+    pill: 'Runtime not connected · mock preview',
+    helper: 'Hook up Jetson dev runner + MQTT bridge to see live ingest.',
+    detail: 'Console stays in passive mode and shows canned telemetry in Phase 0.',
+  },
+  signalCards: [
+    {
+      id: 'controllerHeartbeat',
+      label: 'Controller heartbeat',
+      status: 'waiting',
+      metric: 'No signals yet',
+      helper: 'Start `npm run controller:dev`',
+    },
+    {
+      id: 'jetsonRuntime',
+      label: 'Jetson runtime',
+      status: 'down',
+      metric: 'Runner offline',
+      helper: 'Jetson mock container sleeping',
+    },
+    {
+      id: 'mqttBridge',
+      label: 'MQTT bridge',
+      status: 'ok',
+      metric: 'Bridge listening',
+      helper: 'Port 1883 · no events',
+    },
+    {
+      id: 'lastIngest',
+      label: 'Last ingest',
+      status: 'waiting',
+      metric: '—',
+      helper: 'No item payloads received',
+    },
+  ],
+  logEvents: [
+    {
+      id: 'log1',
+      level: 'info',
+      time: '10:22:10',
+      source: 'console',
+      message: 'Live mode shell initialised (mock data).',
+    },
+    {
+      id: 'log2',
+      level: 'warn',
+      time: '10:22:25',
+      source: 'controller',
+      message: 'Controller doctor not running. Waiting for heartbeat.',
+    },
+    {
+      id: 'log3',
+      level: 'info',
+      time: '10:23:03',
+      source: 'mqtt',
+      message: 'Bridge listening on ws://localhost:9001 (empty queue).',
+    },
+    {
+      id: 'log4',
+      level: 'error',
+      time: '10:23:45',
+      source: 'jetson',
+      message: 'Jetson runtime container not detected on dev LAN.',
+    },
+  ],
+};
