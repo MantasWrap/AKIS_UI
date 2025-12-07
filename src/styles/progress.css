@@ -233,23 +233,45 @@
   outline-offset: 3px;
 }
 
-.progress-aios-pipeline-strip {
+.progress-aios-pipeline-stages {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.progress-aios-stage-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.15rem 0;
+}
+
+.progress-aios-stage-row-name {
+  font-size: 0.9rem;
+  color: var(--dev-text-soft);
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+.progress-aios-stage-row--current .progress-aios-stage-row-name {
+  color: var(--dev-text-primary);
+  font-weight: 600;
 }
 
 .progress-aios-stage-pill {
   border-radius: var(--dev-radius-pill);
   border: 1px solid var(--dev-border-subtle);
-  padding: 0.35rem 0.85rem;
-  display: flex;
+  padding: 0.25rem 0.9rem;
+  min-height: 34px;
+  display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   font-size: 0.85rem;
   color: var(--dev-text-soft);
   background: var(--dev-bg-soft);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .progress-aios-stage-pill--current {
@@ -264,14 +286,14 @@
   color: inherit;
 }
 
-.progress-aios-stage-pill-status {
+.progress-aios-stage-pill-label {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--dev-text-muted);
 }
 
-.progress-aios-stage-pill--current .progress-aios-stage-pill-status {
+.progress-aios-stage-pill--current .progress-aios-stage-pill-label {
   color: var(--dev-text-primary);
 }
 

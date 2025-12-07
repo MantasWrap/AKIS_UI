@@ -860,24 +860,31 @@ export default function ProgressPage() {
               )}
             </CardHeader>
             <div className="progress-card-body progress-card-body--aios">
-              <div className="progress-aios-pipeline-strip">
+              <div className="progress-aios-pipeline-stages">
                 {aiOsStageList.length > 0 ? (
                   aiOsStageList.map((stage) => {
                     const displayCode = stage.label ? stage.label.replace('Stage ', '') : stage.id;
-                    const stageStatusLabel = aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned';
+                    const stageStatusLabel = (aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned').toUpperCase();
                     const isCurrent = stage.id === aiOsCurrentStage?.id;
                     return (
                       <div
                         key={stage.id}
                         className={[
-                          'progress-aios-stage-pill',
-                          isCurrent ? 'progress-aios-stage-pill--current' : '',
+                          'progress-aios-stage-row',
+                          isCurrent ? 'progress-aios-stage-row--current' : '',
                         ]
                           .filter(Boolean)
                           .join(' ')}
                       >
-                        <span className="progress-aios-stage-pill-code">{displayCode}</span>
-                        <span className="progress-aios-stage-pill-status">{stageStatusLabel}</span>
+                        <div className={[
+                          'progress-aios-stage-pill',
+                          isCurrent ? 'progress-aios-stage-pill--current' : '',
+                        ].filter(Boolean).join(' ')}
+                        >
+                          <span className="progress-aios-stage-pill-code">{displayCode}</span>
+                          <span className="progress-aios-stage-pill-label">{stageStatusLabel}</span>
+                        </div>
+                        <div className="progress-aios-stage-row-name">{stage.label}</div>
                       </div>
                     );
                   })
