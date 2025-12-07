@@ -72,6 +72,12 @@
   gap: 0.85rem;
   min-height: 18.5rem;
   height: 100%;
+  transition: box-shadow 120ms ease, transform 120ms ease;
+}
+
+.progress-kpi-card:hover {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }
 
 /* Left vertical accent bar */
@@ -152,6 +158,86 @@
 .progress-card-note {
   font-size: 0.9rem;
   color: var(--dev-text-muted);
+}
+
+.progress-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.progress-card-subhead {
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+  margin-top: 0.15rem;
+}
+
+.progress-dev-info-link {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+  border: none;
+  background: transparent;
+  text-decoration: underline dotted;
+  cursor: pointer;
+  padding: 0;
+}
+
+.progress-dev-info-link:hover,
+.progress-dev-info-link:focus-visible {
+  text-decoration: underline;
+  color: var(--dev-text-primary);
+  outline: none;
+}
+
+.progress-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.progress-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.progress-page-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.progress-page-subtitle {
+  margin: 0;
+  color: var(--dev-text-soft);
+  font-size: 0.95rem;
+}
+
+.progress-env-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.progress-env-pill {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--dev-text-muted);
+}
+
+.progress-intro-strip {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 /* ===== Checklist KPI ===== */
@@ -942,75 +1028,86 @@
 
 /* ===== Next up from CODEX ===== */
 
-.progress-nextsteps-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.progress-card-body--next {
+  gap: 0.9rem;
 }
 
-.progress-nextstep-card {
-  background: var(--dev-bg-soft);
-  border-radius: 0.95rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.progress-nextstep-card.is-expanded {
-  border-color: var(--dev-accent-soft);
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
-}
-
-.progress-topic-chip {
-  background: var(--dev-bg-card);
+.progress-section-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--dev-text-muted);
-  font-weight: 500;
-  font-size: 0.78rem;
-  white-space: nowrap;
+  margin-top: 0.2rem;
 }
 
-.progress-nextstep-chiprow {
-  display: inline-flex;
-  align-items: center;
+.progress-next-meta {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
-}
-
-.progress-nextstep-text {
-  font-size: 1rem;
-  color: var(--dev-text-primary);
-  line-height: 1.4;
-}
-
-.progress-nextstep-source {
+  align-items: center;
   font-size: 0.82rem;
   color: var(--dev-text-muted);
 }
 
-.progress-nextstep-detail {
-  border-top: 1px solid rgba(148, 163, 184, 0.3);
-  padding-top: 0.5rem;
-  font-size: 0.86rem;
+.progress-next-pill {
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-transform: none;
+  background: rgba(148, 163, 184, 0.15);
   color: var(--dev-text-soft);
+}
+
+.progress-next-meta-item {
+  color: var(--dev-text-soft);
+}
+
+.progress-next-priority {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+}
+
+.progress-next-body {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.progress-nextstep-detail .progress-nextstep-detail__topics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+.progress-next-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
 }
 
-.progress-nextstep-detail .progress-nextstep-detail__topic {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
+.progress-next-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--dev-text-soft);
+  line-height: 1.5;
+}
+
+.progress-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.progress-link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--dev-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.progress-link-button:hover,
+.progress-link-button:focus-visible {
+  color: var(--dev-accent-strong);
+  outline: none;
 }
 
 /* ===== Phase board & open checklist items ===== */

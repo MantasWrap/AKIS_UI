@@ -27,36 +27,19 @@ const FALLBACK_PHASE_COPY = 'Phase details coming soon.';
 
 function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children }) {
   return (
-    <div
-      className="dev-card-header"
-      style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}
-    >
+    <div className="dev-card-header progress-card-header">
       <div>
-        <h3 className="dev-card-title" style={{ marginBottom: subtitle ? '0.15rem' : 0 }}>
-          {title}
-        </h3>
-        {subtitle && (
-          <div style={{ fontSize: '0.8rem', color: 'var(--dev-text-muted)' }}>{subtitle}</div>
-        )}
+        <h3 className="dev-card-title">{title}</h3>
+        {subtitle && <div className="progress-card-subhead">{subtitle}</div>}
         {children}
       </div>
       {onToggleDevInfo && (
         <button
           type="button"
           onClick={onToggleDevInfo}
-          className="dev-devinfo-button"
+          className="progress-dev-info-link"
           aria-pressed={devInfoOpen}
           aria-expanded={devInfoOpen}
-          style={{
-            fontSize: '0.75rem',
-            color: 'var(--dev-text-muted)',
-            border: 'none',
-            background: 'transparent',
-            textDecoration: 'none',
-            borderBottom: '1px dotted var(--dev-text-muted)',
-            padding: 0,
-            cursor: 'pointer',
-          }}
         >
           Dev info
         </button>
@@ -306,7 +289,6 @@ export default function ProgressPage() {
     roadmaps: false,
     nextSteps: false,
   });
-  const [expandedNextStep, setExpandedNextStep] = useState(null);
   const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
   const [hoveredPhaseId, setHoveredPhaseId] = useState(null);
   const { overview: aiOsOverview, pipeline: aiOsPipeline } = useAiOsMockData();
@@ -362,6 +344,13 @@ export default function ProgressPage() {
       return acc;
     }, {});
   }, [timeline]);
+  const latestNextStep = stepsToShow[0] || null;
+  const latestNextStepMeta = latestNextStep ? mapTopicToLabelAndClass(latestNextStep.topic) : null;
+  const latestNextStepEntry = latestNextStep?.sourceEntry ? timelineEntryByTitle[latestNextStep.sourceEntry] : null;
+  const latestNextStepLoggedDate = latestNextStepEntry?.date || latestNextStep?.date || 'Unknown';
+  const latestNextStepPriority = (latestNextStep?.priority || 'Normal').toUpperCase();
+  const latestNextStepTitle = latestNextStep?.title || latestNextStep?.sourceEntry || 'Next action';
+  const latestNextStepBody = latestNextStep?.text || latestNextStepEntry?.summary || 'No next steps recorded yet.';
   const phase0Snapshot = phase0;
   const hasPhase0Milestones =
     !!phase0Snapshot && Array.isArray(phase0Snapshot.milestones) && phase0Snapshot.milestones.length > 0;
@@ -538,40 +527,48 @@ export default function ProgressPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div className="dev-card">
-        <div className="progress-header-row">
-          <div className="progress-header-text">
-            <h2 className="dev-card-title" style={{ margin: 0 }}>Progress &amp; roadmap</h2>
-            <p className="dev-card-subtitle" style={{ margin: 0 }}>
-              Live readiness from CODEX progress log and phase checklists.
-            </p>
-          </div>
-          <div className="progress-header-actions">
-            {aiOsBadgeLabel && (
-              <button
-                type="button"
-                className="progress-aios-badge progress-aios-badge--clickable"
-                onClick={navigateToAiOsPipeline}
-                title="View AI OS development pipeline"
-              >
-                {aiOsBadgeLabel}
-              </button>
-            )}
-            <button
-              type="button"
-              className={`dev-pill-button ${loading ? '' : 'active'}`}
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              {loading ? 'Loading…' : 'Refresh'}
-            </button>
-          </div>
+    <div className="progress-page">
+      <div className="progress-page-header">
+        <div>
+          <h1 className="progress-page-title">Project progress</h1>
+          <p className="progress-page-subtitle">Live readiness from CODEX progress log and phase checklists.</p>
         </div>
-        {error && (
-          <p style={{ marginTop: '0.75rem', color: 'var(--dev-text-muted)' }}>{error}</p>
+        <div className="progress-header-actions">
+          <div className="progress-env-pills">
+            <span className="progress-env-pill">API: dev</span>
+            <span className="progress-env-pill">Site: HQ</span>
+            <span className="progress-env-pill">Line: A</span>
+            <span className="progress-env-pill">Version: v0.1</span>
+          </div>
+          <button
+            type="button"
+            className={`dev-pill-button ${loading ? '' : 'active'}`}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+      <div className="progress-intro-strip">
+        <div>
+          <h2 className="dev-card-title">Progress &amp; roadmap</h2>
+          <p className="dev-card-subtitle">CODEX checklist integration, roadmap coverage, and AI OS status.</p>
+        </div>
+        {aiOsBadgeLabel && (
+          <button
+            type="button"
+            className="progress-aios-badge progress-aios-badge--clickable"
+            onClick={navigateToAiOsPipeline}
+            title="View AI OS development pipeline"
+          >
+            {aiOsBadgeLabel}
+          </button>
         )}
       </div>
+      {error && (
+        <p style={{ marginTop: '0.75rem', color: 'var(--dev-text-muted)' }}>{error}</p>
+      )}
 
       <div className="progress-layout">
         <div className="progress-row progress-row--single">
@@ -901,7 +898,7 @@ export default function ProgressPage() {
           <div className="dev-card progress-kpi-card progress-kpi-card--accent-neutral">
             <CardHeader
               title="Next up from CODEX"
-              subtitle="Most recent next_steps"
+              subtitle="Most recent next_steps entry from CODEX progress log."
               onToggleDevInfo={() =>
                 setDevInfoOpen((prev) => ({
                   ...prev,
@@ -909,78 +906,30 @@ export default function ProgressPage() {
                 }))
               }
               devInfoOpen={devInfoOpen.nextSteps}
-            />
-            <div className="progress-card-body">
-              {stepsToShow.length > 0 ? (
-                <div className="progress-nextsteps-stack">
-                  {stepsToShow.map((step, idx) => {
-                    const { label: topicLabel, chipClass } = mapTopicToLabelAndClass(step.topic);
-                    const stepKey = `${step.sourceEntry || step.topic || 'step'}-${idx}`;
-                    const linkedEntry = step.sourceEntry ? timelineEntryByTitle[step.sourceEntry] : null;
-                    const isExpanded = expandedNextStep === stepKey;
-                    const handleToggle = () => {
-                      setExpandedNextStep((prev) => (prev === stepKey ? null : stepKey));
-                    };
-                    const handleKeyToggle = (event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        handleToggle();
-                      }
-                    };
-                    return (
-                      <div
-                        key={stepKey}
-                        className={`progress-nextstep-card ${isExpanded ? 'is-expanded' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleToggle}
-                        onKeyDown={handleKeyToggle}
-                      >
-                        <div className="progress-nextstep-chiprow">
-                          <span className={`${chipClass} progress-topic-chip`}>{topicLabel}</span>
-                        </div>
-                        <div className="progress-nextstep-text">{step.text}</div>
-                        {step.sourceEntry && (
-                          <div className="progress-nextstep-source">From: {step.sourceEntry}</div>
-                        )}
-                        {isExpanded && (
-                          <div className="progress-nextstep-detail">
-                            {linkedEntry ? (
-                              <>
-                                <div>
-                                  {linkedEntry.date} · {linkedEntry.dev || 'Unknown'} · Phase {linkedEntry.phase || '—'}
-                                </div>
-                                {linkedEntry.summary && (
-                                  <div>{linkedEntry.summary}</div>
-                                )}
-                                {linkedEntry.topics?.length ? (
-                                  <div className="progress-nextstep-detail__topics">
-                                    {linkedEntry.topics.map((topic) => (
-                                      <span key={`${stepKey}-${topic}`} className="progress-nextstep-detail__topic">
-                                        {TOPIC_LABELS[topic] || topic}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                {linkedEntry.files?.length ? (
-                                  <div className="progress-nextstep-detail__topics">
-                                    {linkedEntry.files.slice(0, 3).map((file) => (
-                                      <span key={`${stepKey}-${file}`} className="progress-nextstep-detail__topic">
-                                        {file}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </>
-                            ) : (
-                              <div>Full log entry not found in latest timeline.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            >
+              <div className="progress-section-label">Next steps</div>
+            </CardHeader>
+            <div className="progress-card-body progress-card-body--next">
+              {latestNextStep ? (
+                <>
+                  <div className="progress-next-meta">
+                    <span className={`progress-next-pill ${latestNextStepMeta?.chipClass || 'dev-chip'}`}>
+                      {latestNextStepMeta?.label || 'General'}
+                    </span>
+                    <span className="progress-next-meta-item">Logged: {latestNextStepLoggedDate}</span>
+                    <span className="progress-next-priority">
+                      Priority: {latestNextStepPriority}
+                    </span>
+                  </div>
+                  <div className="progress-next-body">
+                    <div className="progress-next-title">{latestNextStepTitle}</div>
+                    <p className="progress-next-text">{latestNextStepBody}</p>
+                  </div>
+                  <div className="progress-next-actions">
+                    <button type="button" className="progress-link-button">Open in progress log</button>
+                    <button type="button" className="progress-link-button">View related items</button>
+                  </div>
+                </>
               ) : (
                 <div className="progress-empty-state">
                   No upcoming tasks recorded yet. Add `next_steps` to the latest entry in CODEX_Progress_Log.md.
