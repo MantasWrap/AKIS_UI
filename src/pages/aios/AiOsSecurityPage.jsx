@@ -1,8 +1,18 @@
+import { useState } from 'react';
 import '../../styles/aios.css';
 import { aiOsMockData } from '../../mock/aiOsMockData';
 
 export default function AiOsSecurityPage() {
   const { security } = aiOsMockData;
+  const [toggles, setToggles] = useState(security.toggles);
+
+  const handleToggle = (toggleId) => {
+    setToggles((prev) =>
+      prev.map((toggle) =>
+        toggle.id === toggleId ? { ...toggle, enabled: !toggle.enabled } : toggle,
+      ),
+    );
+  };
 
   return (
     <div className="aios-page">
@@ -34,13 +44,27 @@ export default function AiOsSecurityPage() {
           ))}
         </div>
 
-        <div style={{ marginTop: '1rem' }}>
-          <h3 className="aios-card-title" style={{ fontSize: '1rem' }}>Guardrails</h3>
-          <div className="aios-guardrail-list">
-            {security.guardrails.map((guardrail) => (
-              <span key={guardrail}>• {guardrail}</span>
-            ))}
-          </div>
+        <div className="aios-guardrail-list">
+          {security.guardrails.map((guardrail) => (
+            <span key={guardrail}>• {guardrail}</span>
+          ))}
+        </div>
+
+        <div className="aios-settings-list">
+          {toggles.map((toggle) => (
+            <label key={toggle.id} className="aios-settings-entry">
+              <div>
+                {toggle.label}
+                <small>{toggle.helper}</small>
+                <div className="aios-table-subline">Mock only</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={toggle.enabled}
+                onChange={() => handleToggle(toggle.id)}
+              />
+            </label>
+          ))}
         </div>
 
         <div className="aios-card-footnote">

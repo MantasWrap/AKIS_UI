@@ -24,6 +24,22 @@
   gap: 0.9rem;
 }
 
+.aios-card--interactive {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.aios-card--interactive:hover,
+.aios-card--interactive:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+}
+
+.aios-card--interactive:focus-visible {
+  outline: 2px solid var(--dev-accent-strong);
+  outline-offset: 2px;
+}
+
 .aios-card-header {
   display: flex;
   justify-content: space-between;
@@ -62,6 +78,39 @@
 .aios-highlight-sub {
   font-size: 0.9rem;
   color: var(--dev-text-muted);
+}
+
+.aios-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.aios-chip {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--dev-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.aios-chip.is-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--dev-text-primary);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.aios-chip:focus-visible,
+.aios-mode-button:focus-visible,
+.aios-stage-card:focus-visible,
+.aios-toggle:focus-visible,
+.aios-tab:focus-visible,
+.aios-mission-trigger:focus-visible {
+  outline: 2px solid var(--dev-accent-strong);
+  outline-offset: 2px;
 }
 
 .aios-list {
@@ -127,11 +176,27 @@
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.15));
 }
 
+.aios-usage-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
 .aios-table {
   width: 100%;
   border: 1px solid var(--dev-border-subtle);
   border-radius: var(--dev-radius-lg);
   overflow: hidden;
+}
+
+.aios-table-entry {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--dev-border-subtle);
+}
+
+.aios-table-entry:last-of-type {
+  border-bottom: none;
 }
 
 .aios-table-row {
@@ -150,8 +215,30 @@
   font-weight: 600;
 }
 
-.aios-table-row:nth-child(even) {
+.aios-table-row:nth-of-type(even) {
   background: var(--dev-bg-soft);
+}
+
+.aios-table-row--interactive {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.aios-table-row--interactive.is-open {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.aios-table-row--interactive:focus-visible {
+  outline: 2px solid var(--dev-accent-strong);
+  outline-offset: 2px;
+}
+
+.aios-table-subline {
+  color: var(--dev-text-muted);
+  font-size: 0.8rem;
 }
 
 .aios-pill {
@@ -202,6 +289,23 @@
   font-size: 0.95rem;
 }
 
+.aios-agent-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border-top: 1px solid var(--dev-border-subtle);
+  background: var(--dev-bg-soft);
+}
+
+.aios-detail-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dev-text-muted);
+  margin-bottom: 0.2rem;
+}
+
 .aios-mission-list {
   display: flex;
   flex-direction: column;
@@ -250,10 +354,6 @@
   border-radius: var(--dev-radius-md);
 }
 
-.aios-settings-entry label {
-  font-weight: 600;
-}
-
 .aios-settings-entry small {
   display: block;
   color: var(--dev-text-muted);
@@ -265,10 +365,378 @@
   color: var(--dev-text-muted);
 }
 
+.aios-toggle-group {
+  display: inline-flex;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+
+.aios-toggle {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 1.1rem;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+  cursor: pointer;
+}
+
+.aios-toggle.is-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--dev-text-primary);
+}
+
+.aios-modes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.aios-mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.aios-mode-button {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.85rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.aios-mode-button.is-active {
+  border-color: var(--dev-accent-strong);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.aios-mode-inspector {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.aios-mode-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.aios-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.aios-stage-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.8rem;
+  background: var(--dev-bg-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+.aios-stage-card.is-active {
+  border-color: var(--dev-accent-strong);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.aios-stage-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.aios-stage-details {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--dev-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.aios-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.aios-cost-list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.aios-cost-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.aios-bar {
+  flex: 1;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--dev-border-subtle);
+  overflow: hidden;
+}
+
+.aios-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.3));
+}
+
+.aios-cost-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.aios-missions-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.aios-mission-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  background: var(--dev-bg-soft);
+}
+
+.aios-mission-card.is-open {
+  border-color: var(--dev-accent-strong);
+}
+
+.aios-mission-trigger {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.85rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aios-mission-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aios-mission-body {
+  border-top: 1px solid var(--dev-border-subtle);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.aios-mission-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.aios-pill--muted {
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--dev-text-muted);
+}
+
+.aios-mission-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.aios-mission-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aios-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--dev-border-subtle);
+}
+
+.aios-step-dot.state-done {
+  background: var(--dev-accent);
+}
+
+.aios-step-dot.state-in_progress {
+  background: var(--dev-warn);
+}
+
+.aios-step-dot.state-pending {
+  background: var(--dev-border-subtle);
+}
+
+.aios-drawer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 30;
+}
+
+.aios-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.aios-drawer-panel {
+  position: relative;
+  background: var(--dev-bg-card);
+  width: min(420px, 100%);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: -12px 0 24px rgba(15, 23, 42, 0.25);
+}
+
+.aios-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.aios-form-field input,
+.aios-form-field textarea {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  background: var(--dev-bg-soft);
+}
+
+.aios-form-field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.aios-mission-agent-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.4rem;
+}
+
+.aios-settings-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.aios-settings-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.aios-tab-list {
+  display: inline-flex;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-pill);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.aios-tab {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 1.1rem;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+  cursor: pointer;
+}
+
+.aios-tab.is-active {
+  background: rgba(34, 197, 94, 0.18);
+  color: var(--dev-text-primary);
+}
+
 .aios-api-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
+}
+
+.aios-api-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.aios-endpoint-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.aios-endpoint-status {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+  text-transform: uppercase;
+}
+
+.aios-endpoint-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.aios-code {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem;
+  border-radius: var(--dev-radius-md);
+  font-size: 0.75rem;
+  overflow-x: auto;
+}
+
+.aios-code code {
+  background: transparent;
+}
+
+@media (max-width: 900px) {
+  .aios-modes-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 720px) {

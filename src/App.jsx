@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import StatusPage from './pages/StatusPage.jsx';
 import DevConsoleLayout from './layouts/DevConsoleLayout.jsx';
 import {
@@ -6,6 +6,7 @@ import {
   getNavModules,
   getPageMetaMap,
 } from './modules/moduleRegistry.js';
+import { subscribeNavigation } from './modules/navigationBus.js';
 
 const CURRENT_ROLE = 'OWNER';
 const NAV_MODULES = getNavModules(CURRENT_ROLE);
@@ -35,6 +36,14 @@ const PAGE_META = getPageMetaMap();
 
 function App() {
   const [view, setView] = useState('status');
+  useEffect(() => {
+    const unsubscribe = subscribeNavigation((key) => {
+      if (getModuleByKey(key)) {
+        setView(key);
+      }
+    });
+    return unsubscribe;
+  }, []);
   const activeMeta = useMemo(() => PAGE_META[view] || PAGE_META.status, [view]);
 
   const page = useMemo(() => {
