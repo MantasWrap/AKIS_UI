@@ -17,6 +17,21 @@ const TOGGLES = [
   { id: 'canEditDocs', label: 'Can modify docs/specs' },
 ];
 
+const SLIDER_COPY = {
+  uiCreativityLevel: {
+    label: 'UI creativity',
+    helper: 'Dial how bold this agent pushes UI polish versus speed.',
+  },
+  backendPlanningBias: {
+    label: 'Backend planning',
+    helper: 'Higher levels keep backend roadmaps front and center.',
+  },
+  docsEditBias: {
+    label: 'Docs focus',
+    helper: 'Guides how often the agent rewrites specs and docs.',
+  },
+};
+
 const TIER_LABELS = {
   domain_boss: 'Domain Boss',
   implementer: 'Implementer',
@@ -240,6 +255,9 @@ export default function AiOsAgentsPage() {
   const selectedAgent = selectedAgentId
     ? agentsState.find((agent) => agent.id === selectedAgentId)
     : null;
+  const selectedAgentSettings = selectedAgent
+    ? getAgentSettings(selectedAgent.id)
+    : null;
   const selectedAgentVisible = selectedAgent
     ? filteredAgents.some((agent) => agent.id === selectedAgent.id)
     : false;
@@ -373,7 +391,7 @@ export default function AiOsAgentsPage() {
               <div className="aios-agent-detail-panel">
                 <div className="aios-agent-detail-header">
                   <div className="aios-agent-detail-identity">
-                    <h2 className="aios-agent-detail-name">{getAgentSettings(selectedAgent.id).name || selectedAgent.name}</h2>
+                    <h2 className="aios-agent-detail-name">{selectedAgentSettings?.name || selectedAgent.name}</h2>
                     <p className="aios-agent-detail-role">
                       {selectedAgent.role}
                       <span className="aios-agent-detail-tier-pill">
@@ -383,7 +401,7 @@ export default function AiOsAgentsPage() {
                     <span className="aios-agent-detail-meta">Mock edit · {TIER_LABELS[selectedAgent.tier] || 'Agent'}</span>
                   </div>
                   <div className="aios-agent-detail-actions">
-                    <span className="aios-agent-preset-pill">{presetLabel(getAgentSettings(selectedAgent.id))}</span>
+                    <span className="aios-agent-preset-pill">{presetLabel(selectedAgentSettings)}</span>
                     <button type="button" className="aios-agent-focus-exit" onClick={() => setSelectedAgentId(null)}>
                       Back to overview
                     </button>
@@ -395,127 +413,143 @@ export default function AiOsAgentsPage() {
                   <input
                     id={`${selectedAgent.id}-focused-name`}
                     className="aios-agent-name-input"
-                    value={getAgentSettings(selectedAgent.id).name || selectedAgent.name}
+                    value={selectedAgentSettings?.name || selectedAgent.name}
                     onChange={(event) => handleNameChange(selectedAgent.id, event.target.value)}
                   />
+                  <p className="aios-agent-detail-rename-note">Visible only in this mock session.</p>
                 </div>
 
-                <section className="aios-agent-detail-section">
+                <section
+                  className="aios-agent-detail-section"
+                  aria-labelledby={`${selectedAgent.id}-preset-heading`}
+                  aria-describedby={`${selectedAgent.id}-preset-sub`}
+                >
                   <div className="aios-agent-detail-section-header">
-                    <h3>Behaviour preset</h3>
-                    <span className="aios-agent-detail-section-sub">Choose a preset or fine-tune sliders.</span>
+                    <h3 id={`${selectedAgent.id}-preset-heading`}>Behaviour preset</h3>
+                    <span id={`${selectedAgent.id}-preset-sub`} className="aios-agent-detail-section-sub">Choose a preset or fine-tune sliders.</span>
                   </div>
-                  <div className="aios-agent-preset-row">
-                    <div className="aios-detail-label">Mode preset</div>
-                    <select
-                      className="aios-agent-preset-select"
-                      value={getAgentSettings(selectedAgent.id).presetId || PRESET_CUSTOM}
-                      onChange={(event) => handlePresetChange(selectedAgent.id, event.target.value)}
-                    >
-                      <option value={PRESET_CUSTOM}>Custom</option>
-                      {modePresets.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {preset.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="aios-agent-preset-caption">
-                    {(() => {
-                      const settings = getAgentSettings(selectedAgent.id);
-                      if (settings.presetId === PRESET_CUSTOM || !settings.presetId) {
-                        return 'Adjust sliders to fine-tune behaviour.';
-                      }
-                      const preset = modePresets.find((item) => item.id === settings.presetId);
-                      return preset?.description || 'Adjust sliders to fine-tune behaviour.';
-                    })()}
-                  </div>
+                  <div className="aios-agent-detail-section-body">
+                    <div className="aios-agent-preset-row">
+                      <div className="aios-detail-label">Mode preset</div>
+                      <select
+                        className="aios-agent-preset-select"
+                        value={selectedAgentSettings?.presetId || PRESET_CUSTOM}
+                        onChange={(event) => handlePresetChange(selectedAgent.id, event.target.value)}
+                      >
+                        <option value={PRESET_CUSTOM}>Custom</option>
+                        {modePresets.map((preset) => (
+                          <option key={preset.id} value={preset.id}>
+                            {preset.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="aios-agent-preset-caption">
+                      {(() => {
+                        if (!selectedAgentSettings || selectedAgentSettings.presetId === PRESET_CUSTOM) {
+                          return 'Adjust sliders to fine-tune behaviour.';
+                        }
+                        const preset = modePresets.find((item) => item.id === selectedAgentSettings.presetId);
+                        return preset?.description || 'Adjust sliders to fine-tune behaviour.';
+                      })()}
+                    </div>
 
-                  {['uiCreativityLevel', 'backendPlanningBias', 'docsEditBias'].map((key) => {
-                    const settings = getAgentSettings(selectedAgent.id);
-                    const sliderIdx = sliderIndex(
-                      key === 'uiCreativityLevel' ? creativityLevels : biasLevels,
-                      settings[key],
-                    );
-                    const levels = key === 'uiCreativityLevel' ? creativityLevels : biasLevels;
-                    return (
-                      <div key={key} className="aios-agent-detail-slider-row">
-                        <div className="aios-agent-detail-slider-label">
-                          <span className="label-main">
-                            {key === 'uiCreativityLevel' && 'UI Creativity'}
-                            {key === 'backendPlanningBias' && 'Backend planning'}
-                            {key === 'docsEditBias' && 'Docs focus'}
-                          </span>
-                          <span className="label-meta">{levels[sliderIdx]?.label}</span>
+                    {['uiCreativityLevel', 'backendPlanningBias', 'docsEditBias'].map((key) => {
+                      const levels = key === 'uiCreativityLevel' ? creativityLevels : biasLevels;
+                      const sliderIdx = sliderIndex(
+                        levels,
+                        selectedAgentSettings?.[key],
+                      );
+                      const sliderCopy = SLIDER_COPY[key];
+                      return (
+                        <div key={key} className="aios-agent-detail-slider-row">
+                          <div className="aios-agent-detail-slider-label">
+                            <span className="label-main">
+                              {sliderCopy?.label}
+                            </span>
+                            <span className="label-meta">{levels[sliderIdx]?.label}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0}
+                            max={levels.length - 1}
+                            value={sliderIdx}
+                            className="aios-agent-slider"
+                            onChange={(event) => handleSliderChange(selectedAgent.id, key, event.target.value)}
+                          />
+                          <p className="aios-agent-slider-caption">
+                            {sliderCopy?.helper || levels[sliderIdx]?.description}
+                          </p>
                         </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={levels.length - 1}
-                          value={sliderIdx}
-                          className="aios-agent-slider"
-                          onChange={(event) => handleSliderChange(selectedAgent.id, key, event.target.value)}
-                        />
-                        {key === 'uiCreativityLevel' && (
-                          <div className="aios-agent-slider-caption">{levels[sliderIdx]?.description}</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </section>
-
-                <section className="aios-agent-detail-section">
-                  <div className="aios-agent-detail-section-header">
-                    <h3>Permissions</h3>
-                    <span className="aios-agent-detail-section-sub">Control what this agent can touch.</span>
-                  </div>
-                  <div className="aios-agent-card-perms">
-                    {TOGGLES.map((toggle) => (
-                      <label key={toggle.id} className="aios-agent-perm-row">
-                        <input
-                          type="checkbox"
-                          checked={!!getAgentSettings(selectedAgent.id)[toggle.id]}
-                        onChange={() => handleToggleChange(selectedAgent.id, toggle.id)}
-                      />
-                      <span>{toggle.label}</span>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
 
-                <section className="aios-agent-detail-section aios-agent-detail-section--startup">
+                <section
+                  className="aios-agent-detail-section"
+                  aria-labelledby={`${selectedAgent.id}-perm-heading`}
+                  aria-describedby={`${selectedAgent.id}-perm-sub`}
+                >
                   <div className="aios-agent-detail-section-header">
-                    <h3>Startup message</h3>
-                    <span className="aios-agent-detail-section-sub">
+                    <h3 id={`${selectedAgent.id}-perm-heading`}>Permissions</h3>
+                    <span id={`${selectedAgent.id}-perm-sub`} className="aios-agent-detail-section-sub">Control what this agent can touch.</span>
+                  </div>
+                  <div className="aios-agent-detail-section-body">
+                    <div className="aios-agent-card-perms">
+                      {TOGGLES.map((toggle) => (
+                        <label key={toggle.id} className="aios-agent-perm-row">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedAgentSettings?.[toggle.id]}
+                            onChange={() => handleToggleChange(selectedAgent.id, toggle.id)}
+                          />
+                          <span>{toggle.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section
+                  className="aios-agent-detail-section aios-agent-detail-section--startup"
+                  aria-labelledby={`${selectedAgent.id}-startup-heading`}
+                  aria-describedby={`${selectedAgent.id}-startup-sub`}
+                >
+                  <div className="aios-agent-detail-section-header">
+                    <h3 id={`${selectedAgent.id}-startup-heading`}>Startup message</h3>
+                    <span id={`${selectedAgent.id}-startup-sub`} className="aios-agent-detail-section-sub">
                       Copied into new chats when you summon this agent.
                     </span>
                   </div>
-                  <p className="aios-agent-detail-startup-snippet">
-                    {selectedAgent.startupMessageSnippet}
-                  </p>
-                  <div className="aios-agent-startup-meta">
-                    <span className="aios-agent-startup-doc-label">Linked doc:</span>
-                    <span className="aios-agent-startup-doc-path">{selectedAgent.startupDocPath}</span>
+                  <div className="aios-agent-detail-section-body">
+                    <p className="aios-agent-detail-startup-snippet">
+                      {selectedAgent.startupMessageSnippet}
+                    </p>
+                    <div className="aios-agent-startup-meta">
+                      <span className="aios-agent-startup-doc-label">Linked doc:</span>
+                      <span className="aios-agent-startup-doc-path">{selectedAgent.startupDocPath}</span>
+                    </div>
+                    <div className="aios-agent-detail-startup-actions">
+                      <button
+                        type="button"
+                        className="aios-agent-btn-soft"
+                        onClick={() => handleCopyStartup(selectedAgent)}
+                      >
+                        {copiedAgentId === selectedAgent.id ? 'Copied!' : 'Copy message'}
+                      </button>
+                      <button
+                        type="button"
+                        className="aios-agent-btn-ghost"
+                        onClick={() => handleOpenStartupDoc(selectedAgent)}
+                      >
+                        Open in docs
+                      </button>
+                    </div>
+                    <p className="aios-agent-detail-startup-hint">
+                      <em>Mock only</em> — copy uses canned text until OS-config wiring lands.
+                    </p>
                   </div>
-                  <div className="aios-agent-detail-startup-actions">
-                    <button
-                      type="button"
-                      className="aios-agent-btn-soft"
-                      onClick={() => handleCopyStartup(selectedAgent)}
-                    >
-                      {copiedAgentId === selectedAgent.id ? 'Copied!' : 'Copy message'}
-                    </button>
-                    <button
-                      type="button"
-                      className="aios-agent-btn-ghost"
-                      onClick={() => handleOpenStartupDoc(selectedAgent)}
-                    >
-                      Open in docs
-                    </button>
-                  </div>
-                  <p className="aios-agent-detail-startup-hint">
-                    <em>Mock only</em> — copy uses canned text until OS-config wiring lands.
-                  </p>
                 </section>
 
                 <footer className="aios-agent-card-footer">

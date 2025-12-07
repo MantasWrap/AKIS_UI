@@ -9,8 +9,6 @@ import {
 } from 'lucide-react';
 import { devNotificationsMock, devSearchMock, devNotesMock } from '../../mock/devConsoleMockData';
 
-const PANEL_IDS = ['notifications', 'search', 'notes'];
-
 function NotificationsPanel({ onClose }) {
   const [filter, setFilter] = useState('all');
   const [isMuted, setIsMuted] = useState(devNotificationsMock.stats.muted);
@@ -47,7 +45,7 @@ function NotificationsPanel({ onClose }) {
   };
 
   return (
-    <div className="dev-ctrl-panel">
+    <div className="dev-ctrl-panel" role="dialog" aria-modal="true" aria-label="Notifications center">
       <div className="dev-ctrl-panel-header">
         <div>
           <h3>Notifications</h3>
@@ -58,47 +56,54 @@ function NotificationsPanel({ onClose }) {
         </button>
       </div>
 
-      <div className="dev-ctrl-panel-actions">
-        <button type="button" onClick={() => setIsMuted((prev) => !prev)} className="dev-ctrl-ghost-btn">
-          {isMuted ? 'Resume alerts' : 'Silence alerts'}
-        </button>
-        <button type="button" onClick={() => setItems([])} className="dev-ctrl-ghost-btn">
-          Clear all
-        </button>
-      </div>
-
-      <div className="dev-ctrl-chip-row">
-        {filters.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={`dev-ctrl-chip ${filter === id ? 'is-active' : ''}`}
-            onClick={() => setFilter(id)}
-          >
-            {label}
+      <section className="dev-ctrl-panel-section" aria-label="Notification controls">
+        <div className="dev-ctrl-panel-actions">
+          <button type="button" onClick={() => setIsMuted((prev) => !prev)} className="dev-ctrl-ghost-btn">
+            {isMuted ? 'Resume alerts' : 'Silence alerts'}
           </button>
-        ))}
-      </div>
+          <button type="button" onClick={() => setItems([])} className="dev-ctrl-ghost-btn">
+            Clear all
+          </button>
+        </div>
+        <div className="dev-ctrl-panel-subhead">
+          <Filter size={12} aria-hidden="true" />
+          <span>Filter feed</span>
+        </div>
+        <div className="dev-ctrl-chip-row">
+          {filters.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`dev-ctrl-chip ${filter === id ? 'is-active' : ''}`}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <div className="dev-ctrl-panel-scroll">
-        {filteredItems.length === 0 ? (
-          <div className="dev-ctrl-empty">No notifications in this filter.</div>
-        ) : (
-          filteredItems.map((item) => (
-            <div key={item.id} className={`dev-ctrl-notification ${severityClass(item.severity)}`}>
-              <div className="dev-ctrl-notification-head">
-                <span>{item.title}</span>
-                <time>{item.timeAgo}</time>
+      <section className="dev-ctrl-panel-section dev-ctrl-panel-section--scroll" aria-label="Notification feed">
+        <div className="dev-ctrl-panel-scroll">
+          {filteredItems.length === 0 ? (
+            <div className="dev-ctrl-empty">No notifications in this filter.</div>
+          ) : (
+            filteredItems.map((item) => (
+              <div key={item.id} className={`dev-ctrl-notification ${severityClass(item.severity)}`}>
+                <div className="dev-ctrl-notification-head">
+                  <span>{item.title}</span>
+                  <time>{item.timeAgo}</time>
+                </div>
+                <p>{item.body}</p>
               </div>
-              <p>{item.body}</p>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      </section>
 
-      <div className="dev-ctrl-panel-footer">
+      <footer className="dev-ctrl-panel-footer">
         <button type="button" className="dev-ctrl-link">View all notifications</button>
-      </div>
+      </footer>
     </div>
   );
 }
@@ -119,7 +124,7 @@ function SearchPanel({ onClose }) {
   };
 
   return (
-    <div className="dev-ctrl-panel">
+    <div className="dev-ctrl-panel" role="dialog" aria-modal="true" aria-label="Search command palette">
       <div className="dev-ctrl-panel-header">
         <div>
           <h3>Command palette</h3>
@@ -130,37 +135,41 @@ function SearchPanel({ onClose }) {
         </button>
       </div>
 
-      <div className="dev-ctrl-search-bar">
-        <SearchIcon size={16} aria-hidden="true" />
-        <input
-          autoFocus
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search tenants, AI OS, docs…"
-        />
-      </div>
+      <section className="dev-ctrl-panel-section" aria-label="Search input">
+        <div className="dev-ctrl-search-bar">
+          <SearchIcon size={16} aria-hidden="true" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search tenants, AI OS, docs…"
+          />
+        </div>
+      </section>
 
-      <div className="dev-ctrl-panel-scroll">
-        {filteredCategories.length === 0 ? (
-          <div className="dev-ctrl-empty">No matches yet. Try another keyword.</div>
-        ) : (
-          filteredCategories.map((category) => (
-            <section key={category.id} className="dev-ctrl-search-section">
-              <header>{category.label}</header>
-              <ul>
-                {category.items.map((item) => (
-                  <li key={item.id}>
-                    <button type="button" onClick={() => handleNavigate(item.path)}>
-                      <span>{item.label}</span>
-                      <span className="dev-ctrl-search-path">{item.path}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
-        )}
-      </div>
+      <section className="dev-ctrl-panel-section dev-ctrl-panel-section--scroll" aria-label="Search results">
+        <div className="dev-ctrl-panel-scroll">
+          {filteredCategories.length === 0 ? (
+            <div className="dev-ctrl-empty">No matches yet. Try another keyword.</div>
+          ) : (
+            filteredCategories.map((category) => (
+              <div key={category.id} className="dev-ctrl-search-section">
+                <header>{category.label}</header>
+                <ul>
+                  {category.items.map((item) => (
+                    <li key={item.id}>
+                      <button type="button" onClick={() => handleNavigate(item.path)}>
+                        <span>{item.label}</span>
+                        <span className="dev-ctrl-search-path">{item.path}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -203,7 +212,7 @@ function NotesPanel({ onClose }) {
   };
 
   return (
-    <div className="dev-ctrl-panel">
+    <div className="dev-ctrl-panel" role="dialog" aria-modal="true" aria-label="Notes and tasks panel">
       <div className="dev-ctrl-panel-header">
         <div>
           <h3>Notes & tasks</h3>
@@ -214,67 +223,77 @@ function NotesPanel({ onClose }) {
         </button>
       </div>
 
-      <div className="dev-ctrl-chip-row">
-        {filters.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={`dev-ctrl-chip ${filter === id ? 'is-active' : ''}`}
-            onClick={() => setFilter(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="dev-ctrl-panel-scroll dev-ctrl-notes-scroll">
-        {filteredNotes.length === 0 ? (
-          <div className="dev-ctrl-empty">No notes in this filter.</div>
-        ) : (
-          filteredNotes.map((note) => (
-            <article key={note.id} className={`dev-ctrl-note dev-ctrl-note--${note.color}`}>
-              <header>
-                <span>{note.title}</span>
-                <button type="button" onClick={() => handleTogglePinned(note.id)} aria-label="Toggle pin">
-                  {note.pinned ? <Pin size={14} /> : <PinOff size={14} />}
-                </button>
-              </header>
-              <p>{note.body}</p>
-              <footer>{note.createdAt}</footer>
-            </article>
-          ))
-        )}
-      </div>
-
-      <div className="dev-ctrl-note-form">
-        <input
-          placeholder="Title"
-          value={newNote.title}
-          onChange={(event) => setNewNote((prev) => ({ ...prev, title: event.target.value }))}
-        />
-        <textarea
-          placeholder="Details"
-          value={newNote.body}
-          onChange={(event) => setNewNote((prev) => ({ ...prev, body: event.target.value }))}
-        />
-        <div className="dev-ctrl-note-form-actions">
-          <div className="dev-ctrl-note-color">
-            {['green', 'yellow', 'blue'].map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`dev-ctrl-color-dot ${newNote.color === color ? 'is-active' : ''}`}
-                onClick={() => setNewNote((prev) => ({ ...prev, color }))}
-              >
-                <span />
-              </button>
-            ))}
-          </div>
-          <button type="button" className="dev-ctrl-primary-btn" onClick={handleAddNote}>
-            Add note
-          </button>
+      <section className="dev-ctrl-panel-section" aria-label="Note filters">
+        <div className="dev-ctrl-panel-subhead">
+          <Filter size={12} aria-hidden="true" />
+          <span>Show</span>
         </div>
-      </div>
+        <div className="dev-ctrl-chip-row">
+          {filters.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`dev-ctrl-chip ${filter === id ? 'is-active' : ''}`}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="dev-ctrl-panel-section dev-ctrl-panel-section--scroll" aria-label="Notes list">
+        <div className="dev-ctrl-panel-scroll dev-ctrl-notes-scroll">
+          {filteredNotes.length === 0 ? (
+            <div className="dev-ctrl-empty">No notes in this filter.</div>
+          ) : (
+            filteredNotes.map((note) => (
+              <article key={note.id} className={`dev-ctrl-note dev-ctrl-note--${note.color}`}>
+                <header>
+                  <span>{note.title}</span>
+                  <button type="button" onClick={() => handleTogglePinned(note.id)} aria-label="Toggle pin">
+                    {note.pinned ? <Pin size={14} /> : <PinOff size={14} />}
+                  </button>
+                </header>
+                <p>{note.body}</p>
+                <footer>{note.createdAt}</footer>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="dev-ctrl-panel-section" aria-label="Compose note">
+        <div className="dev-ctrl-note-form">
+          <input
+            placeholder="Title"
+            value={newNote.title}
+            onChange={(event) => setNewNote((prev) => ({ ...prev, title: event.target.value }))}
+          />
+          <textarea
+            placeholder="Details"
+            value={newNote.body}
+            onChange={(event) => setNewNote((prev) => ({ ...prev, body: event.target.value }))}
+          />
+          <div className="dev-ctrl-note-form-actions">
+            <div className="dev-ctrl-note-color">
+              {['green', 'yellow', 'blue'].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`dev-ctrl-color-dot ${newNote.color === color ? 'is-active' : ''}`}
+                  onClick={() => setNewNote((prev) => ({ ...prev, color }))}
+                >
+                  <span />
+                </button>
+              ))}
+            </div>
+            <button type="button" className="dev-ctrl-primary-btn" onClick={handleAddNote}>
+              Add note
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -331,6 +350,7 @@ export default function DevControlCenter() {
           <div
             className="dev-ctrl-overlay"
             role="presentation"
+            aria-hidden="true"
             onClick={() => setActivePanel(null)}
           />
           <div className="dev-ctrl-panel-container">
