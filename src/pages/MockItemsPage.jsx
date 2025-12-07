@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE, getMockItems, getRuntimeItems } from '../api/client';
 import ItemHistoryPanel from '../components/ItemHistoryPanel';
 
@@ -36,12 +36,7 @@ export default function MockItemsPage() {
     });
   }, [visibleItems]);
 
-  useEffect(() => {
-    loadItems(source, limit, pickStatus, chuteId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, limit, pickStatus, chuteId]);
-
-  async function loadItems(nextSource = source, nextLimit = limit, status = pickStatus, chute = chuteId) {
+  const loadItems = useCallback(async (nextSource = source, nextLimit = limit, status = pickStatus, chute = chuteId) => {
     setLoading(true);
     setError(null);
     try {
@@ -72,7 +67,11 @@ export default function MockItemsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [source, limit, pickStatus, chuteId]);
+
+  useEffect(() => {
+    loadItems(source, limit, pickStatus, chuteId);
+  }, [loadItems, source, limit, pickStatus, chuteId]);
 
   const selectedItems = useMemo(
     () => visibleItems.filter((item) => selectedIds.has(item.item_id)),
@@ -108,7 +107,6 @@ export default function MockItemsPage() {
     try {
       await navigator.clipboard.writeText(selectedItems.map((item) => item.item_id).join('\n'));
     } catch (err) {
-      // eslint-disable-next-line no-alert
       alert(`Failed to copy IDs: ${err.message}`);
     }
   };
@@ -433,12 +431,12 @@ function formatPrediction(item) {
   return fragments.join(' / ');
 }
 
-const linkButton = {
-  border: 'none',
-  background: 'none',
-  color: 'var(--dev-accent)',
-  cursor: 'pointer',
-  padding: 0,
-  textDecoration: 'underline',
+const ghostButton = {
+  border: '1px solid var(--dev-border-subtle)',
+  background: 'rgba(0, 0, 0, 0.02)',
+  borderRadius: '999px',
+  padding: '0.35rem 0.85rem',
   fontSize: '0.85rem',
+  color: 'var(--dev-text-soft)',
+  cursor: 'pointer',
 };

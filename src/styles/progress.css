@@ -106,7 +106,7 @@
 .progress-card-body--current-phase {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-  gap: 1.4rem;
+  gap: 1.8rem;
   align-items: flex-start;
 }
 
@@ -114,18 +114,22 @@
   .progress-card-body--current-phase {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .progress-phase-track--compact {
+    padding: 0;
+  }
 }
 
 .progress-current-phase__left,
 .progress-current-phase__right {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.9rem;
 }
 
 .progress-current-phase__right {
   justify-content: flex-start;
-  gap: 0.7rem;
+  gap: 0.45rem;
 }
 
 .progress-card-body--list {
@@ -341,23 +345,23 @@
 .progress-phase-track {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 1.1rem;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 .progress-phase-track--compact {
-  margin-top: 0.9rem;
-  padding: 0 0.4rem;
+  margin-top: 0.45rem;
+  padding: 0 0.2rem;
 }
 
 .progress-current-phase__timeline {
-  margin-top: 0.7rem;
+  margin-top: 0.4rem;
 }
 
 .progress-phase-row {
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  align-items: flex-start;
+  gap: 0.65rem;
 }
 
 .progress-phase-node {
@@ -380,6 +384,7 @@
   align-items: center;
   gap: 0.3rem;
   min-width: 64px;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .progress-phase-node__circle {
@@ -400,6 +405,13 @@
 .progress-phase-node__label {
   font-size: 0.7rem;
   color: var(--dev-text-soft);
+}
+
+.progress-phase-node__now {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
 }
 
 .progress-phase-node.is-past .progress-phase-node__circle {
@@ -538,6 +550,33 @@
   height: 6px;
   border-radius: 999px;
   background: var(--dev-accent-strong);
+}
+
+@media (max-width: 640px) {
+  .progress-current-phase__panel {
+    padding: 0.95rem 1.1rem 0.9rem 1.3rem;
+  }
+
+  .progress-plugplay-strip {
+    padding: 0.5rem 0.7rem;
+  }
+
+  .progress-phase-row {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .progress-phase-node {
+    min-width: 52px;
+  }
+
+  .progress-phase-connector {
+    display: none;
+  }
+
+  .progress-phase-details {
+    margin-top: 0.35rem;
+  }
 }
 
 /* ===== Checklist metrics ===== */

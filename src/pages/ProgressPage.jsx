@@ -13,6 +13,16 @@ const PHASE_PILLS = [
   { id: 'phase_4', label: '4' },
 ];
 
+const PHASE_DETAILS_COPY = {
+  phase_0: 'Phase 0 builds the fake hardware and integration scaffolding so Plug & Play is a simple migration step.',
+  phase_1: 'Phase 1 validates the conveyor + PLC wiring and gets the first real items flowing through.',
+  phase_2: 'Phase 2 hardens the PLC integration for stable production operation.',
+  phase_3: 'Phase 3 expands the AI model to multiclass garment detection and routing.',
+  phase_4: 'Phase 4 focuses on scaling and subscription-ready deployments.',
+};
+
+const FALLBACK_PHASE_COPY = 'Phase details coming soon.';
+
 function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children }) {
   return (
     <div
@@ -96,23 +106,25 @@ function PhaseDonutKPI({ percentComplete, label }) {
   );
 }
 
-function PhaseTimeline({ phases, currentPhaseId, inspectedPhaseId, onInspectPhase }) {
+function PhaseTimeline({
+  phases,
+  currentPhaseId,
+  inspectedPhaseId,
+  lockedPhaseId,
+  onPreviewPhase,
+  onSelectPhase,
+}) {
   const currentIndex = phases.findIndex((p) => p.id === currentPhaseId);
 
   return (
     <div className="progress-phase-track progress-phase-track--compact">
-      <div className="progress-phase-row">
+      <div className="progress-phase-row" role="tablist" aria-label="AI deployment phases">
         {phases.map((pill, index) => {
           const isCurrent = index === currentIndex;
           const isPast = currentIndex !== -1 && index < currentIndex;
           const isFuture = currentIndex !== -1 && index > currentIndex;
           const isInspected = pill.id === inspectedPhaseId;
-
-          const handleInspect = () => {
-            if (onInspectPhase) {
-              onInspectPhase(pill.id);
-            }
-          };
+          const isLocked = pill.id === lockedPhaseId;
 
           return (
             <Fragment key={pill.id}>
@@ -124,16 +136,23 @@ function PhaseTimeline({ phases, currentPhaseId, inspectedPhaseId, onInspectPhas
                   isPast ? 'is-past' : '',
                   isFuture ? 'is-future' : '',
                   isInspected ? 'is-inspected' : '',
+                  isLocked ? 'is-locked' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
-                onMouseEnter={handleInspect}
-                onFocus={handleInspect}
-                onClick={handleInspect}
-                aria-pressed={isCurrent}
+                onMouseEnter={() => onPreviewPhase?.(pill.id)}
+                onFocus={() => onPreviewPhase?.(pill.id)}
+                onMouseLeave={() => onPreviewPhase?.(null)}
+                onBlur={() => onPreviewPhase?.(null)}
+                onClick={() => onSelectPhase?.(pill.id)}
+                aria-pressed={isLocked}
+                aria-current={isCurrent ? 'step' : undefined}
+                role="tab"
+                aria-selected={isInspected}
               >
                 <div className="progress-phase-node__circle">{pill.label}</div>
                 <div className="progress-phase-node__label">Phase {pill.label}</div>
+                {isCurrent && <span className="progress-phase-node__now">Now</span>}
               </button>
               {index < phases.length - 1 && (
                 <div
@@ -294,11 +313,11 @@ export default function ProgressPage() {
     nextSteps: false,
   });
   const [expandedNextStep, setExpandedNextStep] = useState(null);
-  const [inspectedPhaseId, setInspectedPhaseId] = useState(null);
+  const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
+  const [hoveredPhaseId, setHoveredPhaseId] = useState(null);
 
   useEffect(() => {
     loadData({ fresh: false, topic: activeTopic });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTopic]);
 
   const phase0 = useMemo(() => {
@@ -376,7 +395,7 @@ export default function ProgressPage() {
       } else if (timelineResult && Array.isArray(timelineResult.entries)) {
         setTimeline(timelineResult.entries);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load progress data.');
     } finally {
       setLoading(false);
@@ -442,24 +461,47 @@ export default function ProgressPage() {
           ? 'Late'
           : null;
   useEffect(() => {
-    setInspectedPhaseId((prev) => {
-      if (!prev) {
-        return currentPhaseId;
+    setLockedPhaseId((prev) => {
+      if (prev && phaseSnapshotsById[prev]) {
+        return prev;
       }
-      if (!phaseSnapshotsById[prev]) {
-        return currentPhaseId;
-      }
-      return prev;
+      return currentPhaseId;
     });
+    setHoveredPhaseId(null);
   }, [currentPhaseId, phaseSnapshotsById]);
 
   const currentPhaseSubtitle = currentPhaseLabel;
   const lastUpdateText = latestEntry
     ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
     : 'No updates recorded yet in CODEX_Progress_Log.md';
-  const inspectedPhase = phaseSnapshotsById[inspectedPhaseId] || currentPhaseSnapshot || null;
+  const inspectedPhaseId = hoveredPhaseId || lockedPhaseId || currentPhaseId;
+  const fallbackInspectedPhase = inspectedPhaseId
+    ? {
+        phaseId: inspectedPhaseId,
+        name: `Phase ${(inspectedPhaseId || '').replace('phase_', '')}`,
+      }
+    : null;
+  const inspectedPhase =
+    phaseSnapshotsById[inspectedPhaseId] || fallbackInspectedPhase || currentPhaseSnapshot || null;
   const inspectedPhaseIndexRaw = PHASE_PILLS.findIndex((p) => p.id === inspectedPhaseId);
   const inspectedPhaseIndex = inspectedPhaseIndexRaw >= 0 ? inspectedPhaseIndexRaw : 0;
+  const inspectedPhaseCopy =
+    (inspectedPhase && PHASE_DETAILS_COPY[inspectedPhase.phaseId]) || FALLBACK_PHASE_COPY;
+
+  const handlePhasePreview = (phaseId) => {
+    if (!phaseId) {
+      setHoveredPhaseId(null);
+      return;
+    }
+    setHoveredPhaseId(phaseId);
+  };
+
+  const handlePhaseLock = (phaseId) => {
+    if (phaseId) {
+      setLockedPhaseId(phaseId);
+      setHoveredPhaseId(null);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -557,12 +599,17 @@ export default function ProgressPage() {
                 phases={PHASE_PILLS}
                 currentPhaseId={CURRENT_PHASE_ID}
                 inspectedPhaseId={inspectedPhaseId}
-                onInspectPhase={setInspectedPhaseId}
+                lockedPhaseId={lockedPhaseId}
+                onPreviewPhase={handlePhasePreview}
+                onSelectPhase={handlePhaseLock}
               />
               {inspectedPhase && (
                 <div
                   className="progress-phase-details"
-                  style={{ '--phase-index': inspectedPhaseIndex }}
+                  style={{
+                    '--phase-index': inspectedPhaseIndex,
+                    '--phase-segments': Math.max(1, PHASE_PILLS.length - 1),
+                  }}
                 >
                   <div className="progress-phase-details__header">
                     <span className="progress-phase-details__pill">
@@ -585,23 +632,7 @@ export default function ProgressPage() {
                   </div>
                   <div className="progress-phase-details__body">
                     <p className="progress-phase-details__copy">
-                      {inspectedPhase.phaseId === 'phase_0' &&
-                        'Phase 0 builds the fake hardware and integration scaffolding so Plug & Play is a simple migration step.'}
-                      {inspectedPhase.phaseId === 'phase_1' &&
-                        'Phase 1 validates the conveyor + PLC wiring and gets the first real items flowing through.'}
-                      {inspectedPhase.phaseId === 'phase_2' &&
-                        'Phase 2 hardens the PLC integration for stable production operation.'}
-                      {inspectedPhase.phaseId === 'phase_3' &&
-                        'Phase 3 expands the AI model to multiclass garment detection and routing.'}
-                      {inspectedPhase.phaseId === 'phase_4' &&
-                        'Phase 4 focuses on scaling and subscription-ready deployments.'}
-                      {![
-                        'phase_0',
-                        'phase_1',
-                        'phase_2',
-                        'phase_3',
-                        'phase_4',
-                      ].includes(inspectedPhase.phaseId || '') && 'Phase details coming soon.'}
+                      {inspectedPhaseCopy}
                     </p>
                   </div>
                 </div>

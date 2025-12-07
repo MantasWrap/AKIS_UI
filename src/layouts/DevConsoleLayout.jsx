@@ -15,8 +15,8 @@ const DEFAULT_ENV = {
 };
 
 export default function DevConsoleLayout({
-  navItems,
-  futureNavItems,
+  navSections = [],
+  futureNavItems = [],
   activeKey,
   onNavigate,
   pageTitle,
@@ -54,18 +54,15 @@ export default function DevConsoleLayout({
     };
   }, [profileOpen]);
 
-  useEffect(() => {
-    if (sidebarCollapsed && profileOpen) {
-      setProfileOpen(false);
-    }
-  }, [sidebarCollapsed, profileOpen]);
-
   const iconMap = MODULES.reduce((acc, module) => {
     acc[module.key] = module.icon;
     return acc;
   }, {});
 
   const toggleSidebar = () => {
+    if (!sidebarCollapsed && profileOpen) {
+      setProfileOpen(false);
+    }
     setSidebarCollapsed((prev) => !prev);
   };
 
@@ -91,45 +88,49 @@ export default function DevConsoleLayout({
 
         <div className="dev-sidebar-body">
           <div className="dev-sidebar-nav">
-            <div>
-              <div className="dev-nav-section-label">Core</div>
-              {navItems.map((item) => {
-                const Icon = iconMap[item.key];
-                return (
-                  <button
-                    key={item.key}
-                    className={`dev-nav-button ${activeKey === item.key ? 'active' : ''}`}
-                    onClick={() => onNavigate(item.key)}
-                    aria-label={item.label}
-                    title={item.label}
-                  >
-                    {Icon && (
-                      <span className="dev-nav-icon" aria-hidden="true">
-                        <Icon size={18} />
-                      </span>
-                    )}
-                    <span className="dev-nav-label">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div>
-              <div className="dev-nav-section-label">Future modules</div>
-              {futureNavItems.map((item) => {
-                const Icon = iconMap[item.key];
-                return (
-                  <div key={item.key} className="dev-future-entry">
-                    {Icon && (
-                      <span className="dev-nav-icon future" aria-hidden="true">
-                        <Icon size={16} />
-                      </span>
-                    )}
-                    <span className="dev-nav-label">{item.label}</span>
-                    <span className="dev-coming-soon">Soon</span>
-                  </div>
-                );
-              })}
-            </div>
+            {navSections.map((section) => (
+              <div key={section.key}>
+                <div className="dev-nav-section-label">{section.label}</div>
+                {section.items.map((item) => {
+                  const Icon = iconMap[item.key];
+                  return (
+                    <button
+                      key={item.key}
+                      className={`dev-nav-button ${activeKey === item.key ? 'active' : ''}`}
+                      onClick={() => onNavigate(item.key)}
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      {Icon && (
+                        <span className="dev-nav-icon" aria-hidden="true">
+                          <Icon size={18} />
+                        </span>
+                      )}
+                      <span className="dev-nav-label">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+            {futureNavItems?.length ? (
+              <div>
+                <div className="dev-nav-section-label">Future modules</div>
+                {futureNavItems.map((item) => {
+                  const Icon = iconMap[item.key];
+                  return (
+                    <div key={item.key} className="dev-future-entry">
+                      {Icon && (
+                        <span className="dev-nav-icon future" aria-hidden="true">
+                          <Icon size={16} />
+                        </span>
+                      )}
+                      <span className="dev-nav-label">{item.label}</span>
+                      <span className="dev-coming-soon">Soon</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
           {!profileOpen && <div className="dev-sidebar-divider dev-profile-divider" />}

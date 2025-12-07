@@ -2,15 +2,33 @@ import StatusPage from '../pages/StatusPage.jsx';
 import MockItemsPage from '../pages/MockItemsPage.jsx';
 import RuntimeStatusPage from '../pages/RuntimeStatusPage.jsx';
 import ProgressPage from '../pages/ProgressPage.jsx';
+import AiOsHomePage from '../pages/aios/AiOsHomePage.jsx';
+import AiOsAgentsPage from '../pages/aios/AiOsAgentsPage.jsx';
+import AiOsModesPage from '../pages/aios/AiOsModesPage.jsx';
+import AiOsPipelinePage from '../pages/aios/AiOsPipelinePage.jsx';
+import AiOsAgentCostsPage from '../pages/aios/AiOsAgentCostsPage.jsx';
+import AiOsMissionsPage from '../pages/aios/AiOsMissionsPage.jsx';
+import AiOsSecurityPage from '../pages/aios/AiOsSecurityPage.jsx';
+import AiOsSettingsPage from '../pages/aios/AiOsSettingsPage.jsx';
+import OwnerApiDocsPage from '../pages/api/OwnerApiDocsPage.jsx';
 
 import {
   ActivitySquare,
   BarChart3,
   Bell,
+  BookOpenText,
   Cog,
+  Coins,
+  Cpu,
   GraduationCap,
   LayoutDashboard,
   ListOrdered,
+  Rocket,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Users2,
+  Workflow,
 } from 'lucide-react';
 import { DESIGN_CONFIG } from '../design/designConfig.js';
 
@@ -19,11 +37,29 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
  */
 
 /**
- * @typedef {'core' | 'future'} NavSection
+ * @typedef {'core' | 'aiOs' | 'api' | 'future'} NavSection
  */
 
 /**
- * @typedef {'status' | 'items' | 'runtimeStatus' | 'progress' | 'plc' | 'training' | 'analytics' | 'alerts'} DevModuleKey
+ * @typedef {
+ *  | 'status'
+ *  | 'items'
+ *  | 'runtimeStatus'
+ *  | 'progress'
+ *  | 'plc'
+ *  | 'training'
+ *  | 'analytics'
+ *  | 'alerts'
+ *  | 'aiOsHome'
+ *  | 'aiOsAgents'
+ *  | 'aiOsModes'
+ *  | 'aiOsPipeline'
+ *  | 'aiOsAgentCosts'
+ *  | 'aiOsMissions'
+ *  | 'aiOsSecurity'
+ *  | 'aiOsSettings'
+ *  | 'apiDocs'
+ * } DevModuleKey
  */
 
 /**
@@ -99,6 +135,123 @@ export const MODULES = [
     enabled: resolveEnabled('progress', true),
     enabledRoles: ['OWNER', 'ENGINEER'],
     navSection: 'core',
+  },
+  {
+    key: 'aiOsHome',
+    label: 'Home',
+    component: AiOsHomePage,
+    icon: Cpu,
+    pageMeta: {
+      title: 'AI OS · Home',
+      subtitle: 'AI OS 0.1 status, usage, and plan overview.',
+    },
+    enabled: resolveEnabled('aiOsHome', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsAgents',
+    label: 'Agents',
+    component: AiOsAgentsPage,
+    icon: Users2,
+    pageMeta: {
+      title: 'AI OS · Agents',
+      subtitle: 'Roster of owner-facing AI collaborators.',
+    },
+    enabled: resolveEnabled('aiOsAgents', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsModes',
+    label: 'AI modes',
+    component: AiOsModesPage,
+    icon: Sparkles,
+    pageMeta: {
+      title: 'AI OS · Modes',
+      subtitle: 'Documented communication surfaces and channels.',
+    },
+    enabled: resolveEnabled('aiOsModes', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsPipeline',
+    label: 'Dev pipeline',
+    component: AiOsPipelinePage,
+    icon: Workflow,
+    pageMeta: {
+      title: 'AI dev pipeline',
+      subtitle: 'Stage-by-stage AI OS delivery tracker.',
+    },
+    enabled: resolveEnabled('aiOsPipeline', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsAgentCosts',
+    label: 'Agent costs',
+    component: AiOsAgentCostsPage,
+    icon: Coins,
+    pageMeta: {
+      title: 'Agent costs',
+      subtitle: 'Mocked spend + guardrails for agents.',
+    },
+    enabled: resolveEnabled('aiOsAgentCosts', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsMissions',
+    label: 'Missions',
+    component: AiOsMissionsPage,
+    icon: Rocket,
+    pageMeta: {
+      title: 'AI OS missions',
+      subtitle: 'Mission planning placeholder.',
+    },
+    enabled: resolveEnabled('aiOsMissions', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsSecurity',
+    label: 'Security',
+    component: AiOsSecurityPage,
+    icon: ShieldCheck,
+    pageMeta: {
+      title: 'Security & access',
+      subtitle: 'Roles, guardrails, and access placeholders.',
+    },
+    enabled: resolveEnabled('aiOsSecurity', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsSettings',
+    label: 'Settings',
+    component: AiOsSettingsPage,
+    icon: SlidersHorizontal,
+    pageMeta: {
+      title: 'AI OS settings',
+      subtitle: 'Read-only toggles sourced from specs.',
+    },
+    enabled: resolveEnabled('aiOsSettings', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'apiDocs',
+    label: 'Owner API docs',
+    component: OwnerApiDocsPage,
+    icon: BookOpenText,
+    pageMeta: {
+      title: 'API documentation',
+      subtitle: 'Owner & developer API overview stub.',
+    },
+    enabled: resolveEnabled('apiDocs', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'api',
   },
   // Future modules will be appended here with navSection: 'future'.
 ];

@@ -1,0 +1,278 @@
+.aios-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.aios-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.aios-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.aios-grid--three {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.aios-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.aios-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.aios-card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.aios-card-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--dev-text-soft);
+}
+
+.aios-highlight {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.aios-highlight-sub {
+  font-size: 0.9rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.aios-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--dev-text-soft);
+}
+
+.aios-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dev-accent);
+}
+
+.aios-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.aios-breakdown-item {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  background: var(--dev-bg-soft);
+}
+
+.aios-progress {
+  width: 100%;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--dev-border-subtle);
+  overflow: hidden;
+}
+
+.aios-progress-fill {
+  height: 100%;
+  background: var(--dev-accent);
+}
+
+.aios-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 90px;
+}
+
+.aios-mini-chart span {
+  flex: 1;
+  border-radius: var(--dev-radius-sm);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.15));
+}
+
+.aios-table {
+  width: 100%;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  overflow: hidden;
+}
+
+.aios-table-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+}
+
+.aios-table-row--head {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+  background: rgba(0, 0, 0, 0.02);
+  font-weight: 600;
+}
+
+.aios-table-row:nth-child(even) {
+  background: var(--dev-bg-soft);
+}
+
+.aios-pill {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--dev-ok);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.aios-placeholder {
+  border: 1px dashed var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--dev-text-muted);
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.aios-warning {
+  font-size: 0.85rem;
+  color: var(--dev-warn);
+  background: rgba(249, 115, 22, 0.12);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--dev-radius-md);
+}
+
+.aios-stage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-stage-item {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.85rem 1rem;
+  background: var(--dev-bg-soft);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aios-stage-item strong {
+  font-size: 0.95rem;
+}
+
+.aios-mission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-mission-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.9rem 1rem;
+  background: var(--dev-bg-soft);
+}
+
+.aios-mission-card h4 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.aios-mission-card p {
+  margin: 0;
+  color: var(--dev-text-muted);
+  font-size: 0.9rem;
+}
+
+.aios-guardrail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--dev-text-soft);
+}
+
+.aios-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-settings-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+}
+
+.aios-settings-entry label {
+  font-weight: 600;
+}
+
+.aios-settings-entry small {
+  display: block;
+  color: var(--dev-text-muted);
+  margin-top: 0.2rem;
+}
+
+.aios-card-footnote {
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-api-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .aios-table-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

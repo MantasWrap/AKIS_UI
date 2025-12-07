@@ -9,7 +9,20 @@ import {
 
 const CURRENT_ROLE = 'OWNER';
 const NAV_MODULES = getNavModules(CURRENT_ROLE);
-const NAV_ITEMS = NAV_MODULES.map((module) => ({ key: module.key, label: module.label }));
+const NAV_SECTION_LABELS = {
+  core: 'Core',
+  aiOs: 'AI OS',
+  api: 'API',
+};
+const NAV_SECTION_ORDER = ['core', 'aiOs', 'api'];
+const NAV_SECTIONS = NAV_SECTION_ORDER.map((sectionKey) => ({
+  key: sectionKey,
+  label: NAV_SECTION_LABELS[sectionKey] || sectionKey,
+  items: NAV_MODULES.filter((module) => module.navSection === sectionKey).map((module) => ({
+    key: module.key,
+    label: module.label,
+  })),
+})).filter((section) => section.items.length > 0);
 
 const FUTURE_NAV_ITEMS = [
   { key: 'plc', label: 'PLC / Conveyor' },
@@ -33,7 +46,7 @@ function App() {
 
   return (
     <DevConsoleLayout
-      navItems={NAV_ITEMS}
+      navSections={NAV_SECTIONS}
       futureNavItems={FUTURE_NAV_ITEMS}
       activeKey={view}
       onNavigate={setView}
