@@ -1,14 +1,32 @@
 import { useMemo, useState } from 'react';
 import '../../styles/aios.css';
-import { aiOsMockData } from '../../mock/aiOsMockData';
+import { useAiOsMockData } from '../../hooks/useAiOsMockData';
+
+const TOGGLE_SUMMARY = [
+  { id: 'canEditReact', label: 'React UI' },
+  { id: 'canTouchBackend', label: 'Backend' },
+  { id: 'usesMockDataByDefault', label: 'Mock data' },
+  { id: 'canEditDocs', label: 'Docs' },
+];
+
+const levelLabel = (value) => (value ? value.toUpperCase() : 'MED');
 
 export default function AiOsModesPage() {
-  const { modes } = aiOsMockData;
-  const [selectedModeId, setSelectedModeId] = useState(modes.list[0]?.id);
+  const { modes = { list: [] }, modePresets = [] } = useAiOsMockData();
+  const modeList = useMemo(() => modes.list || [], [modes.list]);
+  const [selectedModeId, setSelectedModeId] = useState(modeList[0]?.id || null);
+
+  const activeModeId = useMemo(() => {
+    if (!modeList.length) return null;
+    if (selectedModeId && modeList.some((mode) => mode.id === selectedModeId)) {
+      return selectedModeId;
+    }
+    return modeList[0].id;
+  }, [modeList, selectedModeId]);
 
   const selectedMode = useMemo(
-    () => modes.list.find((mode) => mode.id === selectedModeId) || modes.list[0],
-    [modes.list, selectedModeId],
+    () => modeList.find((mode) => mode.id === activeModeId),
+    [modeList, activeModeId],
   );
 
   return (
@@ -24,13 +42,13 @@ export default function AiOsModesPage() {
 
         <div className="aios-modes-layout">
           <div className="aios-mode-list" role="tablist" aria-label="Communication modes">
-            {modes.list.map((mode) => (
+            {modeList.map((mode) => (
               <button
                 key={mode.id}
                 type="button"
                 role="tab"
-                aria-selected={selectedModeId === mode.id}
-                className={`aios-mode-button ${selectedModeId === mode.id ? 'is-active' : ''}`}
+                aria-selected={activeModeId === mode.id}
+                className={`aios-mode-button ${activeModeId === mode.id ? 'is-active' : ''}`}
                 onClick={() => setSelectedModeId(mode.id)}
               >
                 <div>
@@ -68,6 +86,45 @@ export default function AiOsModesPage() {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="aios-mode-presets">
+          <div className="aios-card-header">
+            <div>
+              <h3 className="aios-card-title">Mode presets</h3>
+              <p className="aios-card-subtitle">
+                Behaviour bundles applied from the Agents dashboard. Mock-only until OS-config APIs land.
+              </p>
+            </div>
+            <span className="aios-tag">{modePresets.length} presets</span>
+          </div>
+
+          <div className="aios-mode-presets-grid">
+            {modePresets.map((preset) => (
+              <div key={preset.id} className="aios-mode-preset-card">
+                <div className="aios-mode-preset-head">
+                  <span className="aios-pill">{preset.label}</span>
+                  <span className="aios-mode-preset-id">{preset.id}</span>
+                </div>
+                <p className="aios-mode-preset-description">{preset.description}</p>
+                <div className="aios-mode-preset-levels">
+                  <span>UI {levelLabel(preset.uiCreativityLevel)}</span>
+                  <span>Backend {levelLabel(preset.backendPlanningBias)}</span>
+                  <span>Docs {levelLabel(preset.docsEditBias)}</span>
+                </div>
+                <div className="aios-mode-preset-flags">
+                  {TOGGLE_SUMMARY.map((toggle) => (
+                    <span
+                      key={toggle.id}
+                      className={`aios-pill ${preset[toggle.id] ? '' : 'aios-pill--muted'}`}
+                    >
+                      {toggle.label} {preset[toggle.id] ? 'ON' : 'OFF'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="aios-card-footnote">

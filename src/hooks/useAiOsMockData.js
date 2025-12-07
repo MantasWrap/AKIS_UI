@@ -17,5 +17,6 @@ export function useAiOsMockData() {
     security: aiOsMockData.security,
     settings: aiOsMockData.settings,
     api: aiOsMockData.api,
+    modePresets: aiOsMockData.modePresets,
   };
 }

@@ -236,23 +236,23 @@
 
 .aios-agents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .aios-agent-card {
   border: 1px solid var(--dev-border-subtle);
-  border-radius: var(--dev-radius-lg);
-  padding: 1.25rem;
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   background: var(--dev-bg-card);
   box-shadow: var(--dev-shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.9rem;
 }
 
-.aios-agent-card-head {
+.aios-agent-card-header {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
@@ -266,10 +266,16 @@
   gap: 0.3rem;
 }
 
+.aios-agent-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .aios-agent-name-input {
   border: 1px solid var(--dev-border-subtle);
   border-radius: var(--dev-radius-pill);
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   font-size: 0.95rem;
   width: 100%;
 }
@@ -279,9 +285,48 @@
   border-color: var(--dev-accent);
 }
 
+.aios-agent-edit-hint {
+  font-size: 0.72rem;
+  color: var(--dev-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.aios-agent-role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .aios-agent-role {
   font-size: 0.9rem;
   color: var(--dev-text-soft);
+}
+
+.aios-agent-tier {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--dev-text-soft);
+}
+
+.aios-agent-tier--domain_boss {
+  background: rgba(16, 185, 129, 0.17);
+  color: #0f9c7d;
+}
+
+.aios-agent-tier--implementer {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2b63d9;
+}
+
+.aios-agent-tier--os_supervisor {
+  background: rgba(250, 204, 21, 0.25);
+  color: #a16207;
 }
 
 .aios-agent-meta {
@@ -290,10 +335,57 @@
   gap: 0.75rem;
 }
 
+.aios-agent-card-modes {
+  border-top: 1px solid var(--dev-border-subtle);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-agent-preset-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aios-agent-preset-select {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--dev-radius-pill);
+  border: 1px solid var(--dev-border-subtle);
+  background: var(--dev-bg-soft);
+}
+
+.aios-agent-preset-caption {
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+}
+
 .aios-agent-slider-block {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.6rem;
+}
+
+.aios-agent-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.aios-agent-slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-agent-slider-level {
+  font-weight: 600;
+  color: var(--dev-text-primary);
 }
 
 .aios-agent-slider {
@@ -319,33 +411,50 @@
   color: var(--dev-text-soft);
 }
 
-.aios-agent-toggles {
+.aios-agent-card-perms {
+  border-top: 1px solid var(--dev-border-subtle);
+  padding-top: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
-.aios-toggle {
+.aios-agent-perm-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--dev-text-primary);
 }
 
-.aios-toggle input {
+.aios-agent-perm-row input {
   transform: scale(1.05);
 }
 
-.aios-agent-mock-note {
-  font-size: 0.75rem;
+.aios-agent-card-footer {
+  border-top: 1px solid var(--dev-border-subtle);
+  margin-top: 0.2rem;
+  padding-top: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
   color: var(--dev-text-muted);
 }
 
-.aios-agent-footer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
+.aios-agent-mock-tag {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aios-agent-profiles-link {
+  font-size: 0.78rem;
+  color: var(--dev-accent);
+  border: none;
+  background: transparent;
+  text-decoration: underline dotted;
+  cursor: pointer;
 }
 
 .aios-mini-chart {
@@ -630,6 +739,66 @@
   flex-direction: column;
   gap: 0.25rem;
   text-align: right;
+}
+
+.aios-mode-presets {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--dev-border-subtle);
+  padding-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.aios-mode-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.aios-mode-preset-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 0.85rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.aios-mode-preset-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aios-mode-preset-id {
+  font-size: 0.72rem;
+  color: var(--dev-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.aios-mode-preset-description {
+  font-size: 0.85rem;
+  color: var(--dev-text-primary);
+}
+
+.aios-mode-preset-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--dev-text-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.aios-mode-preset-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .aios-stage-grid {
