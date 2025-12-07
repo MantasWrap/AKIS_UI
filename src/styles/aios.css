@@ -179,6 +179,17 @@
   gap: 1.75rem;
 }
 
+.aios-home--error {
+  min-height: 420px;
+  align-items: center;
+  justify-content: center;
+}
+
+.aios-home-error-card {
+  max-width: 520px;
+  text-align: left;
+}
+
 .aios-hero-card {
   gap: 1.5rem;
 }
@@ -336,6 +347,13 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+
+.aios-cost-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .aios-stage-list {

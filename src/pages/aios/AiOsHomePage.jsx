@@ -12,20 +12,55 @@ export default function AiOsHomePage() {
     pipeline,
     costs,
   } = useAiOsMockData();
+
+  const usageRanges = usage?.ranges || {};
+  const usageKeys = Object.keys(usageRanges);
+  const defaultUsageRange = (usage?.defaultRange && usageRanges[usage.defaultRange])
+    ? usage.defaultRange
+    : usageKeys[0] || null;
+  const [range, setRange] = useState(defaultUsageRange);
+  const resolvedUsageKey = (range && usageRanges[range])
+    ? range
+    : (defaultUsageRange && usageRanges[defaultUsageRange])
+      ? defaultUsageRange
+      : usageKeys[0] || null;
+  const activeUsage = resolvedUsageKey ? usageRanges[resolvedUsageKey] || {} : {};
+
   const heroHighlights = overview?.highlights || [];
   const heroBadgeLabel = overview?.badgeLabel
     || [overview?.version, overview?.stage].filter(Boolean).join(' · ')
     || 'AI OS mock';
   const readinessValue = typeof overview?.readiness === 'number' ? `${overview.readiness}%` : '—';
   const heroBuild = overview?.build || 'AI OS mock readiness preview';
-  const usageRanges = usage?.ranges || {};
-  const initialRange = usage?.defaultRange && usageRanges[usage.defaultRange]
-    ? usage.defaultRange
-    : Object.keys(usageRanges)[0];
-  const [range, setRange] = useState(initialRange);
+  const agentRoster = agents?.roster || [];
+  const modesList = modes?.list || [];
+  const pipelineStages = pipeline?.stages || [];
+  const pipelineCardTag = pipeline?.stage ? `Stage ${pipeline.stage}` : 'Stage status';
+  const pipelineStatusSubtitle = pipeline?.status || 'AI OS pipeline status';
+  const pipelineReadiness = typeof pipeline?.readiness === 'number'
+    ? Math.min(100, Math.max(0, pipeline.readiness))
+    : 0;
 
-  const activeUsage = usageRanges[range] || usageRanges[initialRange] || {};
-  const usageKeys = Object.keys(usageRanges);
+  const costPeriod = useMemo(() => {
+    if (!costs || !costs.periods) return null;
+    if (costs.defaultPeriod && costs.periods[costs.defaultPeriod]) {
+      return costs.periods[costs.defaultPeriod];
+    }
+    const entries = Object.values(costs.periods);
+    return entries.length ? entries[0] : null;
+  }, [costs]);
+  const costByAgent = costPeriod?.byAgent || [];
+  const costByModel = costPeriod?.byModel || [];
+  const topAgent = costByAgent[0] || null;
+  const formatCurrency = (value) => {
+    if (typeof value === 'number') return `$${value}`;
+    return value || '—';
+  };
+  const costBreakdown = [
+    topAgent ? { label: topAgent.name, value: formatCurrency(topAgent.value) } : null,
+    costPeriod?.total ? { label: 'Total', value: costPeriod.total } : null,
+    costs?.budgetCeiling ? { label: 'Budget ceiling', value: costs.budgetCeiling } : null,
+  ].filter(Boolean);
 
   const handleRangeChange = (nextRange) => {
     setRange(nextRange);
@@ -44,9 +79,23 @@ export default function AiOsHomePage() {
   }), []);
 
   const miniChartHeights = useMemo(
-    () => (activeUsage.miniChart || []).map((value) => Math.min(100, Math.max(18, value))),
-    [activeUsage.miniChart],
+    () => (activeUsage?.miniChart || []).map((value) => Math.min(100, Math.max(18, value))),
+    [activeUsage?.miniChart],
   );
+
+  if (!overview) {
+    return (
+      <div className="aios-page aios-home aios-home--error">
+        <div className="dev-card aios-card aios-home-error-card">
+          <h2 className="aios-card-title">AI OS Home unavailable</h2>
+          <p className="aios-card-subtitle">
+            Mock data for the AI OS overview is missing. Check <code>aiOsMockData.js</code> and{' '}
+            <code>useAiOsMockData</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="aios-page aios-home">
@@ -105,15 +154,15 @@ export default function AiOsHomePage() {
             <div className="aios-usage-metrics">
               <div>
                 <div className="aios-detail-label">Cost</div>
-                <div className="aios-highlight-sub">{activeUsage.cost}</div>
+                <div className="aios-highlight-sub">{activeUsage?.cost || '—'}</div>
               </div>
               <div>
                 <div className="aios-detail-label">Tokens</div>
-                <div className="aios-highlight-sub">{activeUsage.tokens}</div>
+                <div className="aios-highlight-sub">{activeUsage?.tokens || '—'}</div>
               </div>
             </div>
             <div className="aios-breakdown aios-breakdown--compact">
-              {(activeUsage.breakdown || []).map((item) => (
+              {(activeUsage?.breakdown || []).map((item) => (
                 <div key={item.label} className="aios-breakdown-item">
                   <div className="aios-card-subtitle" style={{ marginTop: 0 }}>{item.label}</div>
                   <div style={{ fontSize: '1rem', fontWeight: 600 }}>{item.value}</div>
@@ -131,13 +180,15 @@ export default function AiOsHomePage() {
               <h3 className="aios-card-title">Agents overview</h3>
               <p className="aios-card-subtitle">UI Boss leads owner UX</p>
             </div>
-            <span className="aios-tag">{agents.total} agents</span>
+            <span className="aios-tag">
+              {typeof agents?.total === 'number' ? `${agents.total} agents` : 'Agents'}
+            </span>
           </div>
           <div className="aios-highlight-sub">
-            {agents.activeThisWeek} active this week · spotlight {agents.highlight}
+            {agents?.activeThisWeek != null ? `${agents.activeThisWeek} active this week` : 'Active roster'} · spotlight {agents?.highlight || 'UI Boss'}
           </div>
           <ul className="aios-list">
-            {agents.roster.map((agent) => (
+            {agentRoster.map((agent) => (
               <li key={agent.name}>
                 <span className="aios-dot" />
                 <span>
@@ -154,11 +205,13 @@ export default function AiOsHomePage() {
               <h3 className="aios-card-title">AI modes</h3>
               <p className="aios-card-subtitle">Communication surfaces</p>
             </div>
-            <span className="aios-tag">{modes.total} modes</span>
+            <span className="aios-tag">
+              {typeof modes?.total === 'number' ? `${modes.total} modes` : 'Modes'}
+            </span>
           </div>
-          <div className="aios-highlight-sub">Featured: {modes.featured}</div>
+          <div className="aios-highlight-sub">Featured: {modes?.featured || 'CHAT&CODEX UI v1'}</div>
           <ul className="aios-list">
-            {modes.list.map((mode) => (
+            {modesList.map((mode) => (
               <li key={mode.name}>
                 <span className="aios-dot" />
                 <span>
@@ -175,21 +228,22 @@ export default function AiOsHomePage() {
           <div className="aios-card-header">
             <div>
               <h3 className="aios-card-title">AI dev pipeline</h3>
-              <p className="aios-card-subtitle">{pipeline.status}</p>
+              <p className="aios-card-subtitle">{pipelineStatusSubtitle}</p>
             </div>
-            <span className="aios-tag">{`Stage ${pipeline.stage}`}</span>
+            <span className="aios-tag">{pipelineCardTag}</span>
           </div>
           <div className="aios-progress" aria-hidden="true">
             <div
               className="aios-progress-fill"
-              style={{ width: `${Math.min(100, Math.max(0, pipeline.readiness))}%` }}
+              style={{ width: `${pipelineReadiness}%` }}
             />
           </div>
           <div className="aios-highlight-sub">
-            Next: {pipeline.next} · {pipeline.eta}
+            {pipeline?.next ? `Next: ${pipeline.next}` : 'Next stage TBD'}
+            {pipeline?.eta ? ` · ${pipeline.eta}` : ''}
           </div>
           <div className="aios-stage-list">
-            {pipeline.stages.slice(0, 3).map((stage) => (
+            {pipelineStages.slice(0, 3).map((stage) => (
               <div key={stage.id} className="aios-stage-item">
                 <strong>{stage.label}</strong>
                 <span>{stage.summary}</span>
@@ -204,24 +258,50 @@ export default function AiOsHomePage() {
               <h3 className="aios-card-title">Agent costs</h3>
               <p className="aios-card-subtitle">Mock-only spending preview</p>
             </div>
-            <span className="aios-tag">{costs.delta}</span>
+            <span className="aios-tag">{costPeriod?.delta || 'Stable'}</span>
           </div>
           <div className="aios-home-costs">
             <div>
-              <div className="aios-highlight">{costs.monthly}</div>
-              <div className="aios-highlight-sub">Monthly · ceiling {costs.budgetCeiling}</div>
+              <div className="aios-highlight">{costPeriod?.total || '—'}</div>
+              <div className="aios-highlight-sub">
+                {costs?.budgetCeiling ? `Monthly · ceiling ${costs.budgetCeiling}` : 'Budget mock only'}
+              </div>
             </div>
             <div className="aios-warning">
-              Top agent: {costs.topAgent} ({costs.topAgentCost})
+              Top agent: {topAgent ? `${topAgent.name} (${formatCurrency(topAgent.value)})` : 'Data coming soon'}
             </div>
           </div>
           <div className="aios-breakdown">
-            {costs.breakdown.map((entry) => (
+            {costBreakdown.map((entry) => (
               <div key={entry.label} className="aios-breakdown-item">
                 <div className="aios-card-subtitle" style={{ marginTop: 0 }}>{entry.label}</div>
                 <div style={{ fontSize: '1rem', fontWeight: 600 }}>{entry.value}</div>
               </div>
             ))}
+          </div>
+          <div className="aios-cost-lists">
+            <div>
+              <div className="aios-detail-label">By agent</div>
+              <ul className="aios-list">
+                {costByAgent.slice(0, 3).map((item) => (
+                  <li key={item.name}>
+                    <span className="aios-dot" />
+                    {item.name} – {formatCurrency(item.value)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="aios-detail-label">By model</div>
+              <ul className="aios-list">
+                {costByModel.slice(0, 3).map((item) => (
+                  <li key={item.name}>
+                    <span className="aios-dot" />
+                    {item.name} – {formatCurrency(item.value)}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
