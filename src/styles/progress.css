@@ -30,7 +30,12 @@
 }
 
 .progress-row--split.progress-row--aios-split {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: stretch;
+}
+
+.progress-row--aios-split .progress-kpi-card {
+  min-height: 20rem;
 }
 
 .progress-row--split > * {
@@ -108,7 +113,7 @@
 }
 
 .progress-card-body--aios {
-  gap: 1.1rem;
+  gap: 1.25rem;
 }
 
 .progress-card-body--current-phase {
@@ -228,60 +233,52 @@
   outline-offset: 3px;
 }
 
-.progress-aios-stage-chips {
+.progress-aios-pipeline-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: flex-start;
 }
 
-.progress-aios-stage-chip {
-  border: 1px solid var(--dev-border-subtle);
+.progress-aios-stage-pill {
   border-radius: var(--dev-radius-pill);
-  padding: 0.45rem 0.8rem;
-  background: var(--dev-bg-soft);
+  border: 1px solid var(--dev-border-subtle);
+  padding: 0.35rem 0.85rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 70px;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--dev-text-soft);
+  background: var(--dev-bg-soft);
 }
 
-.progress-aios-stage-chip.is-current {
+.progress-aios-stage-pill--current {
   border-color: var(--dev-accent);
   background: rgba(34, 197, 94, 0.12);
-}
-
-.progress-aios-stage-chip.is-done {
-  border-color: rgba(34, 197, 94, 0.6);
-}
-
-.progress-aios-stage-chip.is-in_progress {
-  border-color: rgba(59, 130, 246, 0.55);
-}
-
-.progress-aios-stage-chip.is-up_next {
-  border-style: dashed;
-}
-
-.progress-aios-stage-chip.is-future {
-  opacity: 0.6;
-}
-
-.progress-aios-stage-chip__label {
-  font-size: 0.85rem;
-  font-weight: 600;
   color: var(--dev-text-primary);
+  font-weight: 600;
 }
 
-.progress-aios-stage-chip__status {
+.progress-aios-stage-pill-code {
+  font-weight: 600;
+  color: inherit;
+}
+
+.progress-aios-stage-pill-status {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--dev-text-muted);
 }
 
-.progress-aios-stage-chip__empty {
-  font-size: 0.85rem;
+.progress-aios-stage-pill--current .progress-aios-stage-pill-status {
+  color: var(--dev-text-primary);
+}
+
+.progress-aios-stage-pill--empty {
+  border-style: dashed;
   color: var(--dev-text-muted);
+  font-weight: 500;
 }
 
 .progress-aios-stage-summary {

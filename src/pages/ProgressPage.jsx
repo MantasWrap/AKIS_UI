@@ -324,7 +324,6 @@ export default function ProgressPage() {
   const aiOsStageList = aiOsPipeline?.stages || [];
   const aiOsCurrentStage =
     aiOsStageList.find((stage) => stage.id === aiOsPipeline?.currentStageId) || aiOsStageList[0] || null;
-  const aiOsStageChips = aiOsStageList.slice(0, 4);
   const aiOsStageStateCopy = {
     done: 'Complete',
     in_progress: 'In progress',
@@ -861,29 +860,31 @@ export default function ProgressPage() {
               )}
             </CardHeader>
             <div className="progress-card-body progress-card-body--aios">
-              <div className="progress-aios-stage-chips" role="list">
-                {aiOsStageChips.length > 0 ? (
-                  aiOsStageChips.map((stage) => {
-                    const displayLabel = stage.label ? stage.label.replace('Stage ', '') : stage.id;
+              <div className="progress-aios-pipeline-strip">
+                {aiOsStageList.length > 0 ? (
+                  aiOsStageList.map((stage) => {
+                    const displayCode = stage.label ? stage.label.replace('Stage ', '') : stage.id;
+                    const stageStatusLabel = aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned';
+                    const isCurrent = stage.id === aiOsCurrentStage?.id;
                     return (
                       <div
                         key={stage.id}
                         className={[
-                          'progress-aios-stage-chip',
-                          stage.state ? `is-${stage.state}` : '',
-                          stage.id === aiOsCurrentStage?.id ? 'is-current' : '',
-                        ].filter(Boolean).join(' ')}
-                        role="listitem"
+                          'progress-aios-stage-pill',
+                          isCurrent ? 'progress-aios-stage-pill--current' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                       >
-                        <span className="progress-aios-stage-chip__label">{displayLabel}</span>
-                        <span className="progress-aios-stage-chip__status">
-                          {aiOsStageStateCopy[stage.state] || stage.statusTag || 'Planned'}
-                        </span>
+                        <span className="progress-aios-stage-pill-code">{displayCode}</span>
+                        <span className="progress-aios-stage-pill-status">{stageStatusLabel}</span>
                       </div>
                     );
                   })
                 ) : (
-                  <span className="progress-aios-stage-chip__empty">Pipeline data coming soon.</span>
+                  <span className="progress-aios-stage-pill progress-aios-stage-pill--empty">
+                    Pipeline data coming soon.
+                  </span>
                 )}
               </div>
               <div className="progress-aios-stage-summary">
