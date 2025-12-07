@@ -1201,6 +1201,10 @@ textarea {
   font-size: 0.85rem;
 }
 
+.dev-ctrl-notification-actions {
+  margin-top: 0.35rem;
+}
+
 .dev-ctrl-empty {
   border: 1px dashed var(--dev-border-subtle);
   border-radius: var(--dev-radius-lg);
@@ -1294,9 +1298,16 @@ textarea {
 .dev-ctrl-note header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   font-weight: 600;
   font-size: 0.9rem;
+  gap: 0.4rem;
+}
+
+.dev-ctrl-note header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .dev-ctrl-note header button {
@@ -1308,6 +1319,13 @@ textarea {
 .dev-ctrl-note p {
   margin: 0.35rem 0;
   font-size: 0.85rem;
+}
+
+.dev-ctrl-note-context {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
 }
 
 .dev-ctrl-note footer {

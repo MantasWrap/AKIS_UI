@@ -8,8 +8,23 @@ import {
   PinOff,
 } from 'lucide-react';
 import { devNotificationsMock, devSearchMock, devNotesMock } from '../../mock/devConsoleMockData';
+import { emitNavigation } from '../../modules/navigationBus';
 
-function NotificationsPanel({ onClose }) {
+const CONTEXT_LABELS = {
+  status: 'System · Status',
+  runtimeStatus: 'System · Live mode',
+  progress: 'Project · Progress',
+  aiOsHome: 'AI OS · Home',
+  aiOsAgents: 'AI OS · Agents',
+  aiOsModes: 'AI OS · Modes',
+  aiOsPipeline: 'AI OS · Pipeline',
+  aiOsMissions: 'AI OS · Missions',
+  aiOsSecurity: 'AI OS · Security',
+  aiOsSettings: 'AI OS · Settings',
+  apiDocs: 'API · Owner hub',
+};
+
+function NotificationsPanel({ onClose, onNavigate }) {
   const [filter, setFilter] = useState('all');
   const [isMuted, setIsMuted] = useState(devNotificationsMock.stats.muted);
   const [items, setItems] = useState(devNotificationsMock.notifications);
@@ -95,6 +110,17 @@ function NotificationsPanel({ onClose }) {
                   <time>{item.timeAgo}</time>
                 </div>
                 <p>{item.body}</p>
+                {item.targetKey && (
+                  <div className="dev-ctrl-notification-actions">
+                    <button
+                      type="button"
+                      className="dev-ctrl-link"
+                      onClick={() => onNavigate(item.targetKey)}
+                    >
+                      Go to module
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -108,7 +134,7 @@ function NotificationsPanel({ onClose }) {
   );
 }
 
-function SearchPanel({ onClose }) {
+function SearchPanel({ onClose, onNavigate }) {
   const [query, setQuery] = useState('');
 
   const filteredCategories = useMemo(() => devSearchMock.categories
@@ -117,11 +143,6 @@ function SearchPanel({ onClose }) {
       items: category.items.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),
     }))
     .filter((category) => category.items.length > 0), [query]);
-
-  const handleNavigate = (path) => {
-    console.log('Mock navigate:', path);
-    onClose();
-  };
 
   return (
     <div className="dev-ctrl-panel" role="dialog" aria-modal="true" aria-label="Search command palette">
@@ -158,7 +179,17 @@ function SearchPanel({ onClose }) {
                 <ul>
                   {category.items.map((item) => (
                     <li key={item.id}>
-                      <button type="button" onClick={() => handleNavigate(item.path)}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.targetKey) {
+                            onNavigate(item.targetKey);
+                          } else {
+                            console.log('Mock navigate:', item.path);
+                            onClose();
+                          }
+                        }}
+                      >
                         <span>{item.label}</span>
                         <span className="dev-ctrl-search-path">{item.path}</span>
                       </button>
@@ -205,6 +236,7 @@ function NotesPanel({ onClose }) {
         pinned: false,
         color: newNote.color,
         createdAt: 'Today',
+        context: 'notes',
       },
       ...prev,
     ]);
@@ -250,7 +282,14 @@ function NotesPanel({ onClose }) {
             filteredNotes.map((note) => (
               <article key={note.id} className={`dev-ctrl-note dev-ctrl-note--${note.color}`}>
                 <header>
-                  <span>{note.title}</span>
+                  <div>
+                    <span>{note.title}</span>
+                    {note.context && (
+                      <span className="dev-ctrl-note-context">
+                        {CONTEXT_LABELS[note.context] || note.context}
+                      </span>
+                    )}
+                  </div>
                   <button type="button" onClick={() => handleTogglePinned(note.id)} aria-label="Toggle pin">
                     {note.pinned ? <Pin size={14} /> : <PinOff size={14} />}
                   </button>
@@ -316,6 +355,12 @@ export default function DevControlCenter() {
     return () => document.removeEventListener('keydown', handler);
   }, [activePanel]);
 
+  const handleNavigate = (targetKey) => {
+    if (!targetKey) return;
+    emitNavigation(targetKey);
+    setActivePanel(null);
+  };
+
   return (
     <div className="dev-ctrl-wrapper">
       <div className="dev-ctrl-center" role="toolbar" aria-label="Dev control center">
@@ -354,8 +399,12 @@ export default function DevControlCenter() {
             onClick={() => setActivePanel(null)}
           />
           <div className="dev-ctrl-panel-container">
-            {activePanel === 'notifications' && <NotificationsPanel onClose={() => setActivePanel(null)} />}
-            {activePanel === 'search' && <SearchPanel onClose={() => setActivePanel(null)} />}
+            {activePanel === 'notifications' && (
+              <NotificationsPanel onClose={() => setActivePanel(null)} onNavigate={handleNavigate} />
+            )}
+            {activePanel === 'search' && (
+              <SearchPanel onClose={() => setActivePanel(null)} onNavigate={handleNavigate} />
+            )}
             {activePanel === 'notes' && <NotesPanel onClose={() => setActivePanel(null)} />}
           </div>
         </>

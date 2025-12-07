@@ -403,63 +403,272 @@ export const aiOsMockData = {
   },
   missions: {
     note: 'Missions run as read-only previews until backend hooks land.',
+    summary: {
+      active: 2,
+      paused: 1,
+      nextWindow: 'Stage A0 · sprint 4',
+    },
+    environments: ['Mac', 'Ubuntu', 'Jetson', 'Controller PC'],
     items: [
       {
         id: 'mission-owner-onboarding',
         name: 'Owner onboarding funnel',
-        status: 'Shaping',
-        eta: 'A0 sprint 3',
+        status: 'Running',
+        statusVariant: 'running',
+        stage: 'A0 sprint 3',
+        updatedAt: 'Updated 8m ago',
+        environments: ['Mac', 'Controller PC'],
+        nextStep: 'Wait for Jetson logs before closing the loop.',
         description: 'Mocking the UI for new owner login + token setup.',
-        agents: ['UI Boss', 'Ops Bridge'],
-        steps: [
-          { id: 'step-1', title: 'Draft onboarding copy', owner: 'UI Boss', state: 'done' },
-          { id: 'step-2', title: 'Codex review', owner: 'Codex', state: 'in_progress' },
-          { id: 'step-3', title: 'Owner walkthrough', owner: 'Owner', state: 'pending' },
+        timeline: [
+          {
+            id: 'mission-owner-onboarding-1',
+            title: 'Prepare docs snapshot',
+            timestamp: '08:05',
+            state: 'done',
+            description: 'docs/EN zipped and attached to UI Boss chat.',
+          },
+          {
+            id: 'mission-owner-onboarding-2',
+            title: 'Run UI Boss + Codex loop',
+            timestamp: '08:40',
+            state: 'active',
+            description: 'Owner reviewing UI Boss instructions.',
+          },
+          {
+            id: 'mission-owner-onboarding-3',
+            title: 'Sync Jetson + Controller notes',
+            timestamp: 'Pending',
+            state: 'pending',
+            description: 'Wait for Jetson logs before handing off.',
+          },
+          {
+            id: 'mission-owner-onboarding-4',
+            title: 'Close mission',
+            timestamp: 'Pending',
+            state: 'pending',
+            description: 'Owner signs off and archives ZIP.',
+          },
+        ],
+        agents: [
+          { id: 'ui-boss', name: 'UI Boss', role: 'UI lead', tier: 'Domain boss', preset: 'UI Sprint', status: 'Active' },
+          { id: 'ops-bridge', name: 'Ops Bridge', role: 'Mission implementer', tier: 'Domain boss', preset: 'Ops orchestration', status: 'Idle' },
+        ],
+        files: [
+          { id: 'owner-onboarding-docs', label: 'docs/EN snapshot', scope: 'Share EN/ only', detail: 'AKIS V3.9.3.zip uploaded to UI Boss.' },
+          { id: 'owner-onboarding-runtime', label: 'runtime notes', scope: 'Controller PC only', detail: 'Manual doc for Jetson + Controller interplay.' },
+        ],
+        rules: [
+          'UI Boss may read docs/EN only until Owner enables server/.',
+          'Codex receives the full mission brief + latest ZIP.',
+          'Ops Bridge waits for Owner confirmation before syncing runtime configs.',
         ],
       },
       {
         id: 'mission-aios-home-polish',
         name: 'AI OS home polish',
-        status: 'In review',
-        eta: 'A0 sprint 2',
+        status: 'Paused',
+        statusVariant: 'paused',
+        stage: 'A0 sprint 2',
+        updatedAt: 'Paused 2h ago',
+        environments: ['Mac'],
+        nextStep: 'Sync docs & rerun after stage badge review.',
         description: 'Refine status + usage cards with live data hooks.',
-        agents: ['UI Boss', 'QA Scribe'],
-        steps: [
-          { id: 'step-1', title: 'Review spec deltas', owner: 'UI Boss', state: 'done' },
-          { id: 'step-2', title: 'Implement placeholder data', owner: 'Codex', state: 'done' },
-          { id: 'step-3', title: 'QA pass', owner: 'QA Scribe', state: 'pending' },
+        timeline: [
+          {
+            id: 'mission-aios-home-polish-1',
+            title: 'Review spec deltas',
+            timestamp: 'Yesterday · 14:10',
+            state: 'done',
+            description: 'UI Boss vs Dev Console design deltas reconciled.',
+          },
+          {
+            id: 'mission-aios-home-polish-2',
+            title: 'Implement placeholder data',
+            timestamp: 'Today · 09:15',
+            state: 'done',
+            description: 'Mock usage KPI wires completed.',
+          },
+          {
+            id: 'mission-aios-home-polish-3',
+            title: 'QA pass',
+            timestamp: 'Pending',
+            state: 'paused',
+            description: 'Waiting on Owner decision about KPI variant.',
+          },
+        ],
+        agents: [
+          { id: 'ui-boss', name: 'UI Boss', role: 'UI lead', tier: 'Domain boss', preset: 'Balanced', status: 'Waiting' },
+          { id: 'qa-scribe', name: 'QA Scribe', role: 'QA + docs', tier: 'Implementer', preset: 'Docs cleanup', status: 'Idle' },
+        ],
+        files: [
+          { id: 'aios-home-spec', label: 'Owner_AI_OS_Home_Spec.md', scope: 'docs/EN', detail: 'Referenced inline inside chat.' },
+        ],
+        rules: [
+          'Do not expose runtime data until KPI layout is final.',
+          'QA Scribe only touches docs flagged as mock-safe.',
         ],
       },
       {
         id: 'mission-security-export',
         name: 'Security posture export',
         status: 'Planned',
-        eta: 'A1 kickoff',
+        statusVariant: 'planned',
+        stage: 'A1 kickoff',
+        updatedAt: 'Queued for next sprint',
+        environments: ['Ubuntu', 'Jetson'],
+        nextStep: 'Define export schema + doc scopes.',
         description: 'Generate audit-ready OS security snapshots.',
-        agents: ['Ops Bridge', 'Pipeline Scout'],
-        steps: [
-          { id: 'step-1', title: 'Define export schema', owner: 'Pipeline Scout', state: 'pending' },
-          { id: 'step-2', title: 'Wire mock data', owner: 'Codex', state: 'pending' },
+        timeline: [
+          {
+            id: 'mission-security-export-1',
+            title: 'Define export schema',
+            timestamp: 'Pending',
+            state: 'pending',
+            description: 'Pipeline Scout drafts JSON + Markdown mix.',
+          },
+          {
+            id: 'mission-security-export-2',
+            title: 'Wire mock data',
+            timestamp: 'Pending',
+            state: 'pending',
+            description: 'Codex implements stub endpoint.',
+          },
+          {
+            id: 'mission-security-export-3',
+            title: 'Owner approval',
+            timestamp: 'Pending',
+            state: 'pending',
+            description: 'Owner reviews doc/IP guardrails.',
+          },
+        ],
+        agents: [
+          { id: 'ops-bridge', name: 'Ops Bridge', role: 'Mission implementer', tier: 'Domain boss', preset: 'Backend planning', status: 'Planned' },
+          { id: 'pipeline-scout', name: 'Pipeline Scout', role: 'Pipeline observer', tier: 'Implementer', preset: 'Balanced', status: 'On standby' },
+        ],
+        files: [
+          { id: 'security-model', label: 'AI_OS_Security_and_Access_Model.md', scope: 'docs/EN', detail: 'Primary source for export rules.' },
+          { id: 'zip-policy', label: 'Project_Chat_File_Attachments_and_Notifications.md', scope: 'docs/EN', detail: 'Defines ZIP enforcement for missions.' },
+        ],
+        rules: [
+          'Requires both EN.zip + security annex before running.',
+          'Mission must log every doc shared with Codex/UI Boss.',
         ],
       },
     ],
   },
   security: {
-    roles: [
-      { name: 'Owner', scope: 'Full AI OS control', focus: 'Home, agents, costs, security' },
-      { name: 'Engineer', scope: 'Runtime + logs', focus: 'Status, items, PLC telemetry' },
-      { name: 'Tenant dev (future)', scope: 'Scoped API surface', focus: 'Per-tenant missions & read-only data' },
+    summary: {
+      posture: 'Medium · tightening',
+      postureTone: 'warn',
+      tenantIsolation: 'Enabled',
+      isolationDetail: 'Per-tenant doc snapshots enforced',
+      updatedAt: 'Refreshed 12m ago',
+      quickChips: [
+        { id: 'mfa', label: 'MFA', value: 'Required for Owner', tone: 'ok' },
+        { id: 'verification', label: 'Verification app', value: 'Pilot', tone: 'warn' },
+        { id: 'docExposure', label: 'Doc exposure', value: 'Balanced', tone: 'neutral' },
+        { id: 'tenantIsolation', label: 'Tenant isolation', value: 'On', tone: 'ok' },
+      ],
+    },
+    capabilities: [
+      { id: 'aiSettings', label: 'Change AI OS settings' },
+      { id: 'missions', label: 'Start/stop missions' },
+      { id: 'costs', label: 'See Agent costs' },
+      { id: 'docs', label: 'View internal docs' },
+      { id: 'tenants', label: 'Manage tenants/API access' },
     ],
-    guardrails: [
-      'All API calls gated by OS security contexts.',
-      'Agent cost approvals required above $500 new monthly spend.',
-      'Missions restricted to mock data until PLC hardware is online.',
+    roles: [
+      {
+        id: 'owner',
+        name: 'Owner / DEV',
+        description: 'Full AI OS + hardware control.',
+        tier: 'Owner',
+        capabilities: { aiSettings: true, missions: true, costs: true, docs: true, tenants: true },
+      },
+      {
+        id: 'ai-supervisor',
+        name: 'AI OS Supervisor (future)',
+        description: 'Delegated overseer for missions.',
+        tier: 'Supervisor',
+        capabilities: { aiSettings: true, missions: true, costs: true, docs: true, tenants: false },
+      },
+      {
+        id: 'domain-boss',
+        name: 'Domain boss (UI/PLC/Finance)',
+        description: 'Owns a lane, needs scoped knobs.',
+        tier: 'Domain boss',
+        capabilities: { aiSettings: false, missions: true, costs: true, docs: true, tenants: false },
+      },
+      {
+        id: 'implementer',
+        name: 'Implementer (Codex, PLC)',
+        description: 'Executes tasks with limited access.',
+        tier: 'Implementer',
+        capabilities: { aiSettings: false, missions: false, costs: false, docs: true, tenants: false },
+      },
+      {
+        id: 'tenant',
+        name: 'Tenant (future)',
+        description: 'Read-only tenant API consumer.',
+        tier: 'Tenant',
+        capabilities: { aiSettings: false, missions: false, costs: false, docs: false, tenants: false },
+      },
     ],
     toggles: [
-      { id: 'ownerMfa', label: 'Owner MFA enforcement', helper: 'Require MFA for Owner logins.', enabled: true },
-      { id: 'tenantAdminMfa', label: 'Tenant admin MFA', helper: 'Future control for tenant admins.', enabled: false },
-      { id: 'sensitiveActionVerify', label: 'Sensitive action verification', helper: 'Double-confirm before changing agents or costs.', enabled: true },
+      {
+        id: 'ownerMfa',
+        label: 'Require MFA for Owner / DEV logins',
+        helper: 'Applies to Dev Console + control center.',
+        enabled: true,
+      },
+      {
+        id: 'verificationApp',
+        label: 'Require verification app for new tenants',
+        helper: 'Pilot mobile app vs SMS/email.',
+        enabled: false,
+      },
+      {
+        id: 'tenantIsolation',
+        label: 'Tenant isolation enforcement',
+        helper: 'Block doc exposure across tenants.',
+        enabled: true,
+      },
+      {
+        id: 'sensitiveActionVerify',
+        label: 'Require verification before sensitive actions',
+        helper: 'Changing agents, costs, or doc scopes triggers confirm.',
+        enabled: true,
+      },
     ],
+    docExposure: {
+      profile: 'balanced',
+      options: [
+        {
+          id: 'relaxed',
+          label: 'Relaxed',
+          summary: 'Design explorations only',
+          notes: 'UI Boss may view EN/ and selected mock JSON.',
+        },
+        {
+          id: 'balanced',
+          label: 'Balanced',
+          summary: 'Default for AI OS 0.1',
+          notes: 'Docs limited to EN/ + mission attachments with Owner approval.',
+        },
+        {
+          id: 'strict',
+          label: 'Strict',
+          summary: 'Offline + tenant-safe',
+          notes: 'Only Owner + Supervisor can open EN/. Agents read summaries only.',
+        },
+      ],
+      policies: [
+        'Docs never leave tenant boundary; EN.zip logged per mission.',
+        'System docs available to Owner/DEV only unless preset says otherwise.',
+        'Agent access governed by permissions profiles + sliders.',
+      ],
+    },
   },
   settings: {
     note: 'Settings are mock-only until OS security service is wired.',
@@ -480,54 +689,364 @@ export const aiOsMockData = {
     ],
   },
   api: {
-    release: 'First doc bundle targeting AI OS A1.',
-    sections: [
+    release: 'AI OS 0.1 doc hub preview',
+    description: 'Mock Owner + Tenant API explorer wired to doc specs.',
+    tabs: [
       {
-        title: 'Owner-facing API',
-        body: 'Control AI OS components (agents, missions, pipelines) via authenticated owner tokens. Enforced by OS Security.',
+        id: 'owner',
+        label: 'Owner API',
+        summary: 'Full-control endpoints for Owner/DEV scope with AI OS + mission knobs.',
+        groups: [
+          {
+            id: 'owner-aios',
+            label: 'AI OS control',
+            description: 'Status, usage, and pipeline orchestration.',
+            endpoints: [
+              {
+                id: 'owner-aios-status',
+                method: 'GET',
+                path: '/api/owner/ai-os/status',
+                summary: 'Get AI OS status + KPIs',
+                description: 'Returns AI OS version, stage badge, usage breakdown, and current mission summary.',
+                access: 'Owner scope · Bearer token',
+                tags: ['ai-os', 'status'],
+                request: {
+                  params: [
+                    { name: 'range', type: 'string', required: false, description: 'Usage range (7d,30d,90d).' },
+                    { name: 'includeMissions', type: 'boolean', required: false, description: 'Embed the next mission summary.' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      version: 'AI OS 0.1',
+                      stage: 'A0',
+                      usage: { window: '30d', tokens: '1.2M', cost: '$482' },
+                      missions: [{ id: 'mission-owner-onboarding', status: 'running' }],
+                    },
+                  },
+                  error: {
+                    code: 403,
+                    json: { error: 'FORBIDDEN', reason: 'Owner scope required' },
+                    note: 'See AI_OS_Security_and_Access_Model.md for scope mapping.',
+                  },
+                },
+              },
+              {
+                id: 'owner-aios-pipeline',
+                method: 'GET',
+                path: '/api/owner/ai-os/pipeline',
+                summary: 'List AI dev pipeline stages',
+                description: 'Stage metadata (A0–A4) with goals, blockers, and readiness percent.',
+                access: 'Owner scope · Bearer token',
+                tags: ['ai-os', 'pipeline'],
+                request: {
+                  params: [
+                    { name: 'includeBacklog', type: 'boolean', required: false, description: 'Append backlog themes for each stage.' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      stages: [
+                        { id: 'A0', label: 'Manual docs', status: 'in_progress', readiness: 0.72 },
+                        { id: 'A1', label: 'Dashboards', status: 'planned', readiness: 0.18 },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 401,
+                    json: { error: 'UNAUTHENTICATED', reason: 'Missing token' },
+                  },
+                },
+              },
+            ],
+          },
+          {
+            id: 'owner-missions',
+            label: 'Missions & automation',
+            description: 'Create and manage multi-agent missions.',
+            endpoints: [
+              {
+                id: 'owner-mission-create',
+                method: 'POST',
+                path: '/api/owner/ai-os/missions',
+                summary: 'Create a mission',
+                description: 'Creates a mission with agents, environments, and sharing rules.',
+                access: 'Owner scope · Mission:write',
+                tags: ['missions'],
+                request: {
+                  params: [],
+                  body: {
+                    type: 'application/json',
+                    example: {
+                      name: 'AI OS home polish',
+                      environments: ['Mac'],
+                      agents: ['ui-boss', 'qa-scribe'],
+                      docScope: 'EN-only',
+                    },
+                  },
+                },
+                response: {
+                  success: {
+                    code: 201,
+                    json: { id: 'mission-aios-home-polish', status: 'planned' },
+                  },
+                  error: {
+                    code: 409,
+                    json: { error: 'MISSION_CONFLICT', reason: 'Mission with same name exists' },
+                    note: 'Mission naming must be unique per archive.',
+                  },
+                },
+              },
+              {
+                id: 'owner-mission-logs',
+                method: 'GET',
+                path: '/api/owner/ai-os/missions/{missionId}/logs',
+                summary: 'Fetch mission log',
+                description: 'Returns timeline events + doc attachments for a mission.',
+                access: 'Owner scope · Mission:read',
+                tags: ['missions', 'logs'],
+                request: {
+                  params: [
+                    { name: 'missionId', type: 'string', required: true, description: 'Mission identifier.' },
+                    { name: 'includeFiles', type: 'boolean', required: false, description: 'Include doc/file metadata.' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      missionId: 'mission-owner-onboarding',
+                      events: [
+                        { id: 'evt-1', type: 'zip_attached', doc: 'EN.zip', actor: 'Owner' },
+                        { id: 'evt-2', type: 'agent_status', agent: 'ui-boss', status: 'active' },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 404,
+                    json: { error: 'MISSION_NOT_FOUND', reason: 'Unknown mission id' },
+                  },
+                },
+              },
+            ],
+          },
+          {
+            id: 'owner-agents',
+            label: 'Agents & costs',
+            description: 'Agent registry, permissions, and spend.',
+            endpoints: [
+              {
+                id: 'owner-agents-list',
+                method: 'GET',
+                path: '/api/owner/ai-os/agents',
+                summary: 'List registered agents',
+                description: 'Returns roster with tiers, presets, and permissions IDs.',
+                access: 'Owner scope · Agents:read',
+                tags: ['agents'],
+                request: {
+                  params: [
+                    { name: 'tier', type: 'string', required: false, description: 'Filter by tier (boss, implementer).' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      agents: [
+                        { id: 'ui-boss', tier: 'domain_boss', presets: ['UI Sprint'], canEditDocs: true },
+                        { id: 'pipeline-scout', tier: 'implementer', presets: ['Balanced'], canEditDocs: true },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 403,
+                    json: { error: 'FORBIDDEN', reason: 'Agents:read scope required' },
+                  },
+                },
+              },
+              {
+                id: 'owner-agent-costs',
+                method: 'GET',
+                path: '/api/owner/ai-os/agent-costs',
+                summary: 'Fetch agent spend',
+                description: 'Monthly token + USD summary with warnings when thresholds exceed plan.',
+                access: 'Owner scope · Costs:read',
+                tags: ['costs'],
+                request: {
+                  params: [
+                    { name: 'range', type: 'string', required: false, description: 'Time window (7d,30d,90d).' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      window: '30d',
+                      totalUsd: 482,
+                      agents: [
+                        { id: 'ui-boss', usd: 182, tokens: 420000 },
+                        { id: 'qa-scribe', usd: 118, tokens: 280000 },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 429,
+                    json: { error: 'RATE_LIMIT', reason: 'Cost sync still running' },
+                  },
+                },
+              },
+            ],
+          },
+        ],
       },
       {
-        title: 'Tenant developer API',
-        body: 'Scoped endpoints for per-tenant integrations covering mission submission, pipeline telemetry, and cost reporting.',
-      },
-      {
-        title: 'AI OS roles & scopes',
-        body: 'Roles map to OS Security: Owner, Engineer, Tenant Dev. Each scope will ship with its own OpenAPI section.',
+        id: 'tenant',
+        label: 'Tenant API',
+        summary: 'Scoped surface for tenant dev portals (missions, telemetry, read-only data).',
+        groups: [
+          {
+            id: 'tenant-missions',
+            label: 'Tenant missions',
+            description: 'Tenants can submit or monitor missions shared with them.',
+            endpoints: [
+              {
+                id: 'tenant-missions-list',
+                method: 'GET',
+                path: '/api/tenant/ai-os/missions',
+                summary: 'List tenant-visible missions',
+                description: 'Read-only mission feed filtered by tenant + environment.',
+                access: 'Tenant scope · Mission:read',
+                tags: ['missions', 'tenant'],
+                request: {
+                  params: [
+                    { name: 'status', type: 'string', required: false, description: 'planned|running|completed' },
+                    { name: 'environment', type: 'string', required: false, description: 'jetson|controller' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      missions: [
+                        { id: 'mission-tenant-demo', name: 'Tenant onboarding', status: 'planned', environment: ['Jetson'] },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 401,
+                    json: { error: 'UNAUTHENTICATED', reason: 'Missing tenant token' },
+                  },
+                },
+              },
+              {
+                id: 'tenant-missions-submit',
+                method: 'POST',
+                path: '/api/tenant/ai-os/missions',
+                summary: 'Submit mission request',
+                description: 'Tenant proposes a mission that Owner can approve; limited to sandbox environments.',
+                access: 'Tenant scope · Mission:submit',
+                tags: ['missions', 'tenant'],
+                request: {
+                  params: [],
+                  body: {
+                    type: 'application/json',
+                    example: {
+                      name: 'Tenant PLC sync',
+                      requestedAgents: ['tenant-helper'],
+                      docScope: 'Tenant-only',
+                    },
+                  },
+                },
+                response: {
+                  success: {
+                    code: 202,
+                    json: { id: 'mission-tenant-demo', status: 'under_review' },
+                  },
+                  error: {
+                    code: 422,
+                    json: { error: 'INVALID_ENV', reason: 'Environment not available for tenant' },
+                  },
+                },
+              },
+            ],
+          },
+          {
+            id: 'tenant-telemetry',
+            label: 'Telemetry & docs',
+            description: 'Read-only data for tenant dashboards.',
+            endpoints: [
+              {
+                id: 'tenant-runtime',
+                method: 'GET',
+                path: '/api/tenant/runtime-status',
+                summary: 'Runtime heartbeat (scoped)',
+                description: 'Returns heartbeat + limited KPIs for the tenant’s hardware.',
+                access: 'Tenant scope · Runtime:read',
+                tags: ['runtime', 'tenant'],
+                request: {
+                  params: [
+                    { name: 'includeHistory', type: 'boolean', required: false, description: 'Include last 24h events.' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      status: 'ok',
+                      mqtt: 'connected',
+                      lastEventTs: '2025-12-12T08:44:00Z',
+                    },
+                  },
+                  error: {
+                    code: 503,
+                    json: { error: 'UPSTREAM_UNAVAILABLE', reason: 'Owner controller offline' },
+                  },
+                },
+              },
+              {
+                id: 'tenant-docs',
+                method: 'GET',
+                path: '/api/tenant/docs',
+                summary: 'List allowed docs',
+                description: 'Returns doc references that Owner exposed to this tenant (read-only).',
+                access: 'Tenant scope · Docs:read',
+                tags: ['docs', 'tenant'],
+                request: {
+                  params: [
+                    { name: 'category', type: 'string', required: false, description: 'Filter by category (missions, specs).' },
+                  ],
+                  body: null,
+                },
+                response: {
+                  success: {
+                    code: 200,
+                    json: {
+                      docs: [
+                        { path: 'docs/EN/TENANT/Getting_Started.md', version: '0.1', checksum: 'abc123' },
+                      ],
+                    },
+                  },
+                  error: {
+                    code: 403,
+                    json: { error: 'FORBIDDEN', reason: 'Docs:read scope missing' },
+                  },
+                },
+              },
+            ],
+          },
+        ],
       },
     ],
-    endpoints: {
-      owner: [
-        {
-          method: 'GET',
-          path: '/api/owner/ai-os/status',
-          description: 'Returns AI OS stage, usage KPIs, and mission highlights.',
-          status: 'Planned',
-          example: `fetch('/api/owner/ai-os/status', { headers: { Authorization: 'Bearer OWNER_TOKEN' }})`,
-        },
-        {
-          method: 'POST',
-          path: '/api/owner/ai-os/missions',
-          description: 'Create a new Owner mission (requires Owner scope).',
-          status: 'Concept',
-          example: `fetch('/api/owner/ai-os/missions', { method: 'POST', body: JSON.stringify({ name: 'Mission' }) })`,
-        },
-      ],
-      tenant: [
-        {
-          method: 'GET',
-          path: '/api/tenant/ai-os/missions',
-          description: 'List scoped missions for the tenant developer portal.',
-          status: 'Concept',
-          example: `fetch('/api/tenant/ai-os/missions?scope=read')`,
-        },
-        {
-          method: 'POST',
-          path: '/api/tenant/ai-os/hooks/test',
-          description: 'Register a tenant webhook for mission updates.',
-          status: 'Planned',
-          example: `fetch('/api/tenant/ai-os/hooks/test', { method: 'POST', body: JSON.stringify({ url: 'https://tenant.io/hook' }) })`,
-        },
-      ],
-    },
   },
 };

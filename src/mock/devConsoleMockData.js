@@ -11,6 +11,7 @@ export const devNotificationsMock = {
       body: 'Last health check passed 2 minutes ago.',
       timeAgo: '2m ago',
       severity: 'info',
+      targetKey: 'status',
     },
     {
       id: 'n2',
@@ -19,6 +20,7 @@ export const devNotificationsMock = {
       body: 'Consider running “AI OS home polish” before Stage A1.',
       timeAgo: '10m ago',
       severity: 'hint',
+      targetKey: 'aiOsMissions',
     },
     {
       id: 'n3',
@@ -27,6 +29,7 @@ export const devNotificationsMock = {
       body: 'No events received from MQTT for 5 minutes.',
       timeAgo: '15m ago',
       severity: 'warning',
+      targetKey: 'runtimeStatus',
     },
     {
       id: 'n4',
@@ -35,6 +38,7 @@ export const devNotificationsMock = {
       body: 'Yesterday’s CODEX entry requires QA Scribe review.',
       timeAgo: '1h ago',
       severity: 'task',
+      targetKey: 'progress',
     },
   ],
 };
@@ -53,8 +57,14 @@ export const devSearchMock = {
       id: 'aios',
       label: 'AI OS',
       items: [
-        { id: 'a1', label: 'AI OS 0.1 – Stage A0 status', path: '/owner/ai-os/pipeline' },
-        { id: 'a2', label: 'Agents dashboard', path: '/owner/ai-os/agents' },
+        { id: 'a1', label: 'AI OS Home', path: '/owner/ai-os/home', targetKey: 'aiOsHome' },
+        { id: 'a2', label: 'Agents dashboard', path: '/owner/ai-os/agents', targetKey: 'aiOsAgents' },
+        { id: 'a3', label: 'AI modes presets', path: '/owner/ai-os/modes', targetKey: 'aiOsModes' },
+        { id: 'a4', label: 'Dev pipeline', path: '/owner/ai-os/pipeline', targetKey: 'aiOsPipeline' },
+        { id: 'a5', label: 'Missions control', path: '/owner/ai-os/missions', targetKey: 'aiOsMissions' },
+        { id: 'a6', label: 'Security cockpit', path: '/owner/ai-os/security', targetKey: 'aiOsSecurity' },
+        { id: 'a7', label: 'AI OS settings', path: '/owner/ai-os/settings', targetKey: 'aiOsSettings' },
+        { id: 'a8', label: 'Owner API docs', path: '/owner/api/docs', targetKey: 'apiDocs' },
       ],
     },
     {
@@ -92,6 +102,7 @@ export const devNotesMock = [
     pinned: true,
     color: 'green',
     createdAt: 'Today',
+    context: 'aiOsPipeline',
   },
   {
     id: 'note2',
@@ -100,6 +111,7 @@ export const devNotesMock = [
     pinned: false,
     color: 'yellow',
     createdAt: 'Yesterday',
+    context: 'runtimeStatus',
   },
   {
     id: 'note3',
@@ -108,5 +120,6 @@ export const devNotesMock = [
     pinned: false,
     color: 'blue',
     createdAt: 'This week',
+    context: 'aiOsMissions',
   },
 ];
