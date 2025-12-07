@@ -5,6 +5,69 @@
 // Owner_AI_OS_Settings_Spec.md, Owner_Security_and_Access_Settings_Spec.md,
 // Owner_API_Docs_Page_Spec.md (new stub), DevConsole design specs.
 
+export const DEFAULT_AGENT_BEHAVIOUR = {
+  uiCreativityLevel: 'medium',
+  backendPlanningBias: 'medium',
+  docsEditBias: 'medium',
+  permissions: {
+    canEditReact: false,
+    canTouchBackend: true,
+    usesMockDataByDefault: true,
+    canEditDocs: true,
+  },
+};
+
+export const DEFAULT_AGENT_STARTUP = {
+  title: 'Standard startup message',
+  subtitle: 'Copy into a new chat to start this agent.',
+  body: '',
+  docPath: '',
+};
+
+export function createDefaultAgent(id, overrides = {}) {
+  const {
+    behaviourSettings,
+    startupMessage,
+    id: overrideId,
+    ...rest
+  } = overrides || {};
+
+  const resolvedId = id || overrideId || `mock-agent-${Date.now()}`;
+  const mergedBehaviour = {
+    ...DEFAULT_AGENT_BEHAVIOUR,
+    ...(behaviourSettings || {}),
+    permissions: {
+      ...DEFAULT_AGENT_BEHAVIOUR.permissions,
+      ...(behaviourSettings?.permissions || {}),
+    },
+  };
+  const mergedStartup = {
+    ...DEFAULT_AGENT_STARTUP,
+    ...(startupMessage || {}),
+  };
+
+  return {
+    id: resolvedId,
+    name: 'New agent',
+    role: 'Describe this agent',
+    tier: 'implementer',
+    focus: '',
+    status: 'Draft',
+    cost: '$0 / mo',
+    actions: 0,
+    type: 'implementer',
+    conversationProfile: '',
+    permissionProfile: '',
+    primaryMode: 'CHAT&CODEX UI v1',
+    monthlyCost: 0,
+    tokenUsage: '0',
+    notes: 'Mock-only agent placeholder.',
+    ...rest,
+    behaviourSettings: mergedBehaviour,
+    startupMessage: mergedStartup,
+  };
+}
+
 export const aiOsMockData = {
   status: {
     version: 'AI OS 0.1',
@@ -90,16 +153,23 @@ export const aiOsMockData = {
         monthlyCost: 182,
         tokenUsage: '420k',
         notes: 'Keeps Owner UI tidy, pairs with Codex.',
-        uiCreativityLevel: 'max',
-        backendPlanningBias: 'low',
-        docsEditBias: 'medium',
-        canEditReact: true,
-        canTouchBackend: false,
-        usesMockDataByDefault: true,
-        canEditDocs: true,
-        startupMessageLabel: 'Designer chat startup (CHAT&CODEX UI v1)',
-        startupDocPath: 'docs/EN/SYSTEM/Designer_Chat_Startup_Template_Codex.md',
-        startupMessageSnippet: 'You are the UI Boss for the AKIS Dev Console. Prioritise UI/UX work with mock data.',
+        behaviourSettings: {
+          uiCreativityLevel: 'max',
+          backendPlanningBias: 'low',
+          docsEditBias: 'medium',
+          permissions: {
+            canEditReact: true,
+            canTouchBackend: false,
+            usesMockDataByDefault: true,
+            canEditDocs: true,
+          },
+        },
+        startupMessage: {
+          title: 'Designer chat startup (CHAT&CODEX UI v1)',
+          subtitle: 'Copy into a new chat to start this agent.',
+          body: 'You are the UI Boss for the AKIS Dev Console. Prioritise UI/UX work with mock data.',
+          docPath: 'docs/EN/SYSTEM/Designer_Chat_Startup_Template_Codex.md',
+        },
       },
       {
         id: 'qa-scribe',
@@ -126,7 +196,23 @@ export const aiOsMockData = {
         canEditDocs: true,
         startupMessageLabel: 'QA Scribe startup template',
         startupDocPath: 'docs/EN/SYSTEM/CODEX_Progress_Log_QA_Template.md',
-        startupMessageSnippet: 'Summarise CODEX log entries, flag risks, and keep checklist progress tidy.',
+        behaviourSettings: {
+        uiCreativityLevel: 'medium',
+        backendPlanningBias: 'low',
+        docsEditBias: 'high',
+        permissions: {
+          canEditReact: false,
+          canTouchBackend: false,
+          usesMockDataByDefault: true,
+          canEditDocs: true,
+        },
+      },
+      startupMessage: {
+        title: 'QA Scribe startup template',
+        subtitle: 'Copy into a new chat to start this agent.',
+        body: 'Summarise CODEX log entries, flag risks, and keep checklist progress tidy.',
+        docPath: 'docs/EN/SYSTEM/CODEX_Progress_Log_QA_Template.md',
+      },
       },
       {
         id: 'pipeline-scout',
@@ -153,7 +239,23 @@ export const aiOsMockData = {
         canEditDocs: true,
         startupMessageLabel: 'Pipeline scout mission brief',
         startupDocPath: 'docs/EN/AI/AI_Development_Pipeline.md',
-        startupMessageSnippet: 'Monitor AI OS stages A0–A3 and raise readiness blockers.',
+        behaviourSettings: {
+        uiCreativityLevel: 'low',
+        backendPlanningBias: 'medium',
+        docsEditBias: 'medium',
+        permissions: {
+          canEditReact: false,
+          canTouchBackend: true,
+          usesMockDataByDefault: false,
+          canEditDocs: true,
+        },
+      },
+      startupMessage: {
+        title: 'Pipeline scout mission brief',
+        subtitle: 'Copy into a new chat to start this agent.',
+        body: 'Monitor AI OS stages A0–A3 and raise readiness blockers.',
+        docPath: 'docs/EN/AI/AI_Development_Pipeline.md',
+      },
       },
       {
         id: 'ops-bridge',
@@ -180,7 +282,23 @@ export const aiOsMockData = {
         canEditDocs: false,
         startupMessageLabel: 'Ops bridge runtime prompt',
         startupDocPath: 'docs/EN/SYSTEM/AI_Ops_Voice_Startup.md',
-        startupMessageSnippet: 'Coordinate PLC/Jetson runtime missions and translate owner intents into ops steps.',
+        behaviourSettings: {
+        uiCreativityLevel: 'high',
+        backendPlanningBias: 'medium',
+        docsEditBias: 'low',
+        permissions: {
+          canEditReact: true,
+          canTouchBackend: true,
+          usesMockDataByDefault: true,
+          canEditDocs: false,
+        },
+      },
+      startupMessage: {
+        title: 'Ops bridge runtime prompt',
+        subtitle: 'Copy into a new chat to start this agent.',
+        body: 'Coordinate PLC/Jetson runtime missions and translate owner intents into ops steps.',
+        docPath: 'docs/EN/SYSTEM/AI_Ops_Voice_Startup.md',
+      },
       },
     ],
     filters: [

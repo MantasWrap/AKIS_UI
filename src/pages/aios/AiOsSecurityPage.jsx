@@ -6,6 +6,7 @@ export default function AiOsSecurityPage() {
   const { security } = aiOsMockData;
   const [toggles, setToggles] = useState(security.toggles);
   const [docProfile, setDocProfile] = useState(security.docExposure.profile);
+  const roleGridTemplate = `minmax(240px, 280px) repeat(${security.capabilities.length}, minmax(110px, 1fr))`;
 
   const handleToggle = (toggleId) => {
     setToggles((prev) =>
@@ -28,9 +29,10 @@ export default function AiOsSecurityPage() {
         </div>
 
         <div className="aios-security-summary">
-          <div className="aios-security-pill">
+          <div className={`aios-security-pill tone-${security.summary.postureTone}`}>
             <span>Security posture</span>
             <strong>{security.summary.posture}</strong>
+            <p>Owner cockpit view · OS Security monitor</p>
           </div>
           <div className="aios-security-pill">
             <span>Tenant isolation</span>
@@ -45,16 +47,20 @@ export default function AiOsSecurityPage() {
               </span>
             ))}
           </div>
-          <div className="aios-security-updated">{security.summary.updatedAt}</div>
+          <div className="aios-security-updated">Last refreshed · {security.summary.updatedAt}</div>
         </div>
 
         <section className="aios-security-section">
           <header>
-            <h3>Roles &amp; access map</h3>
+            <h3 className="aios-section-title">Roles &amp; access map</h3>
             <p>Mirror of AI_OS_Security_and_Access_Model.md – read-only mock.</p>
           </header>
           <div className="aios-role-table" role="table" aria-label="Role capability matrix">
-            <div className="aios-role-row aios-role-row--head" role="row">
+            <div
+              className="aios-role-row aios-role-row--head"
+              role="row"
+              style={{ '--role-grid-template': roleGridTemplate }}
+            >
               <div role="columnheader">Role</div>
               {security.capabilities.map((capability) => (
                 <div key={capability.id} role="columnheader">
@@ -63,7 +69,12 @@ export default function AiOsSecurityPage() {
               ))}
             </div>
             {security.roles.map((role) => (
-              <div key={role.id} className="aios-role-row" role="row">
+              <div
+                key={role.id}
+                className="aios-role-row"
+                role="row"
+                style={{ '--role-grid-template': roleGridTemplate }}
+              >
                 <div role="cell">
                   <strong>{role.name}</strong>
                   <p>{role.description}</p>
@@ -85,7 +96,7 @@ export default function AiOsSecurityPage() {
 
         <section className="aios-security-section">
           <header>
-            <h3>MFA &amp; verification</h3>
+            <h3 className="aios-section-title">MFA &amp; verification</h3>
             <p>Switches reflect Owner_Security_and_Access_Settings_Spec.md (mock state only).</p>
           </header>
           <div className="aios-security-toggle-list">
@@ -109,7 +120,7 @@ export default function AiOsSecurityPage() {
 
         <section className="aios-security-section">
           <header>
-            <h3>Doc / IP exposure</h3>
+            <h3 className="aios-section-title">Doc / IP exposure</h3>
             <p>Choose exposure profile + guardrails for AI OS docs.</p>
           </header>
           <div className="aios-doc-profile">

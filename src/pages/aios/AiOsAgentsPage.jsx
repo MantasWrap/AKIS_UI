@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../../styles/aios.css';
 import { useAiOsMockData } from '../../hooks/useAiOsMockData';
+import {
+  createDefaultAgent,
+  DEFAULT_AGENT_BEHAVIOUR,
+  DEFAULT_AGENT_STARTUP,
+} from '../../mock/aiOsMockData';
 
 const BASE_LEVELS = [
   { id: 'off', label: 'Off', description: 'Avoid unless explicitly requested.' },
@@ -47,26 +52,55 @@ const tierRank = {
   default: 3,
 };
 
-const DEFAULT_NEW_AGENT = {
-  id: '',
-  name: 'New agent',
-  role: 'Describe this agent',
-  tier: 'implementer',
-  type: 'implementer',
-  status: 'Draft',
-  monthlyCost: 0,
-  notes: 'Mock-only agent placeholder.',
-  uiCreativityLevel: 'medium',
-  backendPlanningBias: 'medium',
-  docsEditBias: 'medium',
-  canEditReact: true,
-  canTouchBackend: false,
-  usesMockDataByDefault: true,
-  canEditDocs: true,
-  startupMessageLabel: 'Mock startup template',
-  startupDocPath: 'docs/EN/SYSTEM/Agent_Startup_Template.md',
-  startupMessageSnippet: 'Explain what this agent focuses on when a session begins.',
+const DEFAULT_BEHAVIOUR = DEFAULT_AGENT_BEHAVIOUR;
+const DEFAULT_STARTUP = DEFAULT_AGENT_STARTUP;
+
+const buildBehaviourFromSource = (source = {}) => {
+  const permissions = {
+    ...DEFAULT_BEHAVIOUR.permissions,
+    ...(source.permissions || {}),
+  };
+
+  return {
+    uiCreativityLevel: source.uiCreativityLevel ?? DEFAULT_BEHAVIOUR.uiCreativityLevel,
+    backendPlanningBias: source.backendPlanningBias ?? DEFAULT_BEHAVIOUR.backendPlanningBias,
+    docsEditBias: source.docsEditBias ?? DEFAULT_BEHAVIOUR.docsEditBias,
+    permissions,
+    canEditReact: permissions.canEditReact,
+    canTouchBackend: permissions.canTouchBackend,
+    usesMockDataByDefault: permissions.usesMockDataByDefault,
+    canEditDocs: permissions.canEditDocs,
+  };
 };
+
+const getEffectiveBehaviour = (agent, overrides = null) => {
+  const base = buildBehaviourFromSource(agent?.behaviourSettings);
+  if (!overrides) return base;
+
+  const mergedPermissions = {
+    ...base.permissions,
+    canEditReact: overrides.canEditReact ?? base.permissions.canEditReact,
+    canTouchBackend: overrides.canTouchBackend ?? base.permissions.canTouchBackend,
+    usesMockDataByDefault: overrides.usesMockDataByDefault ?? base.permissions.usesMockDataByDefault,
+    canEditDocs: overrides.canEditDocs ?? base.permissions.canEditDocs,
+  };
+
+  return {
+    uiCreativityLevel: overrides.uiCreativityLevel ?? base.uiCreativityLevel,
+    backendPlanningBias: overrides.backendPlanningBias ?? base.backendPlanningBias,
+    docsEditBias: overrides.docsEditBias ?? base.docsEditBias,
+    permissions: mergedPermissions,
+    canEditReact: mergedPermissions.canEditReact,
+    canTouchBackend: mergedPermissions.canTouchBackend,
+    usesMockDataByDefault: mergedPermissions.usesMockDataByDefault,
+    canEditDocs: mergedPermissions.canEditDocs,
+  };
+};
+
+const getStartupMessage = (agent) => ({
+  ...DEFAULT_STARTUP,
+  ...(agent?.startupMessage || {}),
+});
 
 const sliderIndex = (levels, value) => {
   const idx = levels.findIndex((level) => level.id === value);
@@ -84,15 +118,16 @@ const findMatchingPreset = (values, presets) => presets.find((preset) => (
 ));
 
 const buildInitialSettings = (roster, presets) => roster.reduce((acc, agent) => {
+  const behaviour = getEffectiveBehaviour(agent);
   const base = {
     name: agent.name,
-    uiCreativityLevel: agent.uiCreativityLevel || 'medium',
-    backendPlanningBias: agent.backendPlanningBias || 'medium',
-    docsEditBias: agent.docsEditBias || 'medium',
-    canEditReact: agent.canEditReact ?? false,
-    canTouchBackend: agent.canTouchBackend ?? false,
-    usesMockDataByDefault: agent.usesMockDataByDefault ?? true,
-    canEditDocs: agent.canEditDocs ?? false,
+    uiCreativityLevel: behaviour.uiCreativityLevel,
+    backendPlanningBias: behaviour.backendPlanningBias,
+    docsEditBias: behaviour.docsEditBias,
+    canEditReact: behaviour.canEditReact,
+    canTouchBackend: behaviour.canTouchBackend,
+    usesMockDataByDefault: behaviour.usesMockDataByDefault,
+    canEditDocs: behaviour.canEditDocs,
   };
   const presetMatch = findMatchingPreset(base, presets);
   acc[agent.id] = {
@@ -110,7 +145,9 @@ export default function AiOsAgentsPage() {
 
   const roster = useMemo(() => agents?.roster || [], [agents]);
 
-  const [agentsState, setAgentsState] = useState(() => roster);
+  const [agentsState, setAgentsState] = useState(() => (
+    roster.length ? roster : [createDefaultAgent('mock-agent-seed')]
+  ));
 
   const [settingsState, setSettingsState] = useState({});
   const [filter, setFilter] = useState('all');
@@ -127,6 +164,21 @@ export default function AiOsAgentsPage() {
     () => buildInitialSettings(agentsState, modePresets),
     [agentsState, modePresets],
   );
+
+  const getAgentSettings = (agentId) => {
+    if (!agentId) return null;
+    const merged = {
+      ...(baseSettings[agentId] || {}),
+      ...(settingsState[agentId] || {}),
+    };
+    if (!merged.name) {
+      const fallback = agentsState.find((agent) => agent.id === agentId);
+      if (fallback?.name) {
+        merged.name = fallback.name;
+      }
+    }
+    return merged;
+  };
 
   const mapSliderValue = (levels, index) => {
     const safeIndex = Math.min(Math.max(Number(index), 0), levels.length - 1);
@@ -154,14 +206,20 @@ export default function AiOsAgentsPage() {
   };
 
   const handleToggleChange = (agentId, field) => {
-    setSettingsState((prev) => ({
-      ...prev,
-      [agentId]: {
-        ...prev[agentId],
-        [field]: !prev[agentId]?.[field],
-        presetId: PRESET_CUSTOM,
-      },
-    }));
+    setSettingsState((prev) => {
+      const baseValue = baseSettings[agentId]?.[field];
+      const currentValue = prev[agentId]?.[field];
+      const safeBase = typeof baseValue === 'boolean' ? baseValue : false;
+      const nextValue = currentValue === undefined ? !safeBase : !currentValue;
+      return {
+        ...prev,
+        [agentId]: {
+          ...prev[agentId],
+          [field]: nextValue,
+          presetId: PRESET_CUSTOM,
+        },
+      };
+    });
   };
 
   const handlePresetChange = (agentId, presetId) => {
@@ -185,17 +243,22 @@ export default function AiOsAgentsPage() {
 
   const handleCreateAgent = () => {
     const id = `mock-agent-${Date.now()}`;
-    const template = { ...DEFAULT_NEW_AGENT, id, name: `${DEFAULT_NEW_AGENT.name} ${agentsState.length + 1}` };
+    const template = createDefaultAgent(id, {
+      name: `New agent ${agentsState.length + 1}`,
+      notes: 'Mock-only agent placeholder.',
+      status: 'Draft',
+    });
+    const behaviour = getEffectiveBehaviour(template);
     setAgentsState((prev) => [template, ...prev]);
     updateAgentSettings(id, {
       name: template.name,
-      uiCreativityLevel: template.uiCreativityLevel,
-      backendPlanningBias: template.backendPlanningBias,
-      docsEditBias: template.docsEditBias,
-      canEditReact: template.canEditReact,
-      canTouchBackend: template.canTouchBackend,
-      usesMockDataByDefault: template.usesMockDataByDefault,
-      canEditDocs: template.canEditDocs,
+      uiCreativityLevel: behaviour.uiCreativityLevel,
+      backendPlanningBias: behaviour.backendPlanningBias,
+      docsEditBias: behaviour.docsEditBias,
+      canEditReact: behaviour.canEditReact,
+      canTouchBackend: behaviour.canTouchBackend,
+      usesMockDataByDefault: behaviour.usesMockDataByDefault,
+      canEditDocs: behaviour.canEditDocs,
       presetId: PRESET_CUSTOM,
     });
     setSelectedAgentId(id);
@@ -253,22 +316,24 @@ export default function AiOsAgentsPage() {
   }, [agentsState, filter, normalizedSearch, sortKey]);
 
   const selectedAgent = selectedAgentId
-    ? agentsState.find((agent) => agent.id === selectedAgentId)
+    ? agentsState.find((agent) => agent.id === selectedAgentId) || null
     : null;
   const selectedAgentSettings = selectedAgent
     ? getAgentSettings(selectedAgent.id)
     : null;
+  const selectedAgentBehaviour = selectedAgent
+    ? getEffectiveBehaviour(selectedAgent, selectedAgentSettings)
+    : null;
+  const startup = selectedAgent
+    ? getStartupMessage(selectedAgent)
+    : DEFAULT_STARTUP;
   const selectedAgentVisible = selectedAgent
     ? filteredAgents.some((agent) => agent.id === selectedAgent.id)
     : false;
 
-  const getAgentSettings = (agentId) => ({
-    ...(baseSettings[agentId] || {}),
-    ...(settingsState[agentId] || {}),
-  });
-
   const handleCopyStartup = (agent) => {
-    const payload = agent.startupMessageSnippet
+    const startupDetails = getStartupMessage(agent);
+    const payload = startupDetails.body
       || `Startup message placeholder for ${agent.name}`;
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(payload).catch(() => {});
@@ -283,7 +348,8 @@ export default function AiOsAgentsPage() {
   }, [copiedAgentId]);
 
   const handleOpenStartupDoc = (agent) => {
-    console.log('Mock doc open:', agent.startupDocPath);
+    const docPath = getStartupMessage(agent).docPath || agent?.startupDocPath || 'docs/EN';
+    console.log('Mock doc open:', docPath);
   };
 
   return (
@@ -425,7 +491,7 @@ export default function AiOsAgentsPage() {
                   aria-describedby={`${selectedAgent.id}-preset-sub`}
                 >
                   <div className="aios-agent-detail-section-header">
-                    <h3 id={`${selectedAgent.id}-preset-heading`}>Behaviour preset</h3>
+                    <h3 className="aios-section-title" id={`${selectedAgent.id}-preset-heading`}>Behaviour preset</h3>
                     <span id={`${selectedAgent.id}-preset-sub`} className="aios-agent-detail-section-sub">Choose a preset or fine-tune sliders.</span>
                   </div>
                   <div className="aios-agent-detail-section-body">
@@ -458,7 +524,7 @@ export default function AiOsAgentsPage() {
                       const levels = key === 'uiCreativityLevel' ? creativityLevels : biasLevels;
                       const sliderIdx = sliderIndex(
                         levels,
-                        selectedAgentSettings?.[key],
+                        selectedAgentBehaviour?.[key],
                       );
                       const sliderCopy = SLIDER_COPY[key];
                       return (
@@ -492,7 +558,7 @@ export default function AiOsAgentsPage() {
                   aria-describedby={`${selectedAgent.id}-perm-sub`}
                 >
                   <div className="aios-agent-detail-section-header">
-                    <h3 id={`${selectedAgent.id}-perm-heading`}>Permissions</h3>
+                    <h3 className="aios-section-title" id={`${selectedAgent.id}-perm-heading`}>Permissions</h3>
                     <span id={`${selectedAgent.id}-perm-sub`} className="aios-agent-detail-section-sub">Control what this agent can touch.</span>
                   </div>
                   <div className="aios-agent-detail-section-body">
@@ -501,7 +567,7 @@ export default function AiOsAgentsPage() {
                         <label key={toggle.id} className="aios-agent-perm-row">
                           <input
                             type="checkbox"
-                            checked={!!selectedAgentSettings?.[toggle.id]}
+                            checked={!!selectedAgentBehaviour?.[toggle.id]}
                             onChange={() => handleToggleChange(selectedAgent.id, toggle.id)}
                           />
                           <span>{toggle.label}</span>
@@ -517,18 +583,20 @@ export default function AiOsAgentsPage() {
                   aria-describedby={`${selectedAgent.id}-startup-sub`}
                 >
                   <div className="aios-agent-detail-section-header">
-                    <h3 id={`${selectedAgent.id}-startup-heading`}>Startup message</h3>
+                    <h3 className="aios-section-title" id={`${selectedAgent.id}-startup-heading`}>Startup message</h3>
                     <span id={`${selectedAgent.id}-startup-sub`} className="aios-agent-detail-section-sub">
                       Copied into new chats when you summon this agent.
                     </span>
                   </div>
                   <div className="aios-agent-detail-section-body">
                     <p className="aios-agent-detail-startup-snippet">
-                      {selectedAgent.startupMessageSnippet}
+                      {startup.body}
                     </p>
                     <div className="aios-agent-startup-meta">
                       <span className="aios-agent-startup-doc-label">Linked doc:</span>
-                      <span className="aios-agent-startup-doc-path">{selectedAgent.startupDocPath}</span>
+                      <span className="aios-agent-startup-doc-path">
+                        {startup.docPath || selectedAgent.startupDocPath || 'docs/EN'}
+                      </span>
                     </div>
                     <div className="aios-agent-detail-startup-actions">
                       <button

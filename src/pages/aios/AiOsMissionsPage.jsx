@@ -152,15 +152,15 @@ export default function AiOsMissionsPage() {
           <span className="aios-tag">Mock data</span>
         </div>
         <div className="aios-missions-summary">
-          <div>
+          <div className="aios-summary-card">
             <p className="aios-card-eyebrow">Running</p>
             <div className="aios-highlight">{missions.summary.active}</div>
           </div>
-          <div>
+          <div className="aios-summary-card">
             <p className="aios-card-eyebrow">Paused</p>
             <div className="aios-highlight">{missions.summary.paused}</div>
           </div>
-          <div>
+          <div className="aios-summary-card">
             <p className="aios-card-eyebrow">Next window</p>
             <div className="aios-highlight-sub">{missions.summary.nextWindow}</div>
           </div>
@@ -229,8 +229,15 @@ export default function AiOsMissionsPage() {
                       <span className={`aios-status-chip status-${selectedMission.statusVariant}`}>
                         {selectedMission.status}
                       </span>
-                      <span>{selectedMission.stage}</span>
-                      <span>{selectedMission.updatedAt}</span>
+                      <span className="aios-mission-stage-pill">{selectedMission.stage}</span>
+                      <span className="aios-mission-detail-updated">{selectedMission.updatedAt}</span>
+                    </div>
+                    <div className="aios-mission-detail-envs">
+                      {selectedMission.environments.map((env) => (
+                        <span key={`${selectedMission.id}-env-${env}`} className="aios-pill aios-pill--muted">
+                          {env}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   <button type="button" className="dev-pill-button">
@@ -241,7 +248,7 @@ export default function AiOsMissionsPage() {
 
                 <div className="aios-mission-detail-section">
                   <header>
-                    <h4>Timeline & checklist</h4>
+                    <h4 className="aios-section-title">Timeline & checklist</h4>
                     <span className="aios-card-eyebrow">Steps auto-sync from missions log</span>
                   </header>
                   <ul className="aios-mission-timeline">
@@ -259,7 +266,7 @@ export default function AiOsMissionsPage() {
 
                 <div className="aios-mission-detail-section">
                   <header>
-                    <h4>Agents on mission</h4>
+                    <h4 className="aios-section-title">Agents on mission</h4>
                     <span className="aios-card-eyebrow">Statuses are mock only</span>
                   </header>
                   <div className="aios-mission-agent-grid">
@@ -289,7 +296,7 @@ export default function AiOsMissionsPage() {
 
                 <div className="aios-mission-detail-section">
                   <header>
-                    <h4>Files & rules</h4>
+                    <h4 className="aios-section-title">Files & rules</h4>
                     <span className="aios-card-eyebrow">Doc scopes enforced manually</span>
                   </header>
                   <div className="aios-mission-files">
