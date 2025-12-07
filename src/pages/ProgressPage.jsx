@@ -194,14 +194,6 @@ function mapTopicToLabelAndClass(topic) {
   }
 }
 
-function getLast7dShare(devPace) {
-  const last = devPace?.entriesLast7d ?? 0;
-  const prev = devPace?.entriesPrev7d ?? 0;
-  const total = last + prev;
-  if (total <= 0) return 50;
-  return Math.round((last / total) * 100);
-}
-
 function formatLastLog(daysSinceLast) {
   if (daysSinceLast === null || Number.isNaN(daysSinceLast)) {
     return 'Last log: unknown';
@@ -356,6 +348,9 @@ export default function ProgressPage() {
   const latestEntry = timeline && timeline.length > 0 ? timeline[0] : null;
   const topicCounts = summary && summary.topicBreakdown ? summary.topicBreakdown : {};
   const devPace = useMemo(() => computeDevPace(timeline), [timeline]);
+  const devPaceLast7d = devPace?.entriesLast7d ?? 0;
+  const devPacePrev7d = devPace?.entriesPrev7d ?? 0;
+  const devPaceLastLogLabel = formatLastLog(devPace.daysSinceLast);
   const nextSteps = Array.isArray(summary?.nextSteps) ? summary.nextSteps : [];
   const stepsToShow = nextSteps.slice(0, 3);
   const timelineEntryByTitle = useMemo(() => {
@@ -374,21 +369,34 @@ export default function ProgressPage() {
   const percent = checklist && typeof checklist.percent === 'number'
     ? Math.round(checklist.percent)
     : null;
-  let roadmapBadgeText = '';
-  let roadmapSummaryText = '';
-  if (docsGapsCount > 0) {
-    roadmapBadgeText = `Roadmaps TODO · ${docsGapsCount} phase${docsGapsCount === 1 ? '' : 's'}`;
-    if (hasPhase0Milestones) {
-      roadmapSummaryText = 'Phase 0 milestones drafted · later phases to be authored.';
-    } else {
-      roadmapSummaryText = 'Roadmaps for later phases still need to be authored.';
-    }
-  } else {
-    roadmapBadgeText = 'All phase roadmaps documented';
-    roadmapSummaryText = hasPhase0Milestones
-      ? 'Phase 0–4 have milestones and roadmap tasks documented.'
-      : 'All phases have roadmap files; milestones may still evolve.';
-  }
+  const checklistTotal = typeof checklist?.total === 'number' ? checklist.total : null;
+  const checklistCompleted = typeof checklist?.completed === 'number' ? checklist.completed : null;
+  const checklistLeft = checklistTotal != null && checklistCompleted != null
+    ? Math.max(0, checklistTotal - checklistCompleted)
+    : null;
+  const checklistMetaLine = checklistTotal != null && checklistCompleted != null && checklistLeft != null
+    ? `${checklistTotal} steps · ${checklistCompleted} done · ${checklistLeft} left`
+    : 'Checklist status';
+  const roadmapPhases = summary?.phases || [];
+  const roadmapDraftedCount = roadmapPhases.filter((phase) => phase.roadmapStatus === 'documented').length;
+  const roadmapMissingCount = Math.max(0, roadmapPhases.length - roadmapDraftedCount);
+  const roadmapCoverageMeta = roadmapPhases.length
+    ? `${roadmapPhases.length} phases · ${roadmapDraftedCount} drafted · ${roadmapMissingCount} missing`
+    : 'Roadmap coverage pending';
+  const defaultPhase0RoadmapChips = [
+    'PreLaunch TODO',
+    'PLC & Conveyor Integration TODO',
+    'PLC Integration TODO',
+    'Multiclass Expansion TODO',
+    'Scaling TODO',
+  ];
+  const phase0RoadmapChips = Array.isArray(phase0?.roadmap?.sections) && phase0.roadmap.sections.length
+    ? phase0.roadmap.sections
+    : (phase0?.checklist?.openItems?.slice(0, 5).map((item) => item.section || item.label) || defaultPhase0RoadmapChips);
+  const currentRoadmapSummary = hasPhase0Milestones
+    ? 'Phase 0 milestones drafted – later phases to be authored.'
+    : 'Phase 0 roadmap is still being authored.';
+  const roadmapFutureSummary = 'Next phases: roadmaps to be authored for Phase 1–4.';
 
   async function loadData({ fresh, topic }) {
     setLoading(true);
@@ -693,11 +701,7 @@ export default function ProgressPage() {
           <div className="dev-card progress-kpi-card progress-kpi-card--accent-success">
             <CardHeader
               title="Phase 0 checklist"
-              subtitle={
-                phase0 && phase0.checklist
-                  ? `${phase0.checklist.total} steps to launch · ${phase0.checklist.completed} done`
-                  : 'Checklist status'
-              }
+              subtitle={checklistMetaLine}
               onToggleDevInfo={() =>
                 setDevInfoOpen((prev) => ({
                   ...prev,
@@ -706,65 +710,47 @@ export default function ProgressPage() {
               }
               devInfoOpen={devInfoOpen.phase0Checklist}
             />
-            <div className="progress-card-body">
+            <div className="progress-card-body progress-card-body--checklist">
               {checklist ? (
                 <>
-                  <div>
-                    <div className="progress-metric-strong">
-                      {checklist.completed} of {checklist.total} items complete
+                  <div className="progress-checklist-completion">
+                    <div className="progress-checklist-percent">
+                      {Number.isFinite(percent) ? `${percent}%` : '—'}
                     </div>
-                    {typeof checklist.percent === 'number' && (
-                      <div className="progress-metric-sub">~{percent}% done</div>
-                    )}
+                    <div className="progress-checklist-details">
+                      <div className="progress-checklist-label">Checklist completion</div>
+                      <div className="progress-checklist-sub">
+                        {checklistCompleted != null && checklistTotal != null
+                          ? `${checklistCompleted} of ${checklistTotal} items complete`
+                          : 'Checklist data pending'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="progress-bar">
+                  <div className="progress-bar progress-bar--checklist">
                     <div
                       className="progress-bar-fill"
                       style={{ width: `${Math.max(0, Math.min(100, percent || 0))}%` }}
                     />
                   </div>
-                  <div className="progress-pace-row">
-                    <div className="progress-micro-muted">Pace</div>
-
-                    <div className="progress-pace-meta">
+                  <div className="progress-checklist-activity">
+                    <div className="progress-checklist-activity-top">
+                      <span className="progress-checklist-activity-label">Pace</span>
                       <span className={devPace.badgeClass}>{devPace.label}</span>
-                      <div>
-                        {devPace.entriesLast7d > 0
-                          ? `${devPace.entriesLast7d} log entr${
-                              devPace.entriesLast7d === 1 ? 'y' : 'ies'
-                            } in last 7 days`
+                      <span className="progress-checklist-activity-text">
+                        {devPaceLast7d > 0
+                          ? `${devPaceLast7d} log entr${devPaceLast7d === 1 ? 'y' : 'ies'} in last 7 days`
                           : 'No log entries in last 7 days'}
-                      </div>
+                      </span>
                     </div>
-
-                    <div className="progress-pace-activity">
-                      <div
-                        className={`progress-pace-activity-bar${
-                          devPace.entriesLast7d + (devPace.entriesPrev7d || 0) === 0
-                            ? ' is-empty'
-                            : ''
-                        }`}
-                      >
-                        <div
-                          className="progress-pace-activity-segment progress-pace-activity-segment--recent"
-                          style={{ width: `${getLast7dShare(devPace)}%` }}
-                        />
-                        <div
-                          className="progress-pace-activity-segment progress-pace-activity-segment--prev"
-                          style={{ width: `${100 - getLast7dShare(devPace)}%` }}
-                        />
-                      </div>
-                      <div className="progress-pace-activity-labels">
-                        <span>Last 7d: {devPace.entriesLast7d}</span>
-                        <span>Prev 7d: {devPace.entriesPrev7d ?? 0}</span>
-                      </div>
+                    <div className="progress-checklist-activity-bar">
+                      <span>Last 7 days vs prior: {devPaceLast7d} · {devPacePrev7d}</span>
                     </div>
-
-                    {devPace.mostActiveDev && (
-                      <div className="progress-micro-muted">
-                        {formatLastLog(devPace.daysSinceLast)} · Most active: {devPace.mostActiveDev}
-                      </div>
-                    )}
+                    <div className="progress-checklist-activity-meta">
+                      <span>Last log: {devPaceLastLogLabel}</span>
+                      {devPace.mostActiveDev && (
+                        <span> · Most active: {devPace.mostActiveDev}</span>
+                      )}
+                    </div>
                   </div>
                 </>
               ) : (
@@ -791,7 +777,7 @@ export default function ProgressPage() {
           >
             <CardHeader
               title="Roadmaps & planning"
-              subtitle="Phase roadmaps & tasks"
+              subtitle="Roadmap coverage"
               onToggleDevInfo={() =>
                 setDevInfoOpen((prev) => ({
                   ...prev,
@@ -800,28 +786,42 @@ export default function ProgressPage() {
               }
               devInfoOpen={devInfoOpen.roadmaps}
             />
-            <div className="progress-card-body">
-              <div>
-                <span className={docsGapsCount > 0 ? 'dev-badge dev-badge--warn' : 'dev-badge dev-badge--ok'}>
-                  {roadmapBadgeText}
-                </span>
-              </div>
-              <div className="progress-roadmap-summary">{roadmapSummaryText}</div>
-              {summary?.phases?.length ? (
-                <div className="progress-roadmap-pillrow">
-                  {summary.phases.map((phase) => {
-                    const isMissing = phase.roadmapStatus === 'missing';
-                    return (
+            <div className="progress-card-body progress-card-body--roadmaps">
+              <div className="progress-roadmaps-meta">{roadmapCoverageMeta}</div>
+              {roadmapPhases.length ? (
+                <div className="progress-roadmaps-bar">
+                  {roadmapPhases.map((phase) => (
                     <div
-                      key={phase.phaseId}
-                      className={`progress-roadmap-pill ${isMissing ? '' : 'is-documented'}`}
-                    >
-                      {(phase.name || phase.phaseId).replace(/_/g, ' ')} {isMissing ? 'TODO' : 'Doc’d'}
-                    </div>
-                  );
-                })}
+                      key={phase.phaseId || phase.name}
+                      className={[
+                        'progress-roadmaps-bar-segment',
+                        phase.roadmapStatus === 'documented' ? 'progress-roadmaps-bar-segment--active' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="progress-card-note">Roadmap coverage data unavailable.</div>
+              )}
+
+              <div className="progress-roadmaps-section">
+                <div className="progress-roadmaps-section-label">Current phase roadmap</div>
+                <div className="progress-roadmaps-section-copy">{currentRoadmapSummary}</div>
+                <div className="progress-roadmaps-chip-grid">
+                  {phase0RoadmapChips.map((chip) => (
+                    <span key={chip} className="progress-roadmaps-chip">
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               </div>
-              ) : null}
+
+              <div className="progress-roadmaps-section">
+                <div className="progress-roadmaps-section-label">Next phases</div>
+                <div className="progress-roadmaps-section-copy">{roadmapFutureSummary}</div>
+              </div>
             </div>
             {devInfoOpen.roadmaps && (
               <div className="progress-devinfo-panel">
