@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Production build
+# Production builds
 dist/
 dist-ssr/
 .build/
@@ -9,6 +9,7 @@ dist-ssr/
 
 # Vite
 .vite/
+.vite-inspect/
 .env.local
 .env.*.local
 
@@ -21,7 +22,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Editor
+# Test coverage
+coverage/
+*.lcov
+
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -31,7 +36,10 @@ lerna-debug.log*
 *.sln
 *.sw?
 .DS_Store
+Thumbs.db
 
 # Misc
 *.local
-coverage/
+
+#Random folders
+!Readme/
