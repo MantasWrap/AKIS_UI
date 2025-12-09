@@ -15,6 +15,7 @@ import AiOsAchievementsPage from '../pages/aios/AiOsAchievementsPage.jsx';
 import AiOsCoreLogsPage from '../pages/aios/AiOsCoreLogsPage.jsx';
 import AiOsAboutUpdatesPage from '../pages/aios/AiOsAboutUpdatesPage.jsx';
 import OwnerApiDocsPage from '../pages/api/OwnerApiDocsPage.jsx';
+import AiOsTelemetryPage from '../pages/aios/AiOsTelemetryPage.jsx';
 
 import {
   ActivitySquare,
@@ -25,6 +26,7 @@ import {
   Coins,
   Cpu,
   GraduationCap,
+  LineChart,
   Info,
   LayoutDashboard,
   ListOrdered,
@@ -69,6 +71,7 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
  *  | 'aiOsAchievements'
  *  | 'aiOsCoreLogs'
  *  | 'aiOsAbout'
+ *  | 'aiOsTelemetry'
  *  | 'apiDocs'
  * } DevModuleKey
  */
@@ -302,6 +305,19 @@ export const MODULES = [
       subtitle: 'Version metadata and release links.',
     },
     enabled: resolveEnabled('aiOsAbout', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsTelemetry',
+    label: 'Telemetry & Behaviour',
+    component: AiOsTelemetryPage,
+    icon: LineChart,
+    pageMeta: {
+      title: 'Telemetry & Behaviour',
+      subtitle: 'Agent metrics, incidents, and timelines.',
+    },
+    enabled: resolveEnabled('aiOsTelemetry', true),
     enabledRoles: ['OWNER'],
     navSection: 'aiOs',
   },
