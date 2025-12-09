@@ -18,5 +18,9 @@ export function useAiOsMockData() {
     settings: aiOsMockData.settings,
     api: aiOsMockData.api,
     modePresets: aiOsMockData.modePresets,
+    agentSettingsV2: aiOsMockData.agentSettingsV2,
+    achievements: aiOsMockData.achievements,
+    coreLogs: aiOsMockData.coreLogs,
+    about: aiOsMockData.about,
   };
 }

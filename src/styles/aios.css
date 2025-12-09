@@ -200,6 +200,372 @@
   text-align: left;
 }
 
+/* --- Agent Settings v2 + shared layouts --- */
+.aios-two-column {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.aios-column {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.aios-column--sidebar {
+  flex: 0 0 320px;
+}
+
+.aios-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aios-agent-row {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.75rem 1rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: border 0.15s ease, background 0.15s ease;
+}
+
+.aios-agent-row.is-active {
+  border-color: var(--dev-accent);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.aios-settings-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.aios-settings-group {
+  gap: 1.25rem;
+}
+
+.aios-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
+}
+
+.aios-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-settings-field input[type="number"],
+.aios-settings-field select {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-sm);
+  padding: 0.45rem 0.65rem;
+  background: var(--dev-bg);
+  color: var(--dev-text-primary);
+  font-size: 0.9rem;
+}
+
+.aios-settings-field input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.aios-primary-btn,
+.aios-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: var(--dev-radius-md);
+  padding: 0.55rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.aios-primary-btn {
+  background: var(--dev-accent);
+  color: #fff;
+}
+
+.aios-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aios-secondary-btn {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--dev-text-primary);
+}
+
+.aios-code-block {
+  background: var(--dev-bg-soft);
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.75rem;
+  font-family: var(--font-mono, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
+  font-size: 0.85rem;
+  overflow: auto;
+}
+
+.aios-last-payload {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.aios-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.aios-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.aios-filter-field select {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-sm);
+  padding: 0.4rem 0.6rem;
+  background: var(--dev-bg);
+  color: var(--dev-text-primary);
+}
+
+.aios-link {
+  color: var(--dev-accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.aios-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Achievements timeline --- */
+.aios-achievement-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 2px solid var(--dev-border-subtle);
+  gap: 1.5rem;
+}
+
+.aios-achievement-row {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+}
+
+.aios-achievement-node {
+  position: absolute;
+  left: -1.9rem;
+  top: 1.2rem;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--dev-bg);
+  border: 3px solid var(--dev-accent);
+}
+
+.aios-achievement-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1rem;
+  background: var(--dev-bg);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.aios-achievement-card--highlight {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+}
+
+.aios-achievement-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.aios-achievement-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+}
+
+.aios-detail-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.aios-detail-value {
+  font-size: 0.9rem;
+  color: var(--dev-text-primary);
+  margin: 0.1rem 0 0;
+}
+
+/* --- Logs & pipelines --- */
+.aios-table-lite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aios-table-lite-header,
+.aios-table-lite-row {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr 0.9fr 2fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aios-table-lite-header {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--dev-border-subtle);
+}
+
+.aios-table-lite-row {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-md);
+  padding: 0.65rem 0.9rem;
+  background: var(--dev-bg);
+  cursor: pointer;
+  text-align: left;
+}
+
+.aios-table-lite-row.is-active {
+  border-color: var(--dev-accent);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+
+.aios-log-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aios-log-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.aios-doc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aios-log-detail dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.aios-log-detail dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.aios-log-detail dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.95rem;
+  color: var(--dev-text-primary);
+}
+
+/* --- About / Updates --- */
+.aios-about-hero {
+  gap: 1.5rem;
+}
+
+.aios-about-version {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aios-about-title {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.aios-about-codename {
+  font-size: 1rem;
+  color: var(--dev-text-muted);
+  margin: 0;
+}
+
+.aios-about-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.aios-about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.aios-whats-new {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.aios-whats-new h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.aios-whats-new p {
+  margin: 0.25rem 0 0;
+  color: var(--dev-text-muted);
+  font-size: 0.9rem;
+}
+
+.aios-about-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
 .aios-hero-card {
   gap: 1.5rem;
 }
@@ -1572,6 +1938,16 @@
 .aios-status-chip.status-planned {
   border-color: rgba(148, 163, 184, 0.7);
   color: rgba(71, 85, 105, 0.9);
+}
+
+.aios-status-chip.status-in_progress {
+  border-color: rgba(59, 130, 246, 0.7);
+  color: rgba(37, 99, 235, 0.95);
+}
+
+.aios-status-chip.status-completed {
+  border-color: rgba(34, 197, 94, 0.7);
+  color: rgba(22, 163, 74, 0.95);
 }
 
 .aios-mission-tile-body {

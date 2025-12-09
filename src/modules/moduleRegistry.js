@@ -10,6 +10,10 @@ import AiOsAgentCostsPage from '../pages/aios/AiOsAgentCostsPage.jsx';
 import AiOsMissionsPage from '../pages/aios/AiOsMissionsPage.jsx';
 import AiOsSecurityPage from '../pages/aios/AiOsSecurityPage.jsx';
 import AiOsSettingsPage from '../pages/aios/AiOsSettingsPage.jsx';
+import AiOsAgentSettingsV2Page from '../pages/aios/AiOsAgentSettingsV2Page.jsx';
+import AiOsAchievementsPage from '../pages/aios/AiOsAchievementsPage.jsx';
+import AiOsCoreLogsPage from '../pages/aios/AiOsCoreLogsPage.jsx';
+import AiOsAboutUpdatesPage from '../pages/aios/AiOsAboutUpdatesPage.jsx';
 import OwnerApiDocsPage from '../pages/api/OwnerApiDocsPage.jsx';
 
 import {
@@ -21,12 +25,15 @@ import {
   Coins,
   Cpu,
   GraduationCap,
+  Info,
   LayoutDashboard,
   ListOrdered,
   Rocket,
+  ScrollText,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Trophy,
   Users2,
   Workflow,
 } from 'lucide-react';
@@ -58,6 +65,10 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
  *  | 'aiOsMissions'
  *  | 'aiOsSecurity'
  *  | 'aiOsSettings'
+ *  | 'aiOsAgentSettingsV2'
+ *  | 'aiOsAchievements'
+ *  | 'aiOsCoreLogs'
+ *  | 'aiOsAbout'
  *  | 'apiDocs'
  * } DevModuleKey
  */
@@ -239,6 +250,58 @@ export const MODULES = [
       subtitle: 'Read-only toggles sourced from specs.',
     },
     enabled: resolveEnabled('aiOsSettings', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsAgentSettingsV2',
+    label: 'Agent settings v2',
+    component: AiOsAgentSettingsV2Page,
+    icon: Cog,
+    pageMeta: {
+      title: 'Agent Settings v2',
+      subtitle: 'Per-agent behaviour/performance/formatting schema.',
+    },
+    enabled: resolveEnabled('aiOsAgentSettingsV2', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsAchievements',
+    label: 'Achievements',
+    component: AiOsAchievementsPage,
+    icon: Trophy,
+    pageMeta: {
+      title: 'Achievements & milestones',
+      subtitle: 'Timeline sourced from Achievements_Log.md.',
+    },
+    enabled: resolveEnabled('aiOsAchievements', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsCoreLogs',
+    label: 'Logs & pipeline',
+    component: AiOsCoreLogsPage,
+    icon: ScrollText,
+    pageMeta: {
+      title: 'Core logs & pipelines',
+      subtitle: 'Agent Task Pipeline, Core Decision Log, and Maturity tracker.',
+    },
+    enabled: resolveEnabled('aiOsCoreLogs', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'aiOs',
+  },
+  {
+    key: 'aiOsAbout',
+    label: 'About / updates',
+    component: AiOsAboutUpdatesPage,
+    icon: Info,
+    pageMeta: {
+      title: 'AI OS · About',
+      subtitle: 'Version metadata and release links.',
+    },
+    enabled: resolveEnabled('aiOsAbout', true),
     enabledRoles: ['OWNER'],
     navSection: 'aiOs',
   },

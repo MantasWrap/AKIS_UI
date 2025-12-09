@@ -1167,4 +1167,212 @@ export const aiOsMockData = {
       },
     ],
   },
+  agentSettingsV2: {
+    api: {
+      readEndpoint: '/api/owner/ai-os/agents/settings',
+      updateEndpoint: '/api/owner/ai-os/agents/settings',
+      schemaVersion: 2,
+    },
+    agents: [
+      {
+        id: 'core-agent',
+        name: 'CoreAgent',
+        tier: 'domain_boss',
+        role: 'Orchestrator',
+        behaviour: {
+          mode: 'FAST',
+          tone: 'owner_direct',
+          layout_profile: 'structured',
+          brand_profile: 'dev_console',
+          safety_profile: 'core_locked',
+        },
+        performance: {
+          fast_max_tokens: 2200,
+          deep_max_tokens: 3600,
+          context_budget_policy: 'balanced',
+        },
+        formatting: {
+          prefers_markdown: true,
+          prefers_file_links: true,
+          prefers_copy_blocks: true,
+        },
+        updatedAt: '2025-12-09T07:15:00Z',
+      },
+      {
+        id: 'ui-boss',
+        name: 'UIBossAgent',
+        tier: 'domain_boss',
+        role: 'Dev Console design lead',
+        behaviour: {
+          mode: 'FAST',
+          tone: 'designer_partner',
+          layout_profile: 'card_stack',
+          brand_profile: 'dev_console',
+          safety_profile: 'ui_only',
+        },
+        performance: {
+          fast_max_tokens: 1800,
+          deep_max_tokens: 3200,
+          context_budget_policy: 'visual_priority',
+        },
+        formatting: {
+          prefers_markdown: true,
+          prefers_file_links: false,
+          prefers_copy_blocks: true,
+        },
+        updatedAt: '2025-12-09T06:50:00Z',
+      },
+      {
+        id: 'backend-boss',
+        name: 'BackendAgent',
+        tier: 'domain_boss',
+        role: 'Runtime and API owner',
+        behaviour: {
+          mode: 'DEEP',
+          tone: 'incident_commander',
+          layout_profile: 'two_column',
+          brand_profile: 'system_console',
+          safety_profile: 'runtime_blocking',
+        },
+        performance: {
+          fast_max_tokens: 1600,
+          deep_max_tokens: 4000,
+          context_budget_policy: 'slo_guarded',
+        },
+        formatting: {
+          prefers_markdown: true,
+          prefers_file_links: true,
+          prefers_copy_blocks: true,
+        },
+        updatedAt: '2025-12-08T19:10:00Z',
+      },
+    ],
+  },
+  achievements: {
+    filters: {
+      categories: ['ui', 'backend', 'docs', 'orchestration'],
+      agents: ['CoreAgent', 'UIBossAgent', 'BackendAgent'],
+    },
+    entries: [
+      {
+        id: 'ACH-2025-001',
+        date: '2025-12-09',
+        title: 'UIBossAgent v1 – brand-aligned Dev Console UI delivery',
+        agents: ['CoreAgent', 'UIBossAgent'],
+        author: 'MJZ',
+        impact: 'Unlocked production-ready UI orchestration + FAST mode in Dev Console.',
+        description: 'MJZ initiated project chat, invited UIBossAgent, iterated on mockups with screenshots, and shipped final HTML via Codex.',
+        category: 'ui',
+        highlight: true,
+      },
+      {
+        id: 'ACH-2025-002',
+        date: '2025-12-09',
+        title: 'AI OS Update Protocol codified',
+        agents: ['CoreAgent'],
+        author: 'MJZ',
+        impact: 'Gave CoreAgent authority model + docs heartbeat requirements.',
+        description: 'DocumentUpdaterAgent and CoreAgent captured Phase 0 docs plus Project Instructions standard.',
+        category: 'orchestration',
+        highlight: false,
+      },
+    ],
+  },
+  coreLogs: {
+    pipeline: {
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'PIPE-2025-031',
+          phase: 'Phase 1',
+          owner: 'CoreAgent',
+          agent: 'UIBossAgent',
+          status: 'in_progress',
+          summary: 'Surface achievements dashboard cards',
+          updatedAt: '2025-12-09T08:10:00Z',
+        },
+        {
+          id: 'PIPE-2025-028',
+          phase: 'Phase 0',
+          owner: 'DocumentUpdaterAgent',
+          agent: 'CoreAgent',
+          status: 'completed',
+          summary: 'Docs: AI OS update protocol + Project Instructions standard',
+          updatedAt: '2025-12-08T22:40:00Z',
+        },
+      ],
+    },
+    decisionLog: [
+      {
+        entry_id: 'CORE-2025-005',
+        title: 'Promoted UIBossAgent v1 and adopted Agent Model v2 under AI OS v1.1',
+        date: '2025-12-09',
+        drivers: ['agent_orchestration', 'ui_delivery', 'os_governance'],
+        docs: [
+          'docs/EN/CORE/AI_OS_Changelog.md',
+          'docs/EN/CORE/AI_OS_Maturity_Tracker.md',
+        ],
+        summary: 'UIBossAgent becomes first production boss agent; Agent Model v2 + settings v2 enforced.',
+      },
+      {
+        entry_id: 'CORE-2025-004',
+        title: 'Public code repo, private docs repo, and EN.zip heartbeat',
+        date: '2025-12-08',
+        drivers: ['multi_chat_sync', 'docs_privacy'],
+        docs: ['docs/EN/SYSTEM/Agent_Registry.md'],
+        summary: 'Split public code/private docs with EN.zip heartbeat requirement.',
+      },
+    ],
+    maturitySnapshots: [
+      {
+        version: '1.1',
+        date: '2025-12-09',
+        score: 0.52,
+        highlights: [
+          'Agents & specs level 4',
+          'Structured outputs level 4',
+          'Dashboards & visibility level 3',
+        ],
+      },
+      {
+        version: '0.1.1',
+        date: '2025-12-08',
+        score: 0.38,
+        highlights: [
+          'CFOAgent spec landed',
+          'Humans & roles log live',
+        ],
+      },
+    ],
+  },
+  about: {
+    version: 'v1.1',
+    codename: 'Agent Orchestration',
+    releaseDate: '2025-12-09',
+    build: 'Dev Console preview · build 1702',
+    highlights: [
+      'UIBossAgent v1 production-ready',
+      'Achievements dashboard available',
+      'Agent Model v2 across boss agents',
+    ],
+    whatsNew: [
+      {
+        title: 'UIBossAgent v1 milestone',
+        description: 'First production boss agent operating in FAST mode with Dev Console UI scaffolding.',
+      },
+      {
+        title: 'Achievements dashboard + Logs viewer',
+        description: 'Owner dashboard surfaces achievements, decision log, and maturity snapshots.',
+      },
+      {
+        title: 'AI OS Update Protocol',
+        description: 'Codified version governance, EN.zip anchoring, and MJZ-only approval.',
+      },
+    ],
+    links: {
+      changelog: 'docs/EN/CORE/AI_OS_Changelog.md',
+      achievements: 'docs/EN/CORE/Achievements_Log.md',
+      maturity: 'docs/EN/CORE/AI_OS_Maturity_Tracker.md',
+    },
+  },
 };
