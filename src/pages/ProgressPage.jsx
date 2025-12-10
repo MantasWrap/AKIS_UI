@@ -5,6 +5,7 @@ import {
 } from '../api/client';
 import { useAiOsMockData } from '../hooks/useAiOsMockData';
 import { emitNavigation } from '../modules/navigationBus';
+import ProgressHeroRoadmap from '../components/ProgressHeroRoadmap';
 import '../styles/progress.css';
 
 const PHASE_PILLS = [
@@ -569,6 +570,8 @@ export default function ProgressPage() {
       {error && (
         <p style={{ marginTop: '0.75rem', color: 'var(--dev-text-muted)' }}>{error}</p>
       )}
+
+      <ProgressHeroRoadmap />
 
       <div className="progress-layout">
         <div className="progress-row progress-row--single">

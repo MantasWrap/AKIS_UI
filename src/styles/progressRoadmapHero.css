@@ -1,0 +1,209 @@
+/* High-level roadmap strip above the Current phase card on Progress page */
+
+.progress-roadmap {
+  margin-top: 0.25rem;
+  margin-bottom: 0.35rem;
+  padding: 1.1rem 1.4rem 1.4rem;
+  border-radius: var(--dev-radius-lg, 16px);
+  background: linear-gradient(135deg, #0f172a, #111827);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.45);
+  color: #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-roadmap::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0.85rem;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.75),
+    rgba(56, 189, 248, 0.9)
+  );
+  opacity: 0.85;
+}
+
+.progress-roadmap-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 0.7rem;
+  color: rgba(209, 213, 219, 0.9);
+  margin: 0 0 0.15rem;
+}
+
+.progress-roadmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.progress-roadmap-title {
+  color: #f9fafb;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.progress-roadmap-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  color: rgba(209, 213, 219, 0.9);
+  max-width: 34rem;
+}
+
+.progress-roadmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.progress-roadmap-legend-chip {
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.progress-roadmap-legend-chip--done {
+  background: rgba(22, 163, 74, 0.23);
+  border-color: rgba(22, 163, 74, 0.85);
+}
+
+.progress-roadmap-legend-chip--active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+.progress-roadmap-legend-chip--todo {
+  opacity: 0.8;
+}
+
+.progress-roadmap-track {
+  position: relative;
+  display: flex;
+  gap: 1.1rem;
+  overflow-x: auto;
+  padding-bottom: 1.2rem;
+}
+
+.progress-roadmap-track::-webkit-scrollbar {
+  height: 0;
+}
+
+.progress-roadmap-step {
+  position: relative;
+  min-width: 190px;
+  max-width: 220px;
+  flex: 0 0 auto;
+}
+
+.progress-roadmap-node {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0.55rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.9);
+  background: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-roadmap-node-index {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.progress-roadmap-card {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  padding: 0.7rem 0.8rem 0.8rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.65);
+}
+
+.progress-roadmap-card-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.progress-roadmap-tag-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.progress-roadmap-tag {
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.9);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.progress-roadmap-kpi {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: rgba(209, 213, 219, 0.9);
+}
+
+.progress-roadmap-kpi-value {
+  font-weight: 600;
+}
+
+.progress-roadmap-kpi-bar {
+  margin-top: 0.35rem;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  overflow: hidden;
+}
+
+.progress-roadmap-kpi-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #a3e635);
+}
+
+.progress-roadmap-step--done .progress-roadmap-card {
+  border-color: rgba(34, 197, 94, 0.9);
+}
+
+.progress-roadmap-step--active .progress-roadmap-card {
+  border-color: rgba(59, 130, 246, 0.95);
+}
+
+.progress-roadmap-step--todo .progress-roadmap-card {
+  opacity: 0.86;
+}
+
+@media (max-width: 900px) {
+  .progress-roadmap {
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+    border-radius: 0;
+  }
+}
