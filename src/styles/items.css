@@ -19,6 +19,18 @@
   min-width: 220px;
 }
 
+.items-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.items-data-source-toggle {
+  width: 100%;
+  max-width: 240px;
+}
+
 .items-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(260px, 320px);
@@ -156,6 +168,16 @@
   color: #b91c1c;
 }
 
+.items-status-pill.status-cancelled {
+  background: rgba(148, 163, 184, 0.2);
+  color: #334155;
+}
+
+.items-status-pill.status-error {
+  background: rgba(185, 28, 28, 0.15);
+  color: #991b1b;
+}
+
 .items-detail-panel {
   border: 1px dashed var(--dev-border-subtle);
   border-radius: 18px;
@@ -241,6 +263,15 @@
   padding: 2rem 0;
 }
 
+.items-inline-error {
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
 @media (max-width: 1100px) {
   .items-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -248,5 +279,16 @@
 
   .items-detail-panel {
     order: 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .items-hero-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .items-data-source-toggle {
+    max-width: none;
   }
 }
