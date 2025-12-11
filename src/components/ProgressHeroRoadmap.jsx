@@ -79,6 +79,8 @@ const ROADMAP_STEPS = [
   },
 ];
 
+// Mock KPI completion per roadmap step (0–100).
+// Later this should come from backend / checklists / runtime data.
 const ROADMAP_KPI_PERCENT = {
   pre_launch_mocking: 80,
   simulations: 60,
@@ -88,6 +90,7 @@ const ROADMAP_KPI_PERCENT = {
   pilot_mode_live: 0,
 };
 
+// 0-based index of the "current" roadmap step. This is mock-only for now.
 const CURRENT_STEP_INDEX = 1;
 
 function clampPercent(value) {
@@ -102,75 +105,91 @@ export default function ProgressHeroRoadmap() {
   );
 
   return (
-    <section className="progress-roadmap" aria-label="AKIS roadmap to pilot mode">
-      <header className="progress-roadmap-header">
+    <section
+      className="dev-card progress-roadmap-hero"
+      aria-label="AKIS roadmap to pilot mode"
+    >
+      <header className="progress-roadmap-hero__header">
         <div>
-          <p className="progress-roadmap-eyebrow">AKIS build roadmap</p>
-          <h2 className="progress-roadmap-title">Roadmap to reality</h2>
-          <p className="progress-roadmap-subtitle">
+          <p className="dev-card-eyebrow">AKIS build roadmap</p>
+          <h2 className="dev-card-title">Roadmap to reality</h2>
+          <p className="dev-card-subtitle">
             From mocked DEV console to live pilot and tenant platforms.
           </p>
         </div>
-        <div className="progress-roadmap-legend" aria-hidden="true">
-          <span className="progress-roadmap-legend-chip progress-roadmap-legend-chip--done">
+        <div className="progress-roadmap-hero__legend" aria-hidden="true">
+          <span className="progress-roadmap-hero__legend-chip progress-roadmap-hero__legend-chip--done">
             Done
           </span>
-          <span className="progress-roadmap-legend-chip progress-roadmap-legend-chip--active">
+          <span className="progress-roadmap-hero__legend-chip progress-roadmap-hero__legend-chip--now">
             Now
           </span>
-          <span className="progress-roadmap-legend-chip progress-roadmap-legend-chip--todo">
+          <span className="progress-roadmap-hero__legend-chip progress-roadmap-hero__legend-chip--next">
             Next
           </span>
         </div>
       </header>
 
-      <div className="progress-roadmap-track">
-        {ROADMAP_STEPS.map((step, index) => {
-          let status = 'todo';
-          if (index < currentIndex) status = 'done';
-          else if (index === currentIndex) status = 'active';
+      <div className="progress-roadmap-hero__body">
+        <div className="progress-roadmap-hero__road" aria-hidden="true" />
+        <div className="progress-roadmap-hero__steps">
+          {ROADMAP_STEPS.map((step, index) => {
+            let status = 'next';
+            if (index < currentIndex) status = 'done';
+            else if (index === currentIndex) status = 'now';
 
-          const clamped = clampPercent(ROADMAP_KPI_PERCENT[step.id]);
+            const clamped = clampPercent(ROADMAP_KPI_PERCENT[step.id]);
 
-          return (
-            <article
-              key={step.id}
-              className={`progress-roadmap-step progress-roadmap-step--${status}`}
-              aria-label={step.title}
-            >
-              <div className="progress-roadmap-node">
-                <div className="progress-roadmap-node-index">{index + 1}</div>
-              </div>
+            return (
+              <article
+                key={step.id}
+                className={`progress-roadmap-hero__step progress-roadmap-hero__step--${status}`}
+                aria-label={step.title}
+              >
+                <div className="progress-roadmap-hero__card">
+                  <h3 className="progress-roadmap-hero__card-title">
+                    {step.title}
+                  </h3>
 
-              <div className="progress-roadmap-card">
-                <h3 className="progress-roadmap-card-title">{step.title}</h3>
+                  <ul className="progress-roadmap-hero__tags">
+                    {step.items.map((item) => (
+                      <li
+                        key={item}
+                        className="progress-roadmap-hero__tag"
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
 
-                <ul className="progress-roadmap-tag-list">
-                  {step.items.map((item) => (
-                    <li key={item} className="progress-roadmap-tag">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="progress-roadmap-kpi">
-                  <span className="progress-roadmap-kpi-label">KPI</span>
-                  <span className="progress-roadmap-kpi-value">
-                    {clamped != null ? `${clamped}%` : '—%'}
-                  </span>
-                </div>
-                {clamped != null && (
-                  <div className="progress-roadmap-kpi-bar" aria-hidden="true">
-                    <div
-                      className="progress-roadmap-kpi-bar-fill"
-                      style={{ width: `${clamped}%` }}
-                    />
+                  <div className="progress-roadmap-hero__kpi-row">
+                    <span className="progress-roadmap-hero__kpi-label">
+                      KPI
+                    </span>
+                    <span className="progress-roadmap-hero__kpi-value">
+                      {clamped != null ? `${clamped}%` : '—%'}
+                    </span>
                   </div>
-                )}
-              </div>
-            </article>
-          );
-        })}
+                  {clamped != null && (
+                    <div
+                      className="progress-roadmap-hero__kpi-bar"
+                      aria-hidden="true"
+                    >
+                      <div
+                        className="progress-roadmap-hero__kpi-bar-fill"
+                        style={{ width: `${clamped}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="progress-roadmap-hero__step-index">
+                  <span>{index + 1}</span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

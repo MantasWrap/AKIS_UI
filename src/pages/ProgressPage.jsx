@@ -19,12 +19,58 @@ const PHASE_PILLS = [
 const PHASE_DETAILS_COPY = {
   phase_0: 'Phase 0 builds the fake hardware and integration scaffolding so Plug & Play is a simple migration step.',
   phase_1: 'Phase 1 validates the conveyor + PLC wiring and gets the first real items flowing through.',
-  phase_2: 'Phase 2 hardens the PLC integration for stable production operation.',
-  phase_3: 'Phase 3 expands the AI model to multiclass garment detection and routing.',
-  phase_4: 'Phase 4 focuses on scaling and subscription-ready deployments.',
+  phase_2: 'Phase 2 is about accuracy and throughput on the live line, turning the prototype into something operators trust.',
+  phase_3: 'Phase 3 adds multi-class handling, advanced retraining, and makes the system robust against real-world mess.',
+  phase_4: 'Phase 4 is about scaling across tenants, billing it correctly, and making upgrades boring.',
 };
 
-const FALLBACK_PHASE_COPY = 'Phase details coming soon.';
+const FALLBACK_PHASE_COPY = 'This phase description is still being drafted. Check progress.log and docs/EN/PHASES for details.';
+
+const INITIAL_DEVINFO_STATE = {
+  currentPhase: false,
+  phaseRoadmap: false,
+  phase0Checklist: false,
+  timeline: false,
+  roadmaps: false,
+  nextSteps: false,
+};
+
+function mapTimelineToSteps(timeline) {
+  if (!Array.isArray(timeline) || timeline.length === 0) {
+    return [];
+  }
+
+  const topicFirstById = {};
+  const topicEntryCounts = {};
+  for (const entry of timeline) {
+    const topic = entry.topic || 'unknown';
+    if (!topicFirstById[topic]) {
+      topicFirstById[topic] = entry;
+    }
+    topicEntryCounts[topic] = (topicEntryCounts[topic] || 0) + 1;
+  }
+
+  const steps = [];
+  const sortedTopics = Object.keys(topicFirstById).sort((a, b) => {
+    const countA = topicEntryCounts[a] || 0;
+    const countB = topicEntryCounts[b] || 0;
+    return countB - countA;
+  });
+
+  for (const topic of sortedTopics) {
+    const sourceEntry = topicFirstById[topic];
+    steps.push({
+      topic,
+      title: sourceEntry.title || sourceEntry.sourceEntry || 'Work item',
+      text: sourceEntry.summary || sourceEntry.text || '',
+      sourceEntry: sourceEntry.sourceEntry || null,
+      date: sourceEntry.date || null,
+      priority: sourceEntry.priority || 'Normal',
+    });
+  }
+
+  return steps;
+}
 
 function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children }) {
   return (
@@ -162,19 +208,40 @@ function PhaseTimeline({
 function mapTopicToLabelAndClass(topic) {
   switch (topic) {
     case 'backend':
-      return { label: 'Backend / API', chipClass: 'dev-chip' };
+      return {
+        label: 'Backend / API',
+        className: 'dev-badge dev-badge--primary',
+      };
     case 'frontend':
-      return { label: 'Dev Console & UI', chipClass: 'dev-chip' };
+      return {
+        label: 'Dev console & UI',
+        className: 'dev-badge dev-badge--secondary',
+      };
     case 'plc':
-      return { label: 'PLC & conveyor', chipClass: 'dev-chip' };
+      return {
+        label: 'PLC & conveyor',
+        className: 'dev-badge dev-badge--plc',
+      };
     case 'jetson-runtime':
-      return { label: 'Jetson runtime', chipClass: 'dev-chip' };
+      return {
+        label: 'Jetson runtime',
+        className: 'dev-badge dev-badge--jetson',
+      };
     case 'devops':
-      return { label: 'DevOps / tooling', chipClass: 'dev-chip' };
+      return {
+        label: 'DevOps / tooling',
+        className: 'dev-badge dev-badge--devops',
+      };
     case 'docs/system':
-      return { label: 'Docs & system', chipClass: 'dev-chip' };
+      return {
+        label: 'Docs / system',
+        className: 'dev-badge dev-badge--docs',
+      };
     default:
-      return { label: 'General', chipClass: 'dev-chip' };
+      return {
+        label: 'Other',
+        className: 'dev-badge dev-badge--default',
+      };
   }
 }
 
@@ -275,24 +342,36 @@ const TOPIC_LABELS = {
   plc: 'PLC & conveyor',
   'jetson-runtime': 'Jetson runtime',
   devops: 'DevOps / tooling',
-  'docs/system': 'Docs & system',
+  'docs/system': 'Docs / system',
 };
+
+const TIMELINE_TIME_WINDOWS = [
+  { id: 'last7d', label: 'Last 7 days' },
+  { id: 'last30d', label: 'Last 30 days' },
+  { id: 'last90d', label: 'Last 90 days' },
+];
+
+const TIMELINE_DEFAULT_WINDOW_ID = 'last30d';
 
 export default function ProgressPage() {
   const [summary, setSummary] = useState(null);
   const [timeline, setTimeline] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [activeTopic, setActiveTopic] = useState('all');
-  const [devInfoOpen, setDevInfoOpen] = useState({
-    currentPhase: false,
-    phase0Checklist: false,
-    roadmaps: false,
-    nextSteps: false,
-  });
-  const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
+  const [timelineWindow, setTimelineWindow] = useState(TIMELINE_DEFAULT_WINDOW_ID);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [devInfoOpen, setDevInfoOpen] = useState(INITIAL_DEVINFO_STATE);
   const [hoveredPhaseId, setHoveredPhaseId] = useState(null);
-  const { overview: aiOsOverview, pipeline: aiOsPipeline } = useAiOsMockData();
+  const [lockedPhaseId, setLockedPhaseId] = useState('phase_0');
+  const [inspectedPhaseId, setInspectedPhaseId] = useState('phase_0');
+  const [timelineTopicFilters, setTimelineTopicFilters] = useState(() => new Set(TOPICS));
+  const [timelineTopicMode, setTimelineTopicMode] = useState('all');
+  const [timelineSource, setTimelineSource] = useState('codex');
+  const [timelineSearch, setTimelineSearch] = useState('');
+  const [timelineTimeWindowId, setTimelineTimeWindowId] = useState(TIMELINE_DEFAULT_WINDOW_ID);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const aiOsData = useAiOsMockData();
+  const aiOsOverview = aiOsData?.overview;
+  const aiOsPipeline = aiOsData?.pipeline;
   const aiOsStageList = aiOsPipeline?.stages || [];
   const aiOsCurrentStage =
     aiOsStageList.find((stage) => stage.id === aiOsPipeline?.currentStageId) || aiOsStageList[0] || null;
@@ -315,32 +394,172 @@ export default function ProgressPage() {
       : null;
 
   useEffect(() => {
-    loadData({ fresh: false, topic: activeTopic });
-  }, [activeTopic]);
+    let isCancelled = false;
 
-  const phase0 = useMemo(() => {
-    if (!summary || !Array.isArray(summary.phases)) return null;
-    return summary.phases.find((phase) => phase.phaseId === 'phase_0') || null;
-  }, [summary]);
+    async function load() {
+      setLoading(true);
+      setError('');
 
-  const docsGapsCount = useMemo(() => {
-    if (!summary || !Array.isArray(summary.phases)) return 0;
-    return summary.phases.filter((phase) => phase.roadmapStatus === 'missing').length;
-  }, [summary]);
+      try {
+        const requestOptions = refreshKey > 0 ? { fresh: true } : undefined;
+        const [summaryData, timelineData] = await Promise.all([
+          getProgressSummary(requestOptions || {}),
+          getProgressTimeline(requestOptions || {}),
+        ]);
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (summaryData && summaryData.ok === false) {
+          setError((prev) => prev || `Could not load progress summary: ${summaryData.error}`);
+        } else if (summaryData) {
+          setSummary(summaryData.data || summaryData);
+        }
+
+        if (timelineData && timelineData.ok === false) {
+          setError((prev) => prev || `Could not load timeline: ${timelineData.error}`);
+        } else if (timelineData) {
+          const entries = Array.isArray(timelineData.entries)
+            ? timelineData.entries
+            : Array.isArray(timelineData)
+              ? timelineData
+              : [];
+          setTimeline(entries);
+        }
+      } catch (err) {
+        console.error('Failed to load progress data', err);
+        if (!isCancelled) {
+          setError('Failed to load progress data. Check console or try again later.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [refreshKey]);
 
   const latestEntry = timeline && timeline.length > 0 ? timeline[0] : null;
-  const topicCounts = summary && summary.topicBreakdown ? summary.topicBreakdown : {};
   const devPace = useMemo(() => computeDevPace(timeline), [timeline]);
+  const topicCounts = summary?.topicBreakdown || {};
   const devPaceLast7d = devPace?.entriesLast7d ?? 0;
   const devPacePrev7d = devPace?.entriesPrev7d ?? 0;
   const devPaceLastLogLabel = formatLastLog(devPace.daysSinceLast);
-  const nextSteps = Array.isArray(summary?.nextSteps) ? summary.nextSteps : [];
-  const stepsToShow = nextSteps.slice(0, 3);
+  const lastUpdateText = latestEntry
+    ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
+    : 'No updates recorded yet in CODEX_Progress_Log.md';
+
+  const phaseSnapshots = useMemo(() => summary?.phases || [], [summary]);
+  const phaseSnapshotsById = useMemo(() => {
+    const map = {};
+    phaseSnapshots.forEach((phase) => {
+      if (phase?.phaseId) {
+        map[phase.phaseId] = phase;
+      }
+    });
+    return map;
+  }, [phaseSnapshots]);
+
+  const derivedPhaseId = useMemo(() => {
+    if (summary?.currentPhaseId) return summary.currentPhaseId;
+    if (summary?.activePhaseId) return summary.activePhaseId;
+    if (typeof summary?.activePhase === 'string') {
+      if (summary.activePhase.includes('1')) return 'phase_1';
+      if (summary.activePhase.includes('2')) return 'phase_2';
+      if (summary.activePhase.includes('3')) return 'phase_3';
+      if (summary.activePhase.includes('4')) return 'phase_4';
+    }
+    return 'phase_0';
+  }, [summary]);
+
+  const currentPhaseId = derivedPhaseId;
+  const currentPhaseSnapshot = phaseSnapshotsById[currentPhaseId] || null;
+
+  const currentPhaseIndexRaw = PHASE_PILLS.findIndex((p) => p.id === currentPhaseId);
+  const currentPhaseIndex = currentPhaseIndexRaw >= 0 ? currentPhaseIndexRaw : 0;
+  const currentPhasePill = PHASE_PILLS[currentPhaseIndex] || PHASE_PILLS[0];
+  const activePhaseRaw = currentPhaseSnapshot?.phaseId || currentPhasePill.id;
+  const activePhaseSubtitle = PHASE_DETAILS_COPY[activePhaseRaw] || FALLBACK_PHASE_COPY;
+  const currentPhaseLabel = currentPhaseSnapshot?.name
+    ? `Phase ${(currentPhaseSnapshot?.phaseId || currentPhaseId).replace('phase_', '')} – ${currentPhaseSnapshot.name}`
+    : `Phase ${(currentPhaseId || 'phase_0').replace('phase_', '')}`;
+
+  const currentPhaseChecklist = currentPhaseSnapshot?.checklist || null;
+  const currentPhaseChecklistPercent =
+    currentPhaseChecklist && typeof currentPhaseChecklist.percent === 'number'
+      ? Math.round(currentPhaseChecklist.percent)
+      : null;
+  const currentPhasePercentComplete =
+    typeof currentPhaseSnapshot?.percent === 'number'
+      ? currentPhaseSnapshot.percent
+      : currentPhaseChecklistPercent ?? 0;
+
+  let focusText = null;
+  if (typeof summary?.currentFocus === 'string' && summary.currentFocus.trim()) {
+    focusText = summary.currentFocus.trim();
+  } else if (activePhaseRaw === 'phase_1') {
+    focusText = 'Current focus: bridge to Phase 1 (PLC & conveyor integration)';
+  }
+
+  const plugPlayMeta = summary?.plugPlay || {};
+  const plugPlayStatus = summary?.plugPlayStatus || plugPlayMeta.status || 'unknown';
+  const plugPlayEta = summary?.plugPlayEta || plugPlayMeta.eta || null;
+  const plugPlayEtaLabel = plugPlayEta || 'ETA TBD';
+  const plugPlayPercent =
+    typeof summary?.plugPlayPercent === 'number'
+      ? Math.round(summary.plugPlayPercent)
+      : typeof plugPlayMeta.percent === 'number'
+        ? Math.round(plugPlayMeta.percent)
+        : null;
+  const plugPlayStatusBadge =
+    plugPlayStatus === 'ready'
+      ? 'ok'
+      : plugPlayStatus === 'at_risk'
+        ? 'warn'
+        : plugPlayStatus === 'blocked'
+          ? 'error'
+          : 'idle';
+  const plugPlayStatusText =
+    plugPlayStatus === 'ready'
+      ? 'Ready for Plug & Play migration'
+      : plugPlayStatus === 'at_risk'
+        ? 'At risk · needs attention'
+        : plugPlayStatus === 'blocked'
+          ? 'Blocked · address issues before migration'
+          : plugPlayStatus === 'unknown'
+            ? 'Status unknown · log progress'
+            : null;
+
+  const roadmapDraftedCount = phaseSnapshots.filter((phase) => phase.roadmapStatus === 'documented').length;
+  const roadmapMissingCount = Math.max(0, phaseSnapshots.length - roadmapDraftedCount);
+  const roadmapCoverageMeta = phaseSnapshots.length
+    ? `${phaseSnapshots.length} phases · ${roadmapDraftedCount} drafted · ${roadmapMissingCount} missing`
+    : 'Roadmap coverage pending';
+  const docsGapsCount = useMemo(() => {
+    if (!phaseSnapshots.length) return 0;
+    return phaseSnapshots.filter((phase) => phase.roadmapStatus === 'missing').length;
+  }, [phaseSnapshots]);
+
+  const nextSteps = useMemo(() => mapTimelineToSteps(timeline), [timeline]);
+  const stepsToShow = useMemo(() => {
+    const showAllTopics = timelineTopicFilters.size === TOPICS.length;
+    const filtered = nextSteps.filter((step) =>
+      showAllTopics ? true : timelineTopicFilters.has(step.topic),
+    );
+    return filtered.slice(0, 4);
+  }, [nextSteps, timelineTopicFilters]);
   const timelineEntryByTitle = useMemo(() => {
     if (!Array.isArray(timeline)) return {};
     return timeline.reduce((acc, entry) => {
-      if (entry?.title) {
-        acc[entry.title] = entry;
+      if (entry?.sourceEntry) {
+        acc[entry.sourceEntry] = entry;
       }
       return acc;
     }, {});
@@ -352,6 +571,61 @@ export default function ProgressPage() {
   const latestNextStepPriority = (latestNextStep?.priority || 'Normal').toUpperCase();
   const latestNextStepTitle = latestNextStep?.title || latestNextStep?.sourceEntry || 'Next action';
   const latestNextStepBody = latestNextStep?.text || latestNextStepEntry?.summary || 'No next steps recorded yet.';
+  const filteredTimelineEntries = useMemo(() => {
+    if (!Array.isArray(timeline)) return [];
+    const searchTerm = timelineSearch.trim().toLowerCase();
+    const windowLookup = {
+      last7d: 7,
+      last30d: 30,
+      last90d: 90,
+    };
+    const daysWindow = windowLookup[timelineTimeWindowId] || null;
+    const threshold =
+      daysWindow != null ? Date.now() - daysWindow * 24 * 60 * 60 * 1000 : null;
+
+    return timeline.filter((entry) => {
+      if (!entry) return false;
+
+      if (timelineSource !== 'all') {
+        const entrySource = entry.source || 'codex';
+        if (entrySource !== timelineSource) {
+          return false;
+        }
+      }
+
+      if (threshold && entry.date) {
+        const entryDate = new Date(entry.date);
+        if (!Number.isNaN(entryDate.getTime()) && entryDate.getTime() < threshold) {
+          return false;
+        }
+      }
+
+      if (timelineTopicFilters.size && timelineTopicFilters.size !== TOPICS.length) {
+        const entryTopics = Array.isArray(entry.topics) && entry.topics.length
+          ? entry.topics
+          : entry.topic
+            ? [entry.topic]
+            : [];
+        if (entryTopics.length) {
+          const matchesTopic = entryTopics.some((topic) => timelineTopicFilters.has(topic));
+          if (!matchesTopic) {
+            return false;
+          }
+        }
+      }
+
+      if (searchTerm) {
+        const haystack = `${entry.title || ''} ${entry.summary || ''} ${entry.text || ''}`.toLowerCase();
+        if (!haystack.includes(searchTerm)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [timeline, timelineTopicFilters, timelineSource, timelineSearch, timelineTimeWindowId]);
+
+  const phase0 = phaseSnapshotsById.phase_0 || null;
   const phase0Snapshot = phase0;
   const hasPhase0Milestones =
     !!phase0Snapshot && Array.isArray(phase0Snapshot.milestones) && phase0Snapshot.milestones.length > 0;
@@ -367,18 +641,13 @@ export default function ProgressPage() {
   const checklistMetaLine = checklistTotal != null && checklistCompleted != null && checklistLeft != null
     ? `${checklistTotal} steps · ${checklistCompleted} done · ${checklistLeft} left`
     : 'Checklist status';
-  const roadmapPhases = summary?.phases || [];
-  const roadmapDraftedCount = roadmapPhases.filter((phase) => phase.roadmapStatus === 'documented').length;
-  const roadmapMissingCount = Math.max(0, roadmapPhases.length - roadmapDraftedCount);
-  const roadmapCoverageMeta = roadmapPhases.length
-    ? `${roadmapPhases.length} phases · ${roadmapDraftedCount} drafted · ${roadmapMissingCount} missing`
-    : 'Roadmap coverage pending';
   const defaultPhase0RoadmapChips = [
     'PreLaunch TODO',
-    'PLC & Conveyor Integration TODO',
-    'PLC Integration TODO',
-    'Multiclass Expansion TODO',
-    'Scaling TODO',
+    'Hardware stubs',
+    'Mock PLC connectors',
+    'Dev console scaffolding',
+    'AI OS training hooks',
+    'Runtime simulator',
   ];
   const phase0RoadmapChips = Array.isArray(phase0?.roadmap?.sections) && phase0.roadmap.sections.length
     ? phase0.roadmap.sections
@@ -388,123 +657,8 @@ export default function ProgressPage() {
     : 'Phase 0 roadmap is still being authored.';
   const roadmapFutureSummary = 'Next phases: roadmaps to be authored for Phase 1–4.';
 
-  async function loadData({ fresh, topic }) {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = {
-        limit: 20,
-        fresh: !!fresh,
-      };
-      if (topic && topic !== 'all') {
-        params.topic = topic;
-      }
-
-      const [summaryResult, timelineResult] = await Promise.all([
-        getProgressSummary({ fresh }),
-        getProgressTimeline(params),
-      ]);
-
-      if (summaryResult && summaryResult.ok === false) {
-        setError((prev) => prev || `Could not load progress summary: ${summaryResult.error}`);
-      } else if (summaryResult && summaryResult.data) {
-        setSummary(summaryResult.data);
-      }
-
-      if (timelineResult && timelineResult.ok === false) {
-        setError((prev) => prev || `Could not load timeline: ${timelineResult.error}`);
-      } else if (timelineResult && Array.isArray(timelineResult.entries)) {
-        setTimeline(timelineResult.entries);
-      }
-    } catch {
-      setError('Failed to load progress data.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleRefresh = () => {
-    loadData({ fresh: true, topic: activeTopic });
-  };
-  const navigateToAiOsPipeline = () => {
-    emitNavigation('aiOsPipeline');
-  };
-
-  const activePhaseRaw = summary?.activePhase || 'Phase 0';
-  const currentPhaseId =
-    summary?.activePhaseId ||
-    (activePhaseRaw.includes('0') ? 'phase_0' :
-      activePhaseRaw.includes('1') ? 'phase_1' :
-      activePhaseRaw.includes('2') ? 'phase_2' :
-      activePhaseRaw.includes('3') ? 'phase_3' :
-      activePhaseRaw.includes('4') ? 'phase_4' :
-      'phase_0');
-  const phaseSnapshotsById = useMemo(() => {
-    const map = {};
-    if (Array.isArray(summary?.phases)) {
-      summary.phases.forEach((phaseSnapshot) => {
-        if (phaseSnapshot?.phaseId) {
-          map[phaseSnapshot.phaseId] = phaseSnapshot;
-        }
-      });
-    }
-    return map;
-  }, [summary]);
-  const CURRENT_PHASE_ID = currentPhaseId;
-  const currentPhaseSnapshot =
-    Array.isArray(summary?.phases)
-      ? summary.phases.find((p) => p.phaseId === currentPhaseId)
-      : null;
-  const currentPhaseLabel =
-    currentPhaseSnapshot?.name
-      ? `Phase ${
-        (currentPhaseSnapshot?.phaseId || currentPhaseId).replace('phase_', '')
-      } – ${currentPhaseSnapshot.name}`
-      : activePhaseRaw || 'Current phase';
-  const currentPhasePercentComplete =
-    typeof currentPhaseSnapshot?.checklist?.percent === 'number'
-      ? currentPhaseSnapshot.checklist.percent
-      : null;
-  let focusText = null;
-  if (typeof activePhaseRaw === 'string' && activePhaseRaw.includes('1')) {
-    focusText = 'Current focus: bridge to Phase 1 (PLC & conveyor integration)';
-  }
-  const plugPlayMeta = summary?.plugPlay || null;
-  const plugPlayPercent =
-    typeof plugPlayMeta?.percent === 'number' ? plugPlayMeta.percent : null;
-  const plugPlayEtaLabel = plugPlayMeta?.eta
-    ? `ETA · ${plugPlayMeta.eta}`
-    : 'ETA · not enough data yet';
-  const plugPlayStatusBadge = plugPlayMeta?.status || null;
-  const plugPlayStatusText =
-    plugPlayStatusBadge === 'on_track'
-      ? 'On track'
-      : plugPlayStatusBadge === 'at_risk'
-        ? 'At risk'
-        : plugPlayStatusBadge === 'late'
-          ? 'Late'
-          : null;
-  useEffect(() => {
-    setLockedPhaseId((prev) => {
-      if (prev && phaseSnapshotsById[prev]) {
-        return prev;
-      }
-      return currentPhaseId;
-    });
-    setHoveredPhaseId(null);
-  }, [currentPhaseId, phaseSnapshotsById]);
-
-  const currentPhaseSubtitle = currentPhaseLabel;
-  const lastUpdateText = latestEntry
-    ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
-    : 'No updates recorded yet in CODEX_Progress_Log.md';
-  const inspectedPhaseId = hoveredPhaseId || lockedPhaseId || currentPhaseId;
-  const fallbackInspectedPhase = inspectedPhaseId
-    ? {
-        phaseId: inspectedPhaseId,
-        name: `Phase ${(inspectedPhaseId || '').replace('phase_', '')}`,
-      }
-    : null;
+  const inspectionsAvailable = phaseSnapshots.length > 0;
+  const fallbackInspectedPhase = inspectionsAvailable ? phaseSnapshots[0] : null;
   const inspectedPhase =
     phaseSnapshotsById[inspectedPhaseId] || fallbackInspectedPhase || currentPhaseSnapshot || null;
   const inspectedPhaseIndexRaw = PHASE_PILLS.findIndex((p) => p.id === inspectedPhaseId);
@@ -512,20 +666,79 @@ export default function ProgressPage() {
   const inspectedPhaseCopy =
     (inspectedPhase && PHASE_DETAILS_COPY[inspectedPhase.phaseId]) || FALLBACK_PHASE_COPY;
 
+
+  const handleRefresh = () => {
+    if (!loading) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  };
+
+  const handleTimelineTopicsAll = () => {
+    setTimelineTopicFilters(new Set(TOPICS));
+    setTimelineTopicMode('all');
+  };
+
+  const handleTimelineTopicToggle = (topic) => {
+    setTimelineTopicFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(topic)) {
+        next.delete(topic);
+      } else {
+        next.add(topic);
+      }
+      setTimelineTopicMode(next.size === TOPICS.length ? 'all' : 'custom');
+      return next;
+    });
+  };
+
+  const handleTimelineWindowChange = (windowId) => {
+    setTimelineWindow(windowId);
+    setTimelineTimeWindowId(windowId);
+  };
+
+  const handleTimelineSourceChange = (sourceId) => {
+    setTimelineSource(sourceId);
+  };
+
+  const navigateToAiOsPipeline = () => {
+    emitNavigation({ type: 'NAVIGATE', payload: { path: '/aios/pipeline' } });
+  };
+
+
   const handlePhasePreview = (phaseId) => {
     if (!phaseId) {
       setHoveredPhaseId(null);
-      return;
+      setInspectedPhaseId((prev) => {
+        const fallbackId = phaseSnapshotsById[lockedPhaseId] ? lockedPhaseId : currentPhaseId;
+        return prev === fallbackId ? prev : fallbackId;
+      });
+    } else {
+      setHoveredPhaseId(phaseId);
+      setInspectedPhaseId(phaseId);
     }
-    setHoveredPhaseId(phaseId);
   };
 
   const handlePhaseLock = (phaseId) => {
     if (phaseId) {
       setLockedPhaseId(phaseId);
       setHoveredPhaseId(null);
+      setInspectedPhaseId(phaseId);
     }
   };
+
+  useEffect(() => {
+    if (hoveredPhaseId) {
+      return;
+    }
+    const fallbackId = phaseSnapshotsById[lockedPhaseId] ? lockedPhaseId : currentPhaseId;
+    setInspectedPhaseId((prev) => (prev === fallbackId ? prev : fallbackId));
+  }, [hoveredPhaseId, lockedPhaseId, currentPhaseId, phaseSnapshotsById]);
+
+  useEffect(() => {
+    if (lockedPhaseId && !phaseSnapshotsById[lockedPhaseId]) {
+      setLockedPhaseId(currentPhaseId);
+    }
+  }, [lockedPhaseId, currentPhaseId, phaseSnapshotsById]);
 
   return (
     <div className="progress-page">
@@ -547,7 +760,7 @@ export default function ProgressPage() {
             onClick={handleRefresh}
             disabled={loading}
           >
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Loading progress …' : 'Refresh data'}
           </button>
         </div>
       </div>
@@ -578,7 +791,7 @@ export default function ProgressPage() {
           <div className="dev-card progress-kpi-card progress-kpi-card--accent-primary">
             <CardHeader
               title="Current phase"
-              subtitle={currentPhaseSubtitle}
+              subtitle={activePhaseSubtitle}
               onToggleDevInfo={() =>
                 setDevInfoOpen((prev) => ({
                   ...prev,
@@ -643,7 +856,7 @@ export default function ProgressPage() {
             <div className="progress-current-phase__timeline">
               <PhaseTimeline
                 phases={PHASE_PILLS}
-                currentPhaseId={CURRENT_PHASE_ID}
+                currentPhaseId={currentPhaseId}
                 inspectedPhaseId={inspectedPhaseId}
                 lockedPhaseId={lockedPhaseId}
                 onPreviewPhase={handlePhasePreview}
@@ -788,9 +1001,9 @@ export default function ProgressPage() {
             />
             <div className="progress-card-body progress-card-body--roadmaps">
               <div className="progress-roadmaps-meta">{roadmapCoverageMeta}</div>
-              {roadmapPhases.length ? (
+              {phaseSnapshots.length ? (
                 <div className="progress-roadmaps-bar">
-                  {roadmapPhases.map((phase) => (
+                  {phaseSnapshots.map((phase) => (
                     <div
                       key={phase.phaseId || phase.name}
                       className={[
@@ -916,7 +1129,7 @@ export default function ProgressPage() {
               {latestNextStep ? (
                 <>
                   <div className="progress-next-meta">
-                    <span className={`progress-next-pill ${latestNextStepMeta?.chipClass || 'dev-chip'}`}>
+                    <span className={`progress-next-pill ${latestNextStepMeta?.className || 'dev-badge dev-badge--default'}`}>
                       {latestNextStepMeta?.label || 'General'}
                     </span>
                     <span className="progress-next-meta-item">Logged: {latestNextStepLoggedDate}</span>
@@ -1011,38 +1224,84 @@ export default function ProgressPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 className="dev-card-title" style={{ margin: 0 }}>Timeline</h2>
-          <p className="dev-card-subtitle" style={{ margin: 0 }}>
+            <p className="dev-card-subtitle" style={{ margin: 0 }}>
               Recent work from CODEX_Progress_Log.md
             </p>
           </div>
           <div className="dev-chip-row">
-            <button
-              type="button"
-              className={`dev-pill-button ${activeTopic === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveTopic('all')}
-            >
-              All topics
-            </button>
-            {TOPICS.map((topic) => {
-              const count = topicCounts[topic] || 0;
-              if (!count) return null;
-              return (
-                <button
-                  key={topic}
-                  type="button"
-                  className={`dev-pill-button ${activeTopic === topic ? 'active' : ''}`}
-                  onClick={() => setActiveTopic(topic)}
-                >
-                  {TOPIC_LABELS[topic]} ({count})
-                </button>
-              );
-            })}
+            {TIMELINE_TIME_WINDOWS.map((window) => (
+              <button
+                key={window.id}
+                type="button"
+                className={`dev-pill-button ${timelineWindow === window.id ? 'active' : ''}`}
+                onClick={() => handleTimelineWindowChange(window.id)}
+              >
+                {window.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {timeline && timeline.length ? (
+        <div style={{ marginTop: '0.75rem' }}>
+          <div className="dev-chip-row" style={{ flexWrap: 'wrap', gap: '0.35rem' }}>
+            <button
+              type="button"
+              className={`dev-pill-button ${timelineTopicMode === 'all' ? 'active' : ''}`}
+              onClick={handleTimelineTopicsAll}
+            >
+              All topics
+            </button>
+            {TOPICS.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                className={`dev-pill-button ${timelineTopicFilters.has(topic) ? 'active' : ''}`}
+                onClick={() => handleTimelineTopicToggle(topic)}
+              >
+                {TOPIC_LABELS[topic]}
+                {topicCounts[topic] ? ` (${topicCounts[topic]})` : ''}
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="dev-chip-row">
+              <button
+                type="button"
+                className={`dev-pill-button ${timelineSource === 'codex' ? 'active' : ''}`}
+                onClick={() => handleTimelineSourceChange('codex')}
+              >
+                CODEX log
+              </button>
+              <button
+                type="button"
+                className={`dev-pill-button ${timelineSource === 'all' ? 'active' : ''}`}
+                onClick={() => handleTimelineSourceChange('all')}
+              >
+                All sources
+              </button>
+            </div>
+            <div style={{ flex: '1 1 220px', minWidth: '220px' }}>
+              <input
+                type="search"
+                placeholder="Search timeline"
+                value={timelineSearch}
+                onChange={(event) => setTimelineSearch(event.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.45rem 0.6rem',
+                  borderRadius: 'var(--dev-radius-md)',
+                  border: '1px solid var(--dev-border-subtle)',
+                  background: 'var(--dev-bg-soft)',
+                  color: 'var(--dev-text-primary)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {filteredTimelineEntries.length ? (
           <div style={{ marginTop: '1rem' }}>
-            {timeline.map((entry) => (
+            {filteredTimelineEntries.map((entry) => (
               <div
                 key={entry.id}
                 style={{
@@ -1056,9 +1315,9 @@ export default function ProgressPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
                   <div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--dev-text-muted)' }}>
-                      {entry.date} · {entry.dev || 'Unknown'}
+                      {entry.date || 'Unknown'} · {entry.dev || 'Unknown'}
                     </div>
-                    <div style={{ fontWeight: 500 }}>{entry.title}</div>
+                    <div style={{ fontWeight: 500 }}>{entry.title || entry.sourceEntry || 'Timeline entry'}</div>
                   </div>
                   {entry.phase && (
                     <span className="dev-badge dev-badge--muted">
@@ -1093,7 +1352,7 @@ export default function ProgressPage() {
           </div>
         ) : (
           <div style={{ marginTop: '1rem', color: 'var(--dev-text-muted)' }}>
-            Timeline is empty. Once CODEX sessions are logged, entries will appear here.
+            No timeline entries match the current filters.
           </div>
         )}
       </div>
