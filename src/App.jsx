@@ -8,6 +8,7 @@ import {
   DEFAULT_MODULE_KEY,
 } from './modules/moduleRegistry.js';
 import { subscribeNavigation } from './modules/navigationBus.js';
+import BuilderPage from './builder/BuilderPage.jsx';
 
 const CURRENT_ROLE = 'OWNER';
 const NAV_MODULES = getNavModules(CURRENT_ROLE);
@@ -37,6 +38,12 @@ const PAGE_META = getPageMetaMap();
 const DEFAULT_VIEW = DEFAULT_MODULE_KEY;
 
 function App() {
+  const pathname = window.location.pathname || '/';
+  if (pathname.startsWith('/builder')) {
+    const builderPath = pathname.replace(/^\/builder/, '') || '/';
+    return <BuilderPage urlPath={builderPath} />;
+  }
+
   const [view, setView] = useState(DEFAULT_VIEW);
 
   const handleNavigate = useCallback((nextKey) => {
