@@ -25,10 +25,12 @@ export default function BuilderPage({ urlPath }) {
         return;
       }
 
+      const options = Object.fromEntries(new URLSearchParams(window.location.search));
       const entry = await fetchOneEntry({
         apiKey,
         model: 'page',
-        query: { 'data.url': path },
+        options,
+        userAttributes: { urlPath: path },
       });
 
       if (!cancelled) setContent(entry || null);
