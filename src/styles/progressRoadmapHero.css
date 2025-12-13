@@ -52,14 +52,15 @@
 /* The diagonal “road” behind the cards */
 .progress-roadmap-hero__road {
   position: absolute;
-  left: -6%;
+  left: -11px;
   right: -6%;
-  bottom: 0.3rem;
-  height: 3.1rem;
+  top: 307px;
+  height: 49px;
+  width: 1445px;
   background: linear-gradient(90deg, #e5e7eb, #d1d5db);
   border-radius: 999px;
   transform-origin: center;
-  transform: rotate(-6deg);
+  transform: matrix(0.994522, -0.104528, 0.104528, 0.994522, 0, 0);
   box-shadow:
     0 10px 24px rgba(15, 23, 42, 0.18),
     inset 0 0 0 1px rgba(148, 163, 184, 0.6);
@@ -70,9 +71,11 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 1.4rem;
-  padding: 0.25rem 1rem 2.4rem;
+  gap: 22.4px;
+  padding: 4px 16px 38.4px;
+  margin-bottom: 82px;
   overflow-x: auto;
+  overflow-y: auto;
 }
 
 .progress-roadmap-hero__steps::-webkit-scrollbar {

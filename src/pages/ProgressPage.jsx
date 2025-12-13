@@ -1023,8 +1023,8 @@ export default function ProgressPage() {
                 <div className="progress-roadmaps-section-label">Current phase roadmap</div>
                 <div className="progress-roadmaps-section-copy">{currentRoadmapSummary}</div>
                 <div className="progress-roadmaps-chip-grid">
-                  {phase0RoadmapChips.map((chip) => (
-                    <span key={chip} className="progress-roadmaps-chip">
+                  {phase0RoadmapChips.map((chip, index) => (
+                    <span key={`roadmap-chip-${index}`} className="progress-roadmaps-chip">
                       {chip}
                     </span>
                   ))}
