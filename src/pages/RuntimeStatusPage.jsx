@@ -1,5 +1,10 @@
+import { useEffect, useMemo, useState } from 'react';
 import '../styles/liveMode.css';
 import { liveModeMock } from '../mock/devConsoleMockData.js';
+import { getRuntimeStatus } from '../api/client.js';
+import PlcCard from '../components/runtime/PlcCard.jsx';
+
+const DEFAULT_POLL_MS = 3000;
 
 export default function RuntimeStatusPage() {
   const {
@@ -7,6 +12,46 @@ export default function RuntimeStatusPage() {
     signalCards,
     logEvents,
   } = liveModeMock;
+
+  const [runtimeStatus, setRuntimeStatus] = useState(null);
+  const [runtimeError, setRuntimeError] = useState(null);
+
+  const pollMs = useMemo(() => {
+    const fromEnv = Number(import.meta.env.VITE_RUNTIME_STATUS_POLL_MS);
+    return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : DEFAULT_POLL_MS;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const result = await getRuntimeStatus();
+      if (cancelled) return;
+
+      if (result?.ok === false) {
+        setRuntimeError(result.error || 'Request failed');
+        return;
+      }
+
+      if (result?.status && result.status !== 'ok') {
+        setRuntimeError(result?.error || 'Backend error');
+        return;
+      }
+
+      setRuntimeStatus(result || null);
+      setRuntimeError(null);
+    }
+
+    load();
+    const interval = setInterval(load, pollMs);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [pollMs]);
+
+  const apiConnected = runtimeStatus?.status === 'ok' && !runtimeError;
 
   return (
     <div className="live-mode-page">
@@ -18,9 +63,13 @@ export default function RuntimeStatusPage() {
         </div>
         <div className="live-mode-hero-copy">
           <p>{streamStatus.detail}</p>
-          <span className="dev-status-chip status-mock">Mock stream</span>
+          <span className={`dev-status-chip ${apiConnected ? 'status-ok' : 'status-mock'}`}>
+            {apiConnected ? 'Live API' : 'Mock stream'}
+          </span>
         </div>
       </section>
+
+      <PlcCard plc={runtimeStatus?.plc} error={runtimeError} />
 
       <section className="dev-card live-mode-signal-strip">
         <header className="live-mode-section-head">

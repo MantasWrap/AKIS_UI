@@ -134,6 +134,112 @@
   font-size: 0.95rem;
 }
 
+/* --- PLC card --- */
+
+.live-mode-plc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.plc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0;
+}
+
+.plc-head-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.plc-title {
+  margin: 0;
+}
+
+.plc-notes {
+  margin: 0;
+  color: var(--dev-text-muted);
+  font-size: 0.92rem;
+}
+
+.plc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.plc-heartbeat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.plc-heartbeat-label {
+  color: var(--dev-text-muted);
+  font-size: 0.9rem;
+}
+
+.plc-heartbeat-value {
+  font-weight: 650;
+}
+
+.plc-heartbeat-ts {
+  color: var(--dev-text-muted);
+  font-size: 0.82rem;
+}
+
+.plc-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.plc-stat {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+  background: var(--dev-bg-soft);
+}
+
+.plc-stat dt {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+  margin: 0;
+}
+
+.plc-stat dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.plc-empty {
+  border: 1px dashed var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.85rem;
+  color: var(--dev-text-muted);
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.plc-empty-title {
+  margin: 0;
+  font-weight: 650;
+  color: var(--dev-text-primary);
+}
+
+.plc-empty-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 768px) {
   .live-mode-section-head {
     flex-direction: column;

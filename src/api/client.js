@@ -3,6 +3,15 @@ const API_BASE =
   import.meta.env.VITE_AKIS_API_BASE ||
   'http://localhost:4100';
 
+function getDebugHeaders() {
+  const token =
+    import.meta.env.VITE_AKIS_DEBUG_TOKEN ||
+    import.meta.env.VITE_DEBUG_TOKEN ||
+    '';
+  if (!token) return {};
+  return { 'x-debug-token': token };
+}
+
 export async function getHealth() {
   try {
     const res = await fetch(`${API_BASE}/api/health`);
@@ -118,7 +127,9 @@ export async function getRuntimeItems(params = {}) {
 
 export async function getRuntimeStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/debug/runtime-status`);
+    const res = await fetch(`${API_BASE}/api/debug/runtime-status`, {
+      headers: getDebugHeaders(),
+    });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -140,7 +151,9 @@ export async function getItemHistory(itemId) {
     return { error: 'Missing item id' };
   }
   try {
-    const res = await fetch(`${API_BASE}/api/items/${encodeURIComponent(itemId)}/history`);
+    const res = await fetch(`${API_BASE}/api/items/${encodeURIComponent(itemId)}/history`, {
+      headers: getDebugHeaders(),
+    });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       const message =
