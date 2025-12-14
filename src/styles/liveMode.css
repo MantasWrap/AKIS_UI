@@ -21,6 +21,12 @@
   align-items: flex-start;
 }
 
+.live-mode-hero-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
 .live-mode-section-head {
   display: flex;
   justify-content: space-between;

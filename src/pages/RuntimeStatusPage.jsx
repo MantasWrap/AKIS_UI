@@ -21,8 +21,8 @@ function formatAgeSeconds(ageS) {
 function computeSignalStatus({ transportDown, runtimeStatusFlag, summary }) {
   if (transportDown) return 'down';
 
-  // If backend returns status:"error" (DB-less MAC_DEV), treat signals as "Waiting"
-  // unless the specific summary is explicitly healthy=true.
+  // DB-less / soft-fail mode: status:"error" but payload present.
+  // Treat non-healthy summaries as "Waiting" (not "Offline") so operators can see the page is alive.
   if (runtimeStatusFlag === 'error') {
     if (summary?.healthy === true) return 'ok';
     return 'waiting';
@@ -30,7 +30,8 @@ function computeSignalStatus({ transportDown, runtimeStatusFlag, summary }) {
 
   if (summary?.healthy === true) return 'ok';
   if (summary?.has_data === false) return 'waiting';
-  // has_data=true but not healthy => treat as offline/stale for signals strip
+
+  // has_data=true but not healthy => treat as offline/stale for the signals strip
   return 'down';
 }
 
@@ -46,15 +47,19 @@ function buildJetsonCard({ transportDown, runtimeStatusFlag, jetsonSummary }) {
 
   const metric =
     status === 'ok'
-      ? 'Heartbeat OK'
+      ? 'Heartbeat received'
       : status === 'waiting'
-        ? 'No heartbeat yet'
+        ? 'Waiting'
         : 'Heartbeat stale';
 
   const helper =
-    !hasData
-      ? 'No heartbeat yet'
-      : `Last update ${ageLabel} ago`;
+    status === 'waiting'
+      ? (runtimeStatusFlag === 'error'
+        ? 'Degraded mode · waiting for first heartbeat'
+        : 'Waiting for first heartbeat')
+      : !hasData
+        ? 'Waiting for first heartbeat'
+        : `Last update ${ageLabel} ago`;
 
   return {
     id: 'jetsonRuntime',
@@ -78,17 +83,21 @@ function buildMqttCard({ transportDown, runtimeStatusFlag, bridgeSummary }) {
 
   const metric =
     status === 'ok'
-      ? 'Connected'
+      ? 'MQTT connected'
       : status === 'waiting'
-        ? 'No stats yet'
+        ? 'Waiting'
         : mqttConnected
           ? 'Stale stats'
-          : 'Disconnected';
+          : 'MQTT disconnected';
 
   const helper =
-    !hasData
-      ? 'No stats yet'
-      : `Last update ${ageLabel} ago`;
+    status === 'waiting'
+      ? (runtimeStatusFlag === 'error'
+        ? 'Degraded mode · waiting for first heartbeat'
+        : 'Waiting for first heartbeat')
+      : !hasData
+        ? 'Waiting for first heartbeat'
+        : `Last update ${ageLabel} ago`;
 
   return {
     id: 'mqttBridge',
@@ -131,6 +140,7 @@ export default function RuntimeStatusPage() {
         return;
       }
 
+      // Parsing failed or unexpected response
       setFetchError('Backend error');
       setRuntimeStatus(null);
     }
@@ -145,14 +155,23 @@ export default function RuntimeStatusPage() {
   }, [pollMs]);
 
   const runtimeFlag = runtimeStatus?.status || null;
-
   const transportDown = Boolean(fetchError) || !runtimeStatus;
+
+  // Hero chip: Live / Degraded / Backend error / Mock
   const heroChip = useMemo(() => {
     if (fetchError) return { text: 'Backend error', cls: 'status-down' };
+    if (!runtimeStatus) return { text: 'Mock stream', cls: 'status-mock' };
     if (runtimeFlag === 'ok') return { text: 'Live API', cls: 'status-ok' };
     if (runtimeFlag === 'error') return { text: 'Live API (degraded)', cls: 'status-waiting' };
-    return { text: 'Mock stream', cls: 'status-mock' };
-  }, [fetchError, runtimeFlag]);
+    return { text: 'Live API (degraded)', cls: 'status-waiting' };
+  }, [fetchError, runtimeFlag, runtimeStatus]);
+
+  // Optional extra cue for DB-less MAC_DEV
+  const degradedHint = useMemo(() => {
+    if (!runtimeStatus || runtimeFlag !== 'error') return null;
+    if (runtimeStatus?.db?.ok === false) return 'Degraded: database not configured.';
+    return 'Degraded: some services unavailable.';
+  }, [runtimeStatus, runtimeFlag]);
 
   const derivedSignalCards = useMemo(() => {
     const jetsonSummary = runtimeStatus?.jetson_metrics_summary || null;
@@ -185,10 +204,13 @@ export default function RuntimeStatusPage() {
           <span className={`dev-status-chip ${heroChip.cls}`}>
             {heroChip.text}
           </span>
+          {degradedHint ? (
+            <p className="live-mode-hero-hint">{degradedHint}</p>
+          ) : null}
         </div>
       </section>
 
-      {/* PLC card: error only on transport failures (keep DB-less status:"error" as “No data” instead of “backend error”) */}
+      {/* PLC card: error only on transport/auth failures (DB-less status:"error" should still show “No data” / “Stale” etc.) */}
       <PlcCard plc={runtimeStatus?.plc} error={fetchError} />
 
       <section className="dev-card live-mode-signal-strip">
@@ -226,7 +248,7 @@ export default function RuntimeStatusPage() {
             <h3>Recent events</h3>
           </div>
           <p className="live-mode-section-sub">
-            Still mock until a later stage defines a real activity feed.
+            Mock activity log (real events wiring will land in a later task).
           </p>
         </header>
         <ul className="live-mode-log-list">
