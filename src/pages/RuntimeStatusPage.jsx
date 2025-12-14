@@ -6,15 +6,104 @@ import PlcCard from '../components/runtime/PlcCard.jsx';
 
 const DEFAULT_POLL_MS = 3000;
 
+function formatAgeSeconds(ageS) {
+  if (typeof ageS !== 'number' || !Number.isFinite(ageS) || ageS < 0) return '—';
+  const rounded = Math.round(ageS);
+  if (rounded < 60) return `${rounded}s`;
+  const m = Math.round(rounded / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.round(h / 24);
+  return `${d}d`;
+}
+
+function computeSignalStatus({ transportDown, runtimeStatusFlag, summary }) {
+  if (transportDown) return 'down';
+
+  // If backend returns status:"error" (DB-less MAC_DEV), treat signals as "Waiting"
+  // unless the specific summary is explicitly healthy=true.
+  if (runtimeStatusFlag === 'error') {
+    if (summary?.healthy === true) return 'ok';
+    return 'waiting';
+  }
+
+  if (summary?.healthy === true) return 'ok';
+  if (summary?.has_data === false) return 'waiting';
+  // has_data=true but not healthy => treat as offline/stale for signals strip
+  return 'down';
+}
+
+function buildJetsonCard({ transportDown, runtimeStatusFlag, jetsonSummary }) {
+  const status = computeSignalStatus({
+    transportDown,
+    runtimeStatusFlag,
+    summary: jetsonSummary,
+  });
+
+  const hasData = jetsonSummary?.has_data === true;
+  const ageLabel = formatAgeSeconds(jetsonSummary?.age_s);
+
+  const metric =
+    status === 'ok'
+      ? 'Heartbeat OK'
+      : status === 'waiting'
+        ? 'No heartbeat yet'
+        : 'Heartbeat stale';
+
+  const helper =
+    !hasData
+      ? 'No heartbeat yet'
+      : `Last update ${ageLabel} ago`;
+
+  return {
+    id: 'jetsonRuntime',
+    label: 'Jetson runtime',
+    status,
+    metric,
+    helper,
+  };
+}
+
+function buildMqttCard({ transportDown, runtimeStatusFlag, bridgeSummary }) {
+  const status = computeSignalStatus({
+    transportDown,
+    runtimeStatusFlag,
+    summary: bridgeSummary,
+  });
+
+  const hasData = bridgeSummary?.has_data === true;
+  const ageLabel = formatAgeSeconds(bridgeSummary?.age_s);
+  const mqttConnected = bridgeSummary?.mqtt_connected === true;
+
+  const metric =
+    status === 'ok'
+      ? 'Connected'
+      : status === 'waiting'
+        ? 'No stats yet'
+        : mqttConnected
+          ? 'Stale stats'
+          : 'Disconnected';
+
+  const helper =
+    !hasData
+      ? 'No stats yet'
+      : `Last update ${ageLabel} ago`;
+
+  return {
+    id: 'mqttBridge',
+    label: 'MQTT bridge',
+    status,
+    metric,
+    helper,
+  };
+}
+
 export default function RuntimeStatusPage() {
-  const {
-    streamStatus,
-    signalCards,
-    logEvents,
-  } = liveModeMock;
+  const { streamStatus, logEvents } = liveModeMock;
 
   const [runtimeStatus, setRuntimeStatus] = useState(null);
-  const [runtimeError, setRuntimeError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
 
   const pollMs = useMemo(() => {
     const fromEnv = Number(import.meta.env.VITE_RUNTIME_STATUS_POLL_MS);
@@ -28,18 +117,22 @@ export default function RuntimeStatusPage() {
       const result = await getRuntimeStatus();
       if (cancelled) return;
 
+      // Transport / auth error (non-200, network, invalid token)
       if (result?.ok === false) {
-        setRuntimeError(result.error || 'Request failed');
+        setFetchError(result.error || 'Request failed');
+        setRuntimeStatus(null);
         return;
       }
 
-      if (result?.status && result.status !== 'ok') {
-        setRuntimeError(result?.error || 'Backend error');
+      // Valid JSON payload from backend (can be status:"ok" or status:"error")
+      if (result && typeof result === 'object') {
+        setRuntimeStatus(result);
+        setFetchError(null);
         return;
       }
 
-      setRuntimeStatus(result || null);
-      setRuntimeError(null);
+      setFetchError('Backend error');
+      setRuntimeStatus(null);
     }
 
     load();
@@ -51,7 +144,33 @@ export default function RuntimeStatusPage() {
     };
   }, [pollMs]);
 
-  const apiConnected = runtimeStatus?.status === 'ok' && !runtimeError;
+  const runtimeFlag = runtimeStatus?.status || null;
+
+  const transportDown = Boolean(fetchError) || !runtimeStatus;
+  const heroChip = useMemo(() => {
+    if (fetchError) return { text: 'Backend error', cls: 'status-down' };
+    if (runtimeFlag === 'ok') return { text: 'Live API', cls: 'status-ok' };
+    if (runtimeFlag === 'error') return { text: 'Live API (degraded)', cls: 'status-waiting' };
+    return { text: 'Mock stream', cls: 'status-mock' };
+  }, [fetchError, runtimeFlag]);
+
+  const derivedSignalCards = useMemo(() => {
+    const jetsonSummary = runtimeStatus?.jetson_metrics_summary || null;
+    const bridgeSummary = runtimeStatus?.bridge_stats_summary || null;
+
+    return [
+      buildJetsonCard({
+        transportDown,
+        runtimeStatusFlag: runtimeFlag,
+        jetsonSummary,
+      }),
+      buildMqttCard({
+        transportDown,
+        runtimeStatusFlag: runtimeFlag,
+        bridgeSummary,
+      }),
+    ];
+  }, [runtimeStatus, transportDown, runtimeFlag]);
 
   return (
     <div className="live-mode-page">
@@ -63,26 +182,27 @@ export default function RuntimeStatusPage() {
         </div>
         <div className="live-mode-hero-copy">
           <p>{streamStatus.detail}</p>
-          <span className={`dev-status-chip ${apiConnected ? 'status-ok' : 'status-mock'}`}>
-            {apiConnected ? 'Live API' : 'Mock stream'}
+          <span className={`dev-status-chip ${heroChip.cls}`}>
+            {heroChip.text}
           </span>
         </div>
       </section>
 
-      <PlcCard plc={runtimeStatus?.plc} error={runtimeError} />
+      {/* PLC card: error only on transport failures (keep DB-less status:"error" as “No data” instead of “backend error”) */}
+      <PlcCard plc={runtimeStatus?.plc} error={fetchError} />
 
       <section className="dev-card live-mode-signal-strip">
         <header className="live-mode-section-head">
           <div>
             <p className="dev-card-eyebrow">Signals</p>
-            <h3>Controller → Jetson → MQTT</h3>
+            <h3>Jetson + MQTT (from /api/debug/runtime-status)</h3>
           </div>
           <p className="live-mode-section-sub">
-            This strip mirrors the future realtime heartbeat cards.
+            Polled snapshot · no realtime stream yet.
           </p>
         </header>
         <div className="live-mode-signal-grid">
-          {signalCards.map((card) => (
+          {derivedSignalCards.map((card) => (
             <article key={card.id} className="live-mode-signal-card">
               <div className="live-mode-signal-top">
                 <span>{card.label}</span>
@@ -106,7 +226,7 @@ export default function RuntimeStatusPage() {
             <h3>Recent events</h3>
           </div>
           <p className="live-mode-section-sub">
-            Once runtime wiring lands this list turns into a streaming console.
+            Still mock until a later stage defines a real activity feed.
           </p>
         </header>
         <ul className="live-mode-log-list">
