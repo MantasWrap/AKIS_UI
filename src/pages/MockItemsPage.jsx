@@ -17,19 +17,29 @@ export default function MockItemsPage() {
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      if (activeFilters.classLabel !== 'all' && item.classLabel !== activeFilters.classLabel) return false;
-      if (activeFilters.status !== 'all' && item.status !== activeFilters.status) return false;
-      if (activeFilters.camera !== 'all' && item.sourceCamera !== activeFilters.camera) return false;
-      if (activeFilters.period !== 'all' && item.lastSeen !== activeFilters.period) return false;
-      if (search.trim()) {
-        const term = search.trim().toLowerCase();
-        return item.id.toLowerCase().includes(term);
+      if (activeFilters.classLabel !== 'all' && item.classLabel !== activeFilters.classLabel) {
+        return false;
+      }
+      if (activeFilters.status !== 'all' && item.status !== activeFilters.status) {
+        return false;
+      }
+      if (activeFilters.camera !== 'all' && item.sourceCamera !== activeFilters.camera) {
+        return false;
+      }
+      if (activeFilters.period !== 'all' && item.lastSeen !== activeFilters.period) {
+        return false;
+      }
+      if (search && !item.id.toLowerCase().includes(search.toLowerCase())) {
+        return false;
       }
       return true;
     });
   }, [items, activeFilters, search]);
 
-  const selectedItem = filteredItems.find((item) => item.id === selectedId) || items.find((item) => item.id === selectedId) || null;
+  const selectedItem =
+    filteredItems.find((item) => item.id === selectedId) ||
+    items.find((item) => item.id === selectedId) ||
+    null;
 
   const handleFilterChange = (key, value) => {
     setActiveFilters((prev) => ({ ...prev, [key]: value }));
@@ -40,7 +50,7 @@ export default function MockItemsPage() {
       <section className="dev-card items-hero-card">
         <div>
           <p className="dev-card-eyebrow">{header.eyebrow}</p>
-          <h2 className="dev-card-title">Items</h2>
+          <h2 className="dev-card-title">Simulation items</h2>
           <p className="dev-card-subtitle">{header.description}</p>
         </div>
         <div className="items-search">
@@ -74,12 +84,8 @@ export default function MockItemsPage() {
             onSelect={(value) => handleFilterChange('camera', value)}
           />
           <FilterGroup
-            label="Last seen"
-            options={filters.periods.map((period) => period.label)}
-            customMap={filters.periods.reduce((acc, period) => {
-              acc[period.label] = period.id;
-              return acc;
-            }, {})}
+            label="Period"
+            options={filters.periods}
             value={activeFilters.period}
             onSelect={(value) => handleFilterChange('period', value)}
           />
@@ -87,14 +93,14 @@ export default function MockItemsPage() {
 
         <section className="items-table-section">
           <div className="items-table-meta">
-            <span>{filteredItems.length} items · mock data only</span>
-            <button type="button" className="dev-ghost-button" onClick={() => {
-              setActiveFilters(FILTER_DEFAULTS);
-              setSearch('');
-            }}
-            >
-              Reset filters
-            </button>
+            <div>
+              <p className="items-table-count">
+                Showing <strong>{filteredItems.length}</strong> of {items.length} mock items
+              </p>
+              <p className="items-table-hint">
+                Filter and click any row to inspect a single mock item in more detail.
+              </p>
+            </div>
           </div>
           <div className="items-table-wrapper">
             <table className="items-table">
@@ -112,21 +118,13 @@ export default function MockItemsPage() {
                 {filteredItems.map((item) => (
                   <tr
                     key={item.id}
-                    className={selectedId === item.id ? 'is-selected' : ''}
+                    className={item.id === selectedId ? 'is-selected' : ''}
                     onClick={() => setSelectedId(item.id)}
                   >
-                    <td>
-                      <button type="button" className="items-table-id" onClick={() => setSelectedId(item.id)}>
-                        {item.id}
-                      </button>
-                    </td>
+                    <td>{item.id}</td>
                     <td>{item.classLabel}</td>
-                    <td>
-                      <span className={`items-status-pill status-${item.status.toLowerCase()}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td>{Math.round(item.confidence * 100)}%</td>
+                    <td>{item.status}</td>
+                    <td>{(item.confidence * 100).toFixed(1)}%</td>
                     <td>{item.timestamp}</td>
                     <td>{item.sourceLane}</td>
                   </tr>
@@ -136,22 +134,41 @@ export default function MockItemsPage() {
           </div>
         </section>
 
-        <aside className={`items-detail-panel ${selectedItem ? 'is-visible' : ''}`}>
-          {selectedItem ? (
-            <ItemDetails item={selectedItem} onClose={() => setSelectedId(null)} />
-          ) : (
-            <div className="items-detail-empty">
-              Select an item to preview doc-backed metadata.
+        {selectedItem && (
+          <section className="items-detail-section">
+            <div className="items-detail-card">
+              <div className="items-detail-head">
+                <h3 className="items-detail-title">{selectedItem.id}</h3>
+                <p className="items-detail-eyebrow">Mock item</p>
+                <p className="items-detail-sub">
+                  {selectedItem.timestamp} · {selectedItem.sourceCamera}
+                </p>
+              </div>
+              <dl className="items-detail-grid">
+                <DetailRow label="Class" value={selectedItem.classLabel} />
+                <DetailRow label="Status" value={selectedItem.status} />
+                <DetailRow label="Confidence" value={`${(selectedItem.confidence * 100).toFixed(1)}%`} />
+                <DetailRow label="Source lane" value={selectedItem.sourceLane} />
+                <DetailRow label="Dimensions" value={selectedItem.dimensions} />
+                <DetailRow label="Weight" value={selectedItem.weight} />
+              </dl>
+              <div className="items-detail-notes">
+                <p className="items-detail-label">Notes</p>
+                <p className="items-detail-value">{selectedItem.notes}</p>
+              </div>
+              <div className="items-detail-doc">
+                <p className="items-detail-label">Doc reference</p>
+                <p className="items-detail-value">{selectedItem.docRef}</p>
+              </div>
             </div>
-          )}
-        </aside>
+          </section>
+        )}
       </div>
     </div>
   );
 }
 
-function FilterGroup({ label, options, value, onSelect, customMap }) {
-  const resolvedValue = customMap ? Object.entries(customMap).find(([, id]) => id === value)?.[0] || 'all' : value;
+function FilterGroup({ label, options, value, onSelect }) {
   return (
     <div className="items-filter-group">
       <p className="items-filter-label">{label}</p>
@@ -164,52 +181,21 @@ function FilterGroup({ label, options, value, onSelect, customMap }) {
           All
         </button>
         {options.map((option) => {
-          const optionValue = customMap ? customMap[option] : option;
-          const isActive = resolvedValue === option;
+          const id = typeof option === 'string' ? option : option.id;
+          const chipLabel = typeof option === 'string' ? option : option.label;
+          const isActive = value === id;
+          const chipValue = id === 'all' ? 'all' : id;
           return (
             <button
-              key={option}
+              key={id}
               type="button"
               className={`items-filter-chip ${isActive ? 'is-active' : ''}`}
-              onClick={() => onSelect(optionValue)}
+              onClick={() => onSelect(chipValue)}
             >
-              {option}
+              {chipLabel}
             </button>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function ItemDetails({ item, onClose }) {
-  return (
-    <div className="items-detail-card">
-      <div className="items-detail-head">
-        <div>
-          <p className="items-detail-eyebrow">Mock item</p>
-          <h3>{item.id}</h3>
-          <p className="items-detail-sub">{item.timestamp} · {item.sourceCamera}</p>
-        </div>
-        <button type="button" className="dev-ghost-button" onClick={onClose}>
-          Close
-        </button>
-      </div>
-      <dl className="items-detail-grid">
-        <DetailRow label="Class" value={item.classLabel} />
-        <DetailRow label="Status" value={item.status} />
-        <DetailRow label="Confidence" value={`${Math.round(item.confidence * 100)}%`} />
-        <DetailRow label="Source lane" value={item.sourceLane} />
-        <DetailRow label="Dimensions" value={item.dimensions} />
-        <DetailRow label="Weight" value={item.weight} />
-      </dl>
-      <div className="items-detail-notes">
-        <p className="items-detail-label">Notes</p>
-        <p>{item.notes}</p>
-      </div>
-      <div className="items-detail-doc">
-        <p className="items-detail-label">Doc reference</p>
-        <code>{item.docRef}</code>
       </div>
     </div>
   );

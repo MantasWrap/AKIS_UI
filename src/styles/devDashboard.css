@@ -18,31 +18,35 @@
 }
 
 .dev-dashboard-pill-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .dev-dashboard-pill {
-  border: 1px solid var(--dev-border-subtle);
-  border-radius: 18px;
+  flex: 1 1 160px;
+  min-width: 0;
+  border-radius: 16px;
   padding: 0.9rem 1rem;
-  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.08), #fff);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  border: 1px solid var(--dev-border-subtle);
+  background: var(--dev-bg-card);
 }
 
 .dev-dashboard-pill .pill-top {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
-  align-items: center;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
 }
 
 .dev-dashboard-pill .pill-label {
   font-weight: 600;
-  color: var(--dev-text-primary);
+}
+
+.dev-dashboard-pill .pill-status {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
 }
 
 .dev-dashboard-pill .pill-description {
@@ -76,50 +80,73 @@
 }
 
 .dev-controller-field {
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--dev-border-subtle);
   border-radius: 12px;
   padding: 0.7rem 0.85rem;
-  background: rgba(248, 250, 252, 0.9);
+  background: var(--dev-bg-soft);
 }
 
 .dev-controller-field dt {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dev-text-muted);
-  margin: 0 0 0.2rem;
+  font-size: 0.8rem;
+  color: var(--dev-text-soft);
 }
 
 .dev-controller-field dd {
-  margin: 0;
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.dev-controller-field dd.is-placeholder {
+  color: var(--dev-text-muted);
+}
+
+.dev-controller-footnote {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-endpoints-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dev-endpoints-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dev-endpoint-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dev-endpoint-eyebrow {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+  letter-spacing: 0.06em;
+}
+
+.dev-endpoint-title {
   font-size: 0.95rem;
   font-weight: 600;
 }
 
-.dev-controller-field dd.is-placeholder {
-  color: rgba(15, 23, 42, 0.5);
+.dev-endpoint-description {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-soft);
 }
 
-.dev-controller-footnote {
-  font-size: 0.82rem;
-  color: var(--dev-text-muted);
-  border-top: 1px dashed var(--dev-border-subtle);
-  margin-top: 0.8rem;
-  padding-top: 0.8rem;
-}
-
-.dev-endpoint-base {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
-}
-
-.dev-endpoint-label {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--dev-text-muted);
+.dev-endpoint-lists {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.2fr);
+  gap: 1.25rem;
 }
 
 .dev-endpoint-list {
@@ -135,29 +162,24 @@
   border: 1px solid var(--dev-border-subtle);
   border-radius: 14px;
   padding: 0.8rem;
-  background: rgba(0, 0, 0, 0.015);
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  background: rgba(15, 23, 42, 0.02);
 }
 
-.dev-endpoint-main {
+.dev-endpoint-item-main {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
 }
 
-.dev-endpoint-title {
-  margin: 0;
-  font-weight: 600;
-}
-
-.dev-endpoint-description {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--dev-text-muted);
+.dev-endpoint-copy {
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--dev-border-subtle);
+  padding: 0.25rem 0.8rem;
+  background: transparent;
+  cursor: pointer;
 }
 
 .dev-endpoint-path {
@@ -180,6 +202,40 @@
   border: 1px dashed var(--dev-border-subtle);
   border-radius: 12px;
   padding: 0.75rem;
+}
+
+.dev-dashboard-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.dev-dashboard-quick-link {
+  border-radius: var(--dev-radius-pill);
+  border: 1px solid var(--dev-border-subtle);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+  background-color: var(--dev-bg-soft);
+  color: var(--dev-text-soft);
+  cursor: pointer;
+}
+
+.pill-status-ok {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #166534;
+}
+
+.pill-status-waiting,
+.pill-status-warn {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #854d0e;
+}
+
+.pill-status-error {
+  background-color: rgba(239, 68, 68, 0.18);
+  color: #b91c1c;
 }
 
 /* Owner Home – shared dashboard helpers */
@@ -329,4 +385,9 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+.dev-endpoint-list-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }

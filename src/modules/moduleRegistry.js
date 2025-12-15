@@ -1,5 +1,4 @@
 import StatusPage from '../pages/StatusPage.jsx';
-import OwnerHomePage from '../pages/OwnerHomePage.jsx';
 import MockItemsPage from '../pages/MockItemsPage.jsx';
 import RuntimeStatusPage from '../pages/RuntimeStatusPage.jsx';
 import ProgressPage from '../pages/ProgressPage.jsx';
@@ -31,7 +30,6 @@ import {
   Info,
   LayoutDashboard,
   ListOrdered,
-  Home,
   Rocket,
   ScrollText,
   ShieldCheck,
@@ -54,7 +52,6 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
 /**
  * @typedef {
  *  | 'status'
- *  | 'ownerHome'
  *  | 'items'
  *  | 'runtimeStatus'
  *  | 'progress'
@@ -80,7 +77,7 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
  */
 
 /**
- * @typedef {Object} DevModule
+ * @typedef DevModule
  * @property {DevModuleKey} key
  * @property {string} label
  * @property {React.ComponentType} component
@@ -117,26 +114,13 @@ export const MODULES = [
     navSection: 'core',
   },
   {
-    key: 'ownerHome',
-    label: 'Owner home',
-    component: OwnerHomePage,
-    icon: Home,
-    pageMeta: {
-      title: 'Owner home',
-      subtitle: 'High-level progress, incidents, and reliability.',
-    },
-    enabled: resolveEnabled('ownerHome', true),
-    enabledRoles: ['OWNER'],
-    navSection: 'core',
-  },
-  {
     key: 'items',
-    label: 'Mock items',
+    label: 'Simulation items',
     component: MockItemsPage,
     icon: ListOrdered,
     pageMeta: {
-      title: 'Mock items',
-      subtitle: 'Experimental fake items to test future runtime UIs.',
+      title: 'Simulation items',
+      subtitle: 'Simulation/mock items for UX testing – not live production data.',
     },
     enabled: resolveEnabled('items', true),
     enabledRoles: ['OWNER', 'ENGINEER'],
@@ -149,7 +133,7 @@ export const MODULES = [
     icon: ActivitySquare,
     pageMeta: {
       title: 'Live mode',
-      subtitle: 'Runtime status and live telemetry for item flow.',
+      subtitle: 'Jetson runtime, blowers and conveyor view (mock scaffold).',
     },
     enabled: resolveEnabled('runtimeStatus', true),
     enabledRoles: ['OWNER', 'ENGINEER'],
@@ -169,13 +153,65 @@ export const MODULES = [
     navSection: 'core',
   },
   {
+    key: 'plc',
+    label: 'PLC',
+    component: RuntimeStatusPage,
+    icon: Cpu,
+    pageMeta: {
+      title: 'PLC',
+      subtitle: 'PLC mapping, IOs and conveyor line overview (future).',
+    },
+    enabled: resolveEnabled('plc', false),
+    enabledRoles: ['OWNER', 'ENGINEER'],
+    navSection: 'core',
+  },
+  {
+    key: 'training',
+    label: 'Training',
+    component: RuntimeStatusPage,
+    icon: GraduationCap,
+    pageMeta: {
+      title: 'Training',
+      subtitle: 'Operator and engineer training modules (future).',
+    },
+    enabled: resolveEnabled('training', false),
+    enabledRoles: ['OWNER', 'ENGINEER'],
+    navSection: 'core',
+  },
+  {
+    key: 'analytics',
+    label: 'Analytics',
+    component: RuntimeStatusPage,
+    icon: LineChart,
+    pageMeta: {
+      title: 'Analytics',
+      subtitle: 'Yield, throughput and quality analytics (future).',
+    },
+    enabled: resolveEnabled('analytics', false),
+    enabledRoles: ['OWNER', 'ENGINEER'],
+    navSection: 'core',
+  },
+  {
+    key: 'alerts',
+    label: 'Alerts',
+    component: RuntimeStatusPage,
+    icon: Bell,
+    pageMeta: {
+      title: 'Alerts',
+      subtitle: 'Notifications and alert rules (future).',
+    },
+    enabled: resolveEnabled('alerts', false),
+    enabledRoles: ['OWNER', 'ENGINEER'],
+    navSection: 'core',
+  },
+  {
     key: 'aiOsHome',
     label: 'Home',
     component: AiOsHomePage,
-    icon: Cpu,
+    icon: Sparkles,
     pageMeta: {
-      title: 'AI OS · Home',
-      subtitle: 'AI OS 0.1 status, usage, and plan overview.',
+      title: 'AI OS Home',
+      subtitle: 'High-level AI OS cockpit.',
     },
     enabled: resolveEnabled('aiOsHome', true),
     enabledRoles: ['OWNER'],
@@ -187,8 +223,8 @@ export const MODULES = [
     component: AiOsAgentsPage,
     icon: Users2,
     pageMeta: {
-      title: 'AI OS · Agents',
-      subtitle: 'Roster of owner-facing AI collaborators.',
+      title: 'Agents dashboard',
+      subtitle: 'AI agents, their roles and current status.',
     },
     enabled: resolveEnabled('aiOsAgents', true),
     enabledRoles: ['OWNER'],
@@ -196,12 +232,12 @@ export const MODULES = [
   },
   {
     key: 'aiOsModes',
-    label: 'AI modes',
+    label: 'Modes',
     component: AiOsModesPage,
-    icon: Sparkles,
+    icon: SlidersHorizontal,
     pageMeta: {
-      title: 'AI OS · Modes',
-      subtitle: 'Documented communication surfaces and channels.',
+      title: 'AI modes',
+      subtitle: 'Presets for AI behaviour and safety.',
     },
     enabled: resolveEnabled('aiOsModes', true),
     enabledRoles: ['OWNER'],
@@ -227,7 +263,7 @@ export const MODULES = [
     icon: Coins,
     pageMeta: {
       title: 'Agent costs',
-      subtitle: 'Mocked spend + guardrails for agents.',
+      subtitle: 'Rough cost-per-action and per-mission estimates.',
     },
     enabled: resolveEnabled('aiOsAgentCosts', true),
     enabledRoles: ['OWNER'],
@@ -239,8 +275,8 @@ export const MODULES = [
     component: AiOsMissionsPage,
     icon: Rocket,
     pageMeta: {
-      title: 'AI OS missions',
-      subtitle: 'Mission planning placeholder.',
+      title: 'Missions control',
+      subtitle: 'Mission queue, statuses and handoffs.',
     },
     enabled: resolveEnabled('aiOsMissions', true),
     enabledRoles: ['OWNER'],
@@ -252,8 +288,8 @@ export const MODULES = [
     component: AiOsSecurityPage,
     icon: ShieldCheck,
     pageMeta: {
-      title: 'Security & access',
-      subtitle: 'Roles, guardrails, and access placeholders.',
+      title: 'Security cockpit',
+      subtitle: 'Access, roles and data boundaries.',
     },
     enabled: resolveEnabled('aiOsSecurity', true),
     enabledRoles: ['OWNER'],
@@ -263,10 +299,10 @@ export const MODULES = [
     key: 'aiOsSettings',
     label: 'Settings',
     component: AiOsSettingsPage,
-    icon: SlidersHorizontal,
+    icon: Cog,
     pageMeta: {
       title: 'AI OS settings',
-      subtitle: 'Read-only toggles sourced from specs.',
+      subtitle: 'Config for AI OS, tenants and environments.',
     },
     enabled: resolveEnabled('aiOsSettings', true),
     enabledRoles: ['OWNER'],
@@ -274,12 +310,12 @@ export const MODULES = [
   },
   {
     key: 'aiOsAgentSettingsV2',
-    label: 'Agent settings v2',
+    label: 'Agent config',
     component: AiOsAgentSettingsV2Page,
-    icon: Cog,
+    icon: ScrollText,
     pageMeta: {
-      title: 'Agent Settings v2',
-      subtitle: 'Per-agent behaviour/performance/formatting schema.',
+      title: 'Agent configuration',
+      subtitle: 'Detailed tuning for individual agents.',
     },
     enabled: resolveEnabled('aiOsAgentSettingsV2', true),
     enabledRoles: ['OWNER'],
@@ -291,8 +327,8 @@ export const MODULES = [
     component: AiOsAchievementsPage,
     icon: Trophy,
     pageMeta: {
-      title: 'Achievements & milestones',
-      subtitle: 'Timeline sourced from Achievements_Log.md.',
+      title: 'AI OS achievements',
+      subtitle: 'Badges and milestones for deployments.',
     },
     enabled: resolveEnabled('aiOsAchievements', true),
     enabledRoles: ['OWNER'],
@@ -302,10 +338,10 @@ export const MODULES = [
     key: 'aiOsCoreLogs',
     label: 'Logs & pipeline',
     component: AiOsCoreLogsPage,
-    icon: ScrollText,
+    icon: ListOrdered,
     pageMeta: {
-      title: 'Core logs & pipelines',
-      subtitle: 'Agent Task Pipeline, Core Decision Log, and Maturity tracker.',
+      title: 'Core logs & pipeline',
+      subtitle: 'Raw event logs and pipeline traces.',
     },
     enabled: resolveEnabled('aiOsCoreLogs', true),
     enabledRoles: ['OWNER'],
@@ -353,9 +389,7 @@ export const MODULES = [
   // Future modules will be appended here with navSection: 'future'.
 ];
 
-const DEFAULT_ROLE = 'OWNER';
-
-export function getNavModules(role = DEFAULT_ROLE) {
+export function getNavModules(role) {
   return MODULES.filter((module) => module.enabled && module.enabledRoles.includes(role));
 }
 
