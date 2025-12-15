@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../styles/devDashboard.css';
 import { devDashboardMock } from '../mock/devConsoleMockData.js';
+import { getProgressSummary } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 
 export default function StatusPage() {
@@ -11,6 +12,67 @@ export default function StatusPage() {
     endpoints,
   } = devDashboardMock;
   const [copiedId, setCopiedId] = useState(null);
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadSummary() {
+      try {
+        const data = await getProgressSummary({});
+        if (isCancelled) return;
+
+        if (!data) {
+          setSummary(null);
+          return;
+        }
+
+        const payload = data.data || data.summary || data;
+        setSummary(payload);
+      } catch (error) {
+        console.warn('Owner summary load failed', error);
+      }
+    }
+
+    loadSummary();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const currentPhaseText = (() => {
+    if (!summary) return '';
+
+    const { activePhaseId, phases, activePhase } = summary;
+    if (!Array.isArray(phases) || phases.length === 0) {
+      return activePhase || '';
+    }
+
+    const phase =
+      (activePhaseId && phases.find((p) => p.phaseId === activePhaseId)) ||
+      phases[0];
+
+    if (!phase) {
+      return activePhase || '';
+    }
+
+    const name = phase.name || activePhase || 'Current phase';
+    const checklist = phase.checklist || {};
+    const completed = Number(checklist.completed || 0);
+    const total = Number.isFinite(Number(checklist.total))
+      ? Number(checklist.total)
+      : 0;
+    const percent =
+      typeof checklist.percent === 'number'
+        ? Math.round(checklist.percent)
+        : total > 0
+          ? Math.round((completed / total) * 100)
+          : 0;
+
+    const totalLabel = total > 0 ? `${completed}/${total}` : `${completed}`;
+    return `${name} · ${totalLabel} items · ${percent}% done`;
+  })();
 
   const handleNavigate = (targetKey) => {
     emitNavigation(targetKey);
@@ -38,6 +100,13 @@ export default function StatusPage() {
           </div>
           <span className="dev-status-chip status-mock">Mock only</span>
         </header>
+        {currentPhaseText && (
+          <p
+            className="dev-dashboard-phase-line"
+          >
+            Current phase: {currentPhaseText}
+          </p>
+        )}
         <div className="dev-dashboard-quick-links">
           <button
             type="button"

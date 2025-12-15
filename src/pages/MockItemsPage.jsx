@@ -51,7 +51,9 @@ export default function MockItemsPage() {
         <div>
           <p className="dev-card-eyebrow">{header.eyebrow}</p>
           <h2 className="dev-card-title">Simulation items</h2>
-          <p className="dev-card-subtitle">{header.description}</p>
+          <p className="dev-card-subtitle">
+            {header.description}
+          </p>
         </div>
         <div className="items-search">
           <input
@@ -104,16 +106,16 @@ export default function MockItemsPage() {
           </div>
           <div className="items-table-wrapper">
             <table className="items-table">
-              <thead>
-                <tr>
-                  <th>Item ID</th>
-                  <th>Class</th>
-                  <th>Status</th>
-                  <th>Confidence</th>
-                  <th>Timestamp</th>
-                  <th>Source lane</th>
-                </tr>
-              </thead>
+                    <thead>
+                      <tr>
+                        <th>Item ID</th>
+                        <th>Class</th>
+                        <th>Status</th>
+                        <th>Confidence</th>
+                        <th>Timestamp</th>
+                        <th>Source lane</th>
+                      </tr>
+                    </thead>
               <tbody>
                 {filteredItems.map((item) => (
                   <tr
@@ -158,7 +160,9 @@ export default function MockItemsPage() {
               </div>
               <div className="items-detail-doc">
                 <p className="items-detail-label">Doc reference</p>
-                <p className="items-detail-value">{selectedItem.docRef}</p>
+                <code className="items-detail-value items-detail-doc-ref">
+                  {selectedItem.docRef}
+                </code>
               </div>
             </div>
           </section>

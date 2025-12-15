@@ -212,6 +212,12 @@
   margin-bottom: 0.25rem;
 }
 
+.dev-dashboard-phase-line {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
 .dev-dashboard-quick-link {
   border-radius: var(--dev-radius-pill);
   border: 1px solid var(--dev-border-subtle);
