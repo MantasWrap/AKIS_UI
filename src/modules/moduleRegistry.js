@@ -1,4 +1,5 @@
 import StatusPage from '../pages/StatusPage.jsx';
+import OwnerHomePage from '../pages/OwnerHomePage.jsx';
 import MockItemsPage from '../pages/MockItemsPage.jsx';
 import RuntimeStatusPage from '../pages/RuntimeStatusPage.jsx';
 import ProgressPage from '../pages/ProgressPage.jsx';
@@ -30,6 +31,7 @@ import {
   Info,
   LayoutDashboard,
   ListOrdered,
+  Home,
   Rocket,
   ScrollText,
   ShieldCheck,
@@ -52,6 +54,7 @@ import { DESIGN_CONFIG } from '../design/designConfig.js';
 /**
  * @typedef {
  *  | 'status'
+ *  | 'ownerHome'
  *  | 'items'
  *  | 'runtimeStatus'
  *  | 'progress'
@@ -114,13 +117,26 @@ export const MODULES = [
     navSection: 'core',
   },
   {
+    key: 'ownerHome',
+    label: 'Owner home',
+    component: OwnerHomePage,
+    icon: Home,
+    pageMeta: {
+      title: 'Owner home',
+      subtitle: 'High-level progress, incidents, and reliability.',
+    },
+    enabled: resolveEnabled('ownerHome', true),
+    enabledRoles: ['OWNER'],
+    navSection: 'core',
+  },
+  {
     key: 'items',
-    label: 'Items',
+    label: 'Mock items',
     component: MockItemsPage,
     icon: ListOrdered,
     pageMeta: {
-      title: 'Items',
-      subtitle: 'Live and historical items from item_events_log.',
+      title: 'Mock items',
+      subtitle: 'Experimental fake items to test future runtime UIs.',
     },
     enabled: resolveEnabled('items', true),
     enabledRoles: ['OWNER', 'ENGINEER'],
