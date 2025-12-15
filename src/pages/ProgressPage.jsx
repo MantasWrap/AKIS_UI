@@ -2,6 +2,11 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   getProgressSummary,
   getProgressTimeline,
+  getTelemetrySummaryAgents,
+  getTelemetrySummaryIncidents,
+  getTelemetryReliabilityAgents,
+  getTelemetryAnalyticsOverview,
+  getTelemetryAnalyticsForAgent,
 } from '../api/client';
 import { useAiOsMockData } from '../hooks/useAiOsMockData';
 import { emitNavigation } from '../modules/navigationBus';
@@ -33,6 +38,7 @@ const INITIAL_DEVINFO_STATE = {
   timeline: false,
   roadmaps: false,
   nextSteps: false,
+  telemetry: false,
 };
 
 function mapTimelineToSteps(timeline) {
@@ -70,6 +76,19 @@ function mapTimelineToSteps(timeline) {
   }
 
   return steps;
+}
+
+function computeReliabilityLabel(score) {
+  if (score == null || Number.isNaN(score)) {
+    return { label: 'Not enough data yet', tone: 'unknown' };
+  }
+  if (score >= 80) {
+    return { label: 'Stable', tone: 'ok' };
+  }
+  if (score >= 50) {
+    return { label: 'Watch', tone: 'warn' };
+  }
+  return { label: 'Needs attention', tone: 'error' };
 }
 
 function CardHeader({ title, subtitle, onToggleDevInfo, devInfoOpen, children }) {
@@ -369,6 +388,14 @@ export default function ProgressPage() {
   const [timelineSearch, setTimelineSearch] = useState('');
   const [timelineTimeWindowId, setTimelineTimeWindowId] = useState(TIMELINE_DEFAULT_WINDOW_ID);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [telemetryLoading, setTelemetryLoading] = useState(true);
+  const [telemetryError, setTelemetryError] = useState('');
+  const [agentSummary, setAgentSummary] = useState(null);
+  const [incidentSummary, setIncidentSummary] = useState(null);
+  const [reliabilitySummary, setReliabilitySummary] = useState(null);
+  const [analyticsOverview, setAnalyticsOverview] = useState(null);
+  const [selectedAgentId, setSelectedAgentId] = useState(null);
+  const [selectedAgentAnalytics, setSelectedAgentAnalytics] = useState(null);
   const aiOsData = useAiOsMockData();
   const aiOsOverview = aiOsData?.overview;
   const aiOsPipeline = aiOsData?.pipeline;
@@ -446,6 +473,109 @@ export default function ProgressPage() {
     };
   }, [refreshKey]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadTelemetry() {
+      setTelemetryLoading(true);
+      setTelemetryError('');
+
+      try {
+        const requestOptions = refreshKey > 0 ? { fresh: true } : {};
+        const [
+          agentsSummaryData,
+          incidentsSummaryData,
+          reliabilityData,
+          analyticsData,
+        ] = await Promise.all([
+          getTelemetrySummaryAgents(requestOptions),
+          getTelemetrySummaryIncidents(requestOptions),
+          getTelemetryReliabilityAgents(requestOptions),
+          getTelemetryAnalyticsOverview(requestOptions),
+        ]);
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (agentsSummaryData && agentsSummaryData.error) {
+          setTelemetryError((prev) => prev || `Could not load agent summary: ${agentsSummaryData.error}`);
+        } else if (agentsSummaryData) {
+          setAgentSummary(agentsSummaryData);
+        }
+
+        if (incidentsSummaryData && incidentsSummaryData.error) {
+          setTelemetryError((prev) => prev || `Could not load incident summary: ${incidentsSummaryData.error}`);
+        } else if (incidentsSummaryData) {
+          setIncidentSummary(incidentsSummaryData);
+        }
+
+        if (reliabilityData && reliabilityData.error) {
+          setTelemetryError((prev) => prev || `Could not load reliability data: ${reliabilityData.error}`);
+        } else if (reliabilityData) {
+          setReliabilitySummary(reliabilityData);
+        }
+
+        if (analyticsData && analyticsData.error) {
+          setTelemetryError((prev) => prev || `Could not load analytics overview: ${analyticsData.error}`);
+        } else if (analyticsData) {
+          setAnalyticsOverview(analyticsData);
+        }
+      } catch (err) {
+        console.error('Failed to load telemetry data', err);
+        if (!isCancelled) {
+          setTelemetryError((prev) => prev || 'Failed to load telemetry data. Check console or try again later.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setTelemetryLoading(false);
+        }
+      }
+    }
+
+    loadTelemetry();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadSelectedAgentAnalytics() {
+      if (!selectedAgentId) {
+        setSelectedAgentAnalytics(null);
+        return;
+      }
+
+      try {
+        const data = await getTelemetryAnalyticsForAgent(selectedAgentId, {});
+        if (isCancelled) {
+          return;
+        }
+
+        if (data && data.error) {
+          setSelectedAgentAnalytics(null);
+          return;
+        }
+
+        setSelectedAgentAnalytics(data || null);
+      } catch (err) {
+        console.warn('Failed to load agent analytics', err);
+        if (!isCancelled) {
+          setSelectedAgentAnalytics(null);
+        }
+      }
+    }
+
+    loadSelectedAgentAnalytics();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedAgentId]);
+
   const latestEntry = timeline && timeline.length > 0 ? timeline[0] : null;
   const devPace = useMemo(() => computeDevPace(timeline), [timeline]);
   const topicCounts = summary?.topicBreakdown || {};
@@ -455,6 +585,139 @@ export default function ProgressPage() {
   const lastUpdateText = latestEntry
     ? `Last update · ${latestEntry.date} – ${latestEntry.title}`
     : 'No updates recorded yet in CODEX_Progress_Log.md';
+
+  const overallReliability = useMemo(() => {
+    const agents = Array.isArray(reliabilitySummary?.agents) ? reliabilitySummary.agents : [];
+    if (!agents.length) {
+      return null;
+    }
+    const scores = agents
+      .map((agent) =>
+        typeof agent.reliability_score === 'number'
+          ? agent.reliability_score
+          : typeof agent.reliability === 'number'
+            ? agent.reliability
+            : null,
+      )
+      .filter((value) => value != null);
+    if (!scores.length) {
+      return null;
+    }
+    const avg = scores.reduce((sum, value) => sum + value, 0) / scores.length;
+    return computeReliabilityLabel(Math.round(avg));
+  }, [reliabilitySummary]);
+
+  const incidentsTotal = useMemo(() => {
+    if (!incidentSummary) return 0;
+    if (typeof incidentSummary.total_incidents === 'number') {
+      return incidentSummary.total_incidents;
+    }
+    if (Array.isArray(incidentSummary.incidents)) {
+      return incidentSummary.incidents.reduce(
+        (sum, item) => sum + (typeof item.count === 'number' ? item.count : 0),
+        0,
+      );
+    }
+    if (incidentSummary.incidents && typeof incidentSummary.incidents === 'object') {
+      return Object.values(incidentSummary.incidents).reduce(
+        (sum, value) => sum + (Number(value) || 0),
+        0,
+      );
+    }
+    return 0;
+  }, [incidentSummary]);
+
+  const topIncidentTypes = useMemo(() => {
+    const entries = [];
+
+    if (Array.isArray(incidentSummary?.incidents)) {
+      incidentSummary.incidents.forEach((incident) => {
+        entries.push({
+          label: incident.incident_type || incident.type || incident.name || incident.label || 'Incident',
+          count: Number(incident.count ?? incident.total ?? 0),
+        });
+      });
+    } else if (incidentSummary?.incidents && typeof incidentSummary.incidents === 'object') {
+      Object.entries(incidentSummary.incidents).forEach(([key, value]) => {
+        entries.push({
+          label: key,
+          count: Number(value) || 0,
+        });
+      });
+    } else if (Array.isArray(analyticsOverview?.top_incident_types)) {
+      analyticsOverview.top_incident_types.forEach((incident) => {
+        entries.push({
+          label: incident.incident_type || incident.type || incident.name || 'Incident',
+          count: Number(incident.count ?? 0),
+        });
+      });
+    }
+
+    return entries
+      .filter((entry) => entry.label)
+      .sort((a, b) => (b.count || 0) - (a.count || 0))
+      .slice(0, 3);
+  }, [incidentSummary, analyticsOverview]);
+
+  const agentsByIncidentRate = useMemo(() => {
+    let source = [];
+    if (Array.isArray(analyticsOverview?.agents_with_highest_incident_rate)) {
+      source = analyticsOverview.agents_with_highest_incident_rate;
+    } else if (Array.isArray(analyticsOverview?.agents)) {
+      source = analyticsOverview.agents;
+    }
+
+    return source
+      .map((agent) => {
+        const incidentsPer1k =
+          typeof agent.incidents_per_1k_actions === 'number'
+            ? agent.incidents_per_1k_actions
+            : typeof agent.incident_rate === 'number'
+              ? agent.incident_rate
+              : typeof agent.incident_rate_percent === 'number'
+                ? agent.incident_rate_percent
+                : null;
+        return {
+          agent_id: agent.agent_id || agent.id || agent.agent,
+          incidents_per_1k_actions: incidentsPer1k,
+          window: agent.window || agent.period || agent.range || analyticsOverview?.window || null,
+        };
+      })
+      .filter((agent) => agent.agent_id && agent.incidents_per_1k_actions != null)
+      .sort((a, b) => (b.incidents_per_1k_actions || 0) - (a.incidents_per_1k_actions || 0))
+      .slice(0, 5);
+  }, [analyticsOverview]);
+
+  const reliabilitySnapshot = useMemo(() => {
+    let agents = [];
+    if (Array.isArray(analyticsOverview?.reliability_snapshot) && analyticsOverview.reliability_snapshot.length) {
+      agents = analyticsOverview.reliability_snapshot;
+    } else if (Array.isArray(reliabilitySummary?.agents) && reliabilitySummary.agents.length) {
+      agents = reliabilitySummary.agents;
+    }
+
+    return agents
+      .map((agent) => ({
+        agent_id: agent.agent_id || agent.id || agent.agent,
+        reliability_score:
+          typeof agent.reliability_score === 'number'
+            ? agent.reliability_score
+            : typeof agent.reliability === 'number'
+              ? agent.reliability
+              : null,
+        total_incidents: agent.total_incidents ?? agent.incident_count ?? agent.incidents ?? null,
+      }))
+      .filter((agent) => agent.agent_id)
+      .sort((a, b) => (a.reliability_score ?? 0) - (b.reliability_score ?? 0));
+  }, [analyticsOverview, reliabilitySummary]);
+
+  const hasTelemetryData = Boolean(
+    overallReliability ||
+      incidentsTotal > 0 ||
+      agentsByIncidentRate.length > 0 ||
+      reliabilitySnapshot.length > 0 ||
+      agentSummary,
+  );
 
   const phaseSnapshots = useMemo(() => summary?.phases || [], [summary]);
   const phaseSnapshotsById = useMemo(() => {
@@ -698,6 +961,10 @@ export default function ProgressPage() {
 
   const handleTimelineSourceChange = (sourceId) => {
     setTimelineSource(sourceId);
+  };
+
+  const handleSelectAgent = (agentId) => {
+    setSelectedAgentId((prev) => (prev === agentId ? null : agentId));
   };
 
   const navigateToAiOsPipeline = () => {
@@ -1355,6 +1622,217 @@ export default function ProgressPage() {
             No timeline entries match the current filters.
           </div>
         )}
+
+        <div
+          style={{
+            marginTop: '1.5rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--dev-border-subtle)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>
+                Incidents &amp; reliability (agents)
+              </h3>
+              <p
+                style={{
+                  margin: '0.15rem 0 0',
+                  fontSize: '0.85rem',
+                  color: 'var(--dev-text-soft)',
+                }}
+              >
+                Simple snapshot of incident volume and which agents should be watched.
+              </p>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--dev-text-muted)' }}>
+              {telemetryLoading && !telemetryError && 'Loading telemetry…'}
+              {!telemetryLoading && telemetryError && telemetryError}
+              {!telemetryLoading && !telemetryError && !hasTelemetryData && (
+                <>No incident or reliability data available yet.</>
+              )}
+            </div>
+          </div>
+
+          {(overallReliability || incidentsTotal > 0) && (
+            <div className="dev-dashboard-pill-row">
+              {overallReliability && (
+                <div className="dev-dashboard-pill">
+                  <div className="pill-label">Overall reliability</div>
+                  <div className="pill-value">{overallReliability.label}</div>
+                  <p className="pill-description">
+                    Based on agent reliability scores from the last telemetry window.
+                  </p>
+                </div>
+              )}
+              {incidentsTotal > 0 && (
+                <div className="dev-dashboard-pill">
+                  <div className="pill-label">Incidents in window</div>
+                  <div className="pill-value">{incidentsTotal}</div>
+                  <p className="pill-description">
+                    Total incidents counted across agents for the selected period.
+                  </p>
+                  {topIncidentTypes.length > 0 && (
+                    <p className="pill-meta">
+                      Top type: {topIncidentTypes[0].label} · {topIncidentTypes[0].count}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(agentsByIncidentRate.length > 0 || reliabilitySnapshot.length > 0) && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  agentsByIncidentRate.length > 0 && reliabilitySnapshot.length > 0
+                    ? 'minmax(0, 1.4fr) minmax(0, 1.4fr)'
+                    : 'minmax(0, 1fr)',
+                gap: '1.25rem',
+                alignItems: 'flex-start',
+              }}
+            >
+              {agentsByIncidentRate.length > 0 && (
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                    Agents with highest incident rate
+                  </h4>
+                  <p
+                    style={{
+                      margin: '0.15rem 0 0',
+                      fontSize: '0.8rem',
+                      color: 'var(--dev-text-muted)',
+                    }}
+                  >
+                    Sorted by incidents per 1k actions.
+                  </p>
+                  <table className="dev-table">
+                    <thead>
+                      <tr>
+                        <th>Agent</th>
+                        <th>Incidents/1k</th>
+                        <th>Window</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {agentsByIncidentRate.map((agent) => (
+                        <tr
+                          key={agent.agent_id}
+                          className={agent.agent_id === selectedAgentId ? 'selected' : undefined}
+                          onClick={() => handleSelectAgent(agent.agent_id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td>{agent.agent_id}</td>
+                          <td>{agent.incidents_per_1k_actions?.toFixed?.(1) ?? agent.incidents_per_1k_actions}</td>
+                          <td>{agent.window || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {reliabilitySnapshot.length > 0 && (
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                    Reliability snapshot by agent
+                  </h4>
+                  <p
+                    style={{
+                      margin: '0.15rem 0 0',
+                      fontSize: '0.8rem',
+                      color: 'var(--dev-text-muted)',
+                    }}
+                  >
+                    Lower scores mean the agent needs more attention.
+                  </p>
+                  <table className="dev-table">
+                    <thead>
+                      <tr>
+                        <th>Agent</th>
+                        <th>Reliability</th>
+                        <th>Incidents</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reliabilitySnapshot.map((agent) => (
+                        <tr
+                          key={agent.agent_id}
+                          className={agent.agent_id === selectedAgentId ? 'selected' : undefined}
+                          onClick={() => handleSelectAgent(agent.agent_id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td>{agent.agent_id}</td>
+                          <td>
+                            {agent.reliability_score != null
+                              ? `${agent.reliability_score.toFixed?.(0) ?? agent.reliability_score}%`
+                              : '—'}
+                          </td>
+                          <td>{agent.total_incidents ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedAgentId && selectedAgentAnalytics && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '0.75rem 0 0',
+                borderTop: '1px dashed var(--dev-border-subtle)',
+              }}
+            >
+              <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                {selectedAgentId} – details
+              </h4>
+              <p
+                style={{
+                  margin: '0.2rem 0 0',
+                  fontSize: '0.8rem',
+                  color: 'var(--dev-text-muted)',
+                }}
+              >
+                Simple, read-only view using /api/telemetry/analytics/agent/{'{agentId}'}.
+              </p>
+              <div className="dev-dashboard-pill-row">
+                <div className="dev-dashboard-pill">
+                  <div className="pill-label">Incidents</div>
+                  <div className="pill-value">
+                    {selectedAgentAnalytics.total_incidents ??
+                      selectedAgentAnalytics.incident_count ??
+                      '—'}
+                  </div>
+                </div>
+                <div className="dev-dashboard-pill">
+                  <div className="pill-label">Average severity</div>
+                  <div className="pill-value">
+                    {selectedAgentAnalytics.avg_severity ??
+                      selectedAgentAnalytics.average_severity ??
+                      selectedAgentAnalytics.severity ??
+                      '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

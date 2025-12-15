@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/devDashboard.css';
+
+// NOTE: Deprecated: owner overview now lives on ProgressPage.
 import {
   getProgressSummary,
   getProgressTimeline,
