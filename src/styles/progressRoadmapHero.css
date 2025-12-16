@@ -49,17 +49,17 @@
   position: relative;
   margin-top: 1.05rem;
   overflow: hidden;
-  padding: 0 0.5rem 1.5rem;
+  padding: 0 0.75rem 1.5rem;
 }
 
 /* The diagonal “road” behind the cards */
 .progress-roadmap-hero__road {
   position: absolute;
-  left: clamp(-32px, -3vw, -16px);
-  right: clamp(-32px, -3vw, -16px);
-  top: 307px;
-  height: 49px;
-  width: calc(100% + 64px);
+  left: clamp(-24px, -2vw, -12px);
+  right: clamp(-24px, -2vw, -12px);
+  top: 296px;
+  height: 44px;
+  width: calc(100% + clamp(24px, 4vw, 64px));
   background: linear-gradient(90deg, #e5e7eb, #d1d5db);
   border-radius: 999px;
   transform-origin: center;
@@ -67,6 +67,7 @@
   box-shadow:
     0 10px 24px rgba(15, 23, 42, 0.18),
     inset 0 0 0 1px rgba(148, 163, 184, 0.6);
+  pointer-events: none;
 }
 
 /* Steps arranged along the road */
@@ -74,13 +75,13 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 22.4px;
+  --road-gap: clamp(12px, 2vw, 22px);
+  gap: var(--road-gap);
   width: 100%;
   max-width: 100%;
-  padding: 4px 0 38.4px;
-  margin: 0 0 82px;
-  overflow-x: auto;
-  overflow-y: visible;
+  padding: 4px clamp(4px, 1vw, 16px) 38.4px;
+  margin: 0;
+  overflow: hidden;
 }
 
 .progress-roadmap-hero__steps::-webkit-scrollbar {
@@ -98,8 +99,9 @@
 
 .progress-roadmap-hero__step {
   position: relative;
-  flex: 0 0 210px;
-  max-width: 220px;
+  flex: 1 1 clamp(140px, calc((100% - (5 * var(--road-gap))) / 6), 210px);
+  min-width: clamp(140px, calc((100% - (5 * var(--road-gap))) / 6), 210px);
+  max-width: 210px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,17 +199,31 @@
 
 @media (max-width: 1024px) {
   .progress-roadmap-hero__road {
-    top: 260px;
+    display: none;
+  }
+
+  .progress-roadmap-hero__steps {
+    overflow-x: auto;
   }
 }
 
-@media (max-width: 768px) {
-  .progress-roadmap-hero__body {
-    overflow: visible;
+@media (max-width: 840px) {
+  .progress-roadmap-hero__steps {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: visible;
   }
 
-  .progress-roadmap-hero__road {
-    display: none;
+  .progress-roadmap-hero__step {
+    flex: 1 1 min(220px, calc(50% - var(--road-gap)));
+    max-width: min(220px, calc(50% - var(--road-gap)));
+  }
+}
+
+@media (max-width: 540px) {
+  .progress-roadmap-hero__step {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 }
 
@@ -249,15 +265,5 @@
   .progress-roadmap-hero {
     margin-top: 1.2rem;
     padding: 1.05rem 1rem 1.4rem;
-  }
-
-  .progress-roadmap-hero__steps {
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
-  }
-
-  .progress-roadmap-hero__road {
-    left: clamp(-36px, -6vw, -12px);
-    right: clamp(-36px, -6vw, -12px);
   }
 }
