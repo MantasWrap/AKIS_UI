@@ -337,7 +337,10 @@ export default function RuntimeStatusPage() {
     ];
   }, [runtimeStatus, transportDown, runtimeFlag]);
 
-  const lanes = runtimeStatus?.lanes || liveModeMock.lanes;
+  const lanes =
+    Array.isArray(runtimeStatus?.lanes) && runtimeStatus.lanes.length > 0
+      ? runtimeStatus.lanes
+      : liveModeMock.lanes;
   const logEvents = liveModeMock.logEvents;
 
   return (

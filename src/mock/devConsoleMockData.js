@@ -226,6 +226,44 @@ export const liveModeMock = {
     helper: 'Hook up Jetson dev runner + MQTT bridge to see live ingest.',
     detail: 'Console stays in passive mode and shows canned telemetry in Phase 0.',
   },
+  lanes: [
+    {
+      id: 'lane-sim-1',
+      mode: 'SIM',
+      notes: 'Simulation lane · awaiting PLC stub.',
+      metrics_summary: {
+        has_data: true,
+        healthy: true,
+        last_heartbeat_at: '2024-07-01T10:22:15.000Z',
+        raw: {
+          stats: {
+            picks_seen: 0,
+            posts: 0,
+            gated_lines: 0,
+            skips_no_chute: 0,
+          },
+        },
+      },
+    },
+    {
+      id: 'lane-sim-2',
+      mode: 'SIM',
+      notes: 'Secondary lane placeholder.',
+      metrics_summary: {
+        has_data: false,
+        healthy: false,
+        last_heartbeat_at: null,
+        raw: {
+          stats: {
+            picks_seen: 0,
+            posts: 0,
+            gated_lines: 0,
+            skips_no_chute: 0,
+          },
+        },
+      },
+    },
+  ],
   signalCards: [
     {
       id: 'controllerHeartbeat',
