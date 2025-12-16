@@ -177,6 +177,18 @@ function getChuteId(item) {
   return item?.sorting_decision?.chute_id || null;
 }
 
+function getEstimatedItemWeight(item) {
+  const value = item?.weights?.estimated_item_weight_kg;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function formatWeightKg(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const abs = Math.abs(value);
+  const decimals = abs < 1 ? 3 : 2;
+  return `${value.toFixed(decimals)} kg`;
+}
+
 export default function RuntimeStatusPage() {
   const [runtimeStatus, setRuntimeStatus] = useState(null);
   const [fetchError, setFetchError] = useState('');
@@ -425,35 +437,41 @@ export default function RuntimeStatusPage() {
           </p>
           <div className="live-mode-runtime-items-table-wrapper">
             <table className="live-mode-runtime-items-table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Item ID</th>
-                  <th>Category</th>
-                  <th>Chute</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentItems.map((item) => (
-                  <tr key={getItemId(item)}>
-                    <td>{formatShortTime(getItemSeenAt(item))}</td>
-                    <td>{getItemId(item)}</td>
-                    <td>{getCategory(item)}</td>
-                    <td>{getChuteId(item) || '—'}</td>
-                    <td>{computePipelineStatusForItem(item)}</td>
-                  </tr>
-                ))}
-                {!recentItemsLoading &&
-                  !recentItemsError &&
-                  recentItems.length === 0 && (
-                    <tr>
-                      <td colSpan={5}>
-                        <div className="live-mode-runtime-items-empty">
-                          No runtime items in the last few minutes.
-                        </div>
-                      </td>
-                    </tr>
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Item ID</th>
+                        <th>Category</th>
+                        <th>Chute</th>
+                        <th>Status</th>
+                        <th>Weight (Fake HW)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentItems.map((item) => {
+                        const weight = getEstimatedItemWeight(item);
+                        const formattedWeight = formatWeightKg(weight);
+                        return (
+                          <tr key={getItemId(item)}>
+                            <td>{formatShortTime(getItemSeenAt(item))}</td>
+                            <td>{getItemId(item)}</td>
+                            <td>{getCategory(item)}</td>
+                            <td>{getChuteId(item) || '—'}</td>
+                            <td>{computePipelineStatusForItem(item)}</td>
+                            <td>{formattedWeight ? `~${formattedWeight}` : '—'}</td>
+                          </tr>
+                        );
+                      })}
+                      {!recentItemsLoading &&
+                        !recentItemsError &&
+                        recentItems.length === 0 && (
+                          <tr>
+                            <td colSpan={6}>
+                              <div className="live-mode-runtime-items-empty">
+                                No runtime items in the last few minutes.
+                              </div>
+                            </td>
+                          </tr>
                   )}
               </tbody>
             </table>

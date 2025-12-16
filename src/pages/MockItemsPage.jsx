@@ -127,6 +127,13 @@ function formatShortDateTime(value) {
   });
 }
 
+function formatWeightKg(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const abs = Math.abs(value);
+  const decimals = abs < 1 ? 3 : 2;
+  return `${value.toFixed(decimals)} kg`;
+}
+
 export default function MockItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -469,8 +476,8 @@ export default function MockItemsPage() {
             <ItemDetail item={selectedItem} />
           ) : (
             <div className="items-detail-empty">
-              Select an item in the table to see clothing attributes, AI confidences, routing, and
-              PLC feedback.
+              Select an item in the table to see clothing attributes, AI confidences, routing, PLC
+              feedback, and Fake Hardware weights.
             </div>
           )}
         </section>
@@ -531,6 +538,7 @@ function ItemDetail({ item }) {
   const rawConfidences = item?.ai_prediction?.confidences;
   const routing = item?.sorting_decision || {};
   const plc = item?.plc_feedback || {};
+  const weights = item?.weights || {};
   const seenAt = getItemSeenAt(item);
   const pipelineStatus = computePipelineStatus(item);
 
@@ -542,6 +550,12 @@ function ItemDetail({ item }) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 4);
   }, [rawConfidences]);
+
+  const formattedWeightBefore = formatWeightKg(weights.box_weight_kg_before);
+  const formattedWeightAfter = formatWeightKg(weights.box_weight_kg_after);
+  const formattedEstimatedWeight = formatWeightKg(weights.estimated_item_weight_kg);
+  const missingWeightTelemetry =
+    !formattedWeightBefore || !formattedWeightAfter || !formattedEstimatedWeight;
 
   return (
     <div className="items-detail-card">
@@ -626,6 +640,30 @@ function ItemDetail({ item }) {
             />
             <DetailRow label="Pick command ID" value={plc.pick_command_id} />
           </div>
+        </section>
+
+        <section>
+          <h4 className="items-detail-section-title">Weights (Fake Hardware, Phase 0)</h4>
+          <div className="items-detail-grid-inner">
+            <DetailRow
+              label="Chute weight before drop"
+              value={formattedWeightBefore}
+            />
+            <DetailRow
+              label="Chute weight after drop"
+              value={formattedWeightAfter}
+            />
+            <DetailRow
+              label="Estimated item weight"
+              value={formattedEstimatedWeight}
+            />
+          </div>
+          <p className="items-detail-helper">
+            Weights are simulated by Fake Hardware in Phase 0. Not a real scale.
+          </p>
+          {missingWeightTelemetry && (
+            <p className="items-detail-helper">No weight telemetry for this item yet.</p>
+          )}
         </section>
       </div>
     </div>
