@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/liveMode.css';
 import { liveModeMock } from '../mock/devConsoleMockData.js';
-import { getRuntimeStatus } from '../api/client.js';
+import { getRecentRuntimeItems, getRuntimeStatus } from '../api/client.js';
 import PlcCard from '../components/runtime/PlcCard.jsx';
 
 const DEFAULT_POLL_MS = 3000;
@@ -19,20 +19,42 @@ function formatAgeSeconds(ageS) {
 }
 
 function computeSignalStatus({ transportDown, runtimeStatusFlag, summary }) {
-  if (transportDown) return 'down';
+  if (transportDown) return 'error';
+  if (runtimeStatusFlag === 'error') return 'error';
+  if (!summary) return 'waiting';
+  if (summary.status === 'error') return 'error';
+  if (summary.status === 'degraded') return 'degraded';
+  return 'ok';
+}
 
-  // DB-less / soft-fail mode: status:"error" but payload present.
-  // Treat non-healthy summaries as "Waiting" (not "Offline") so operators can see the page is alive.
-  if (runtimeStatusFlag === 'error') {
-    if (summary?.healthy === true) return 'ok';
-    return 'waiting';
+function buildControllerCard({ transportDown, runtimeStatusFlag, summary }) {
+  const status = computeSignalStatus({ transportDown, runtimeStatusFlag, summary });
+  let metric = 'Unknown';
+  let helper = 'Waiting for controller heartbeat.';
+
+  if (!summary) {
+    metric = 'No status yet';
+    helper = transportDown
+      ? 'Controller not reachable – check dev server.'
+      : 'Start the controller dev server.';
+  } else if (summary?.status === 'ok') {
+    metric = 'Healthy';
+    helper = 'DB and controller heartbeat look OK.';
+  } else if (summary?.status === 'degraded') {
+    metric = 'Degraded';
+    helper = summary?.helper || 'Some checks are failing.';
+  } else if (summary?.status === 'error') {
+    metric = 'Error';
+    helper = summary?.helper || 'Runtime reported an error.';
   }
 
-  if (summary?.healthy === true) return 'ok';
-  if (summary?.has_data === false) return 'waiting';
-
-  // has_data=true but not healthy => treat as offline/stale for the signals strip
-  return 'down';
+  return {
+    id: 'controllerHeartbeat',
+    label: 'Controller heartbeat',
+    status,
+    metric,
+    helper,
+  };
 }
 
 function buildJetsonCard({ transportDown, runtimeStatusFlag, jetsonSummary }) {
@@ -42,24 +64,22 @@ function buildJetsonCard({ transportDown, runtimeStatusFlag, jetsonSummary }) {
     summary: jetsonSummary,
   });
 
-  const hasData = jetsonSummary?.has_data === true;
-  const ageLabel = formatAgeSeconds(jetsonSummary?.age_s);
+  let metric = 'Unknown';
+  let helper = 'Waiting for Jetson runtime.';
 
-  const metric =
-    status === 'ok'
-      ? 'Heartbeat received'
-      : status === 'waiting'
-        ? 'Waiting'
-        : 'Heartbeat stale';
-
-  const helper =
-    status === 'waiting'
-      ? (runtimeStatusFlag === 'error'
-        ? 'Degraded mode · waiting for first heartbeat'
-        : 'Waiting for first heartbeat')
-      : !hasData
-        ? 'Waiting for first heartbeat'
-        : `Last update ${ageLabel} ago`;
+  if (!jetsonSummary) {
+    metric = 'No signals yet';
+    helper = 'Start the Jetson dev runner.';
+  } else if (jetsonSummary?.status === 'ok') {
+    metric = 'Connected';
+    helper = 'Jetson runtime is sending events.';
+  } else if (jetsonSummary?.status === 'degraded') {
+    metric = 'Degraded';
+    helper = jetsonSummary?.helper || 'Some runtime checks are failing.';
+  } else if (jetsonSummary?.status === 'error') {
+    metric = 'Error';
+    helper = jetsonSummary?.helper || 'Runtime reported an error.';
+  }
 
   return {
     id: 'jetsonRuntime',
@@ -77,27 +97,22 @@ function buildMqttCard({ transportDown, runtimeStatusFlag, bridgeSummary }) {
     summary: bridgeSummary,
   });
 
-  const hasData = bridgeSummary?.has_data === true;
-  const ageLabel = formatAgeSeconds(bridgeSummary?.age_s);
-  const mqttConnected = bridgeSummary?.mqtt_connected === true;
+  let metric = 'Unknown';
+  let helper = 'Waiting for MQTT bridge.';
 
-  const metric =
-    status === 'ok'
-      ? 'MQTT connected'
-      : status === 'waiting'
-        ? 'Waiting'
-        : mqttConnected
-          ? 'Stale stats'
-          : 'MQTT disconnected';
-
-  const helper =
-    status === 'waiting'
-      ? (runtimeStatusFlag === 'error'
-        ? 'Degraded mode · waiting for first heartbeat'
-        : 'Waiting for first heartbeat')
-      : !hasData
-        ? 'Waiting for first heartbeat'
-        : `Last update ${ageLabel} ago`;
+  if (!bridgeSummary) {
+    metric = 'No signals yet';
+    helper = 'Start the MQTT bridge / ws endpoint.';
+  } else if (bridgeSummary?.status === 'ok') {
+    metric = 'Connected';
+    helper = 'Bridge is connected and listening.';
+  } else if (bridgeSummary?.status === 'degraded') {
+    metric = 'Degraded';
+    helper = bridgeSummary?.helper || 'Bridge is connected but something is off.';
+  } else if (bridgeSummary?.status === 'error') {
+    metric = 'Error';
+    helper = bridgeSummary?.helper || 'Bridge reported an error.';
+  }
 
   return {
     id: 'mqttBridge',
@@ -108,76 +123,207 @@ function buildMqttCard({ transportDown, runtimeStatusFlag, bridgeSummary }) {
   };
 }
 
+function computePipelineStatusForItem(item) {
+  const hasDecision = Boolean(item?.sorting_decision);
+  const pickStatus = item?.plc_feedback?.pick_status || null;
+
+  if (!hasDecision) return 'SEEN';
+  if (!pickStatus) return 'DECIDED';
+
+  const normalized = String(pickStatus).toUpperCase();
+  if (normalized === 'FIRED' || normalized === 'SUCCESS') return 'ROUTED';
+  if (normalized === 'MISSED' || normalized === 'FAILED' || normalized === 'ERROR') {
+    return 'DROPPED';
+  }
+
+  return 'DECIDED';
+}
+
+function getItemId(item) {
+  return item?.item_id || item?.id || '—';
+}
+
+function getItemSeenAt(item) {
+  return (
+    item?.capture?.timestamp ||
+    item?.meta?.created_at ||
+    item?.timestamp ||
+    null
+  );
+}
+
+function parseDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function formatShortTime(value) {
+  const d = parseDate(value);
+  if (!d) return '—';
+  return d.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function getCategory(item) {
+  return item?.ai_prediction?.classes?.category || '—';
+}
+
+function getChuteId(item) {
+  return item?.sorting_decision?.chute_id || null;
+}
+
 export default function RuntimeStatusPage() {
-  const { streamStatus, logEvents } = liveModeMock;
-
   const [runtimeStatus, setRuntimeStatus] = useState(null);
-  const [fetchError, setFetchError] = useState(null);
+  const [fetchError, setFetchError] = useState('');
+  const [isPolling] = useState(true);
 
-  const pollMs = useMemo(() => {
-    const fromEnv = Number(import.meta.env.VITE_RUNTIME_STATUS_POLL_MS);
-    return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : DEFAULT_POLL_MS;
-  }, []);
+  const [recentItems, setRecentItems] = useState([]);
+  const [recentItemsError, setRecentItemsError] = useState('');
+  const [recentItemsLoading, setRecentItemsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    let timerId;
 
     async function load() {
       const result = await getRuntimeStatus();
       if (cancelled) return;
 
-      // Transport / auth error (non-200, network, invalid token)
       if (result?.ok === false) {
         setFetchError(result.error || 'Request failed');
         setRuntimeStatus(null);
         return;
       }
 
-      // Valid JSON payload from backend (can be status:"ok" or status:"error")
       if (result && typeof result === 'object') {
         setRuntimeStatus(result);
-        setFetchError(null);
-        return;
+        setFetchError('');
+      } else {
+        setRuntimeStatus(null);
+        setFetchError('Unexpected runtime status payload.');
       }
-
-      // Parsing failed or unexpected response
-      setFetchError('Backend error');
-      setRuntimeStatus(null);
     }
 
-    load();
-    const interval = setInterval(load, pollMs);
+    if (isPolling) {
+      load();
+      timerId = setInterval(load, DEFAULT_POLL_MS);
+    }
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (timerId) clearInterval(timerId);
     };
-  }, [pollMs]);
+  }, [isPolling]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timerId;
+
+    async function loadRecentItems() {
+      setRecentItemsLoading(true);
+      try {
+        const result = await getRecentRuntimeItems({ limit: 20 });
+        if (cancelled) return;
+
+        if (result?.ok === false) {
+          setRecentItemsError(result.error || 'Failed to load recent runtime items.');
+          setRecentItems([]);
+        } else {
+          const payload = Array.isArray(result)
+            ? result
+            : Array.isArray(result?.items)
+            ? result.items
+            : [];
+          setRecentItems(payload);
+          setRecentItemsError('');
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setRecentItemsError(
+            loadError?.message
+              ? `Failed to load recent runtime items: ${loadError.message}`
+              : 'Failed to load recent runtime items.',
+          );
+          setRecentItems([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecentItemsLoading(false);
+        }
+      }
+    }
+
+    loadRecentItems();
+    timerId = setInterval(loadRecentItems, DEFAULT_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearInterval(timerId);
+    };
+  }, []);
 
   const runtimeFlag = runtimeStatus?.status || null;
   const transportDown = Boolean(fetchError) || !runtimeStatus;
 
-  // Hero chip: Live / Degraded / Backend error / Mock
-  const heroChip = useMemo(() => {
-    if (fetchError) return { text: 'Backend error', cls: 'status-down' };
-    if (!runtimeStatus) return { text: 'Mock stream', cls: 'status-mock' };
-    if (runtimeFlag === 'ok') return { text: 'Live API', cls: 'status-ok' };
-    if (runtimeFlag === 'error') return { text: 'Live API (degraded)', cls: 'status-waiting' };
-    return { text: 'Live API (degraded)', cls: 'status-waiting' };
-  }, [fetchError, runtimeFlag, runtimeStatus]);
+  const streamStatus = useMemo(() => {
+    if (!runtimeStatus) {
+      return liveModeMock.streamStatus;
+    }
 
-  // Optional extra cue for DB-less MAC_DEV
-  const degradedHint = useMemo(() => {
+    const ageSeconds = runtimeStatus?.meta?.age_seconds;
+    const ageLabel = formatAgeSeconds(
+      typeof ageSeconds === 'number' ? ageSeconds : NaN,
+    );
+
+    if (runtimeFlag === 'error') {
+      return {
+        pill: 'Runtime error',
+        helper: 'Runtime reported an error – check logs.',
+        detail: `Last heartbeat ${ageLabel} ago.`,
+      };
+    }
+
+    if (transportDown) {
+      return {
+        pill: 'Runtime not reachable',
+        helper: 'Controller could not reach runtime status endpoint.',
+        detail: 'Check dev docker / port forwarding.',
+      };
+    }
+
+    return {
+      pill: 'Runtime connected',
+      helper: 'Runtime status endpoint is responding.',
+      detail: `Last heartbeat ${ageLabel} ago.`,
+    };
+  }, [runtimeStatus, runtimeFlag, transportDown]);
+
+  const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
-    if (runtimeStatus?.db?.ok === false) return 'Degraded: database not configured.';
-    return 'Degraded: some services unavailable.';
+    if (runtimeStatus?.db?.ok === false) {
+      return 'Degraded: database not configured.';
+    }
+    return null;
   }, [runtimeStatus, runtimeFlag]);
 
-  const derivedSignalCards = useMemo(() => {
+  const signalCards = useMemo(() => {
+    if (!runtimeStatus) return liveModeMock.signalCards;
+
     const jetsonSummary = runtimeStatus?.jetson_metrics_summary || null;
     const bridgeSummary = runtimeStatus?.bridge_stats_summary || null;
+    const controllerSummary = runtimeStatus?.controller_summary || null;
 
     return [
+      buildControllerCard({
+        transportDown,
+        runtimeStatusFlag: runtimeFlag,
+        summary: controllerSummary,
+      }),
       buildJetsonCard({
         transportDown,
         runtimeStatusFlag: runtimeFlag,
@@ -191,64 +337,135 @@ export default function RuntimeStatusPage() {
     ];
   }, [runtimeStatus, transportDown, runtimeFlag]);
 
+  const lanes = runtimeStatus?.lanes || liveModeMock.lanes;
+  const logEvents = liveModeMock.logEvents;
+
   return (
     <div className="live-mode-page">
       <section className="dev-card live-mode-hero">
-        <div>
-          <p className="dev-card-eyebrow">Live mode shell</p>
-          <h2 className="dev-card-title">{streamStatus.pill}</h2>
-          <p className="dev-card-subtitle">{streamStatus.helper}</p>
-        </div>
         <div className="live-mode-hero-copy">
-          <p>{streamStatus.detail}</p>
-          <span className={`dev-status-chip ${heroChip.cls}`}>
-            {heroChip.text}
-          </span>
-          {degradedHint ? (
-            <p className="live-mode-hero-hint">{degradedHint}</p>
-          ) : null}
+          <p className="dev-card-eyebrow">Phase 0 · Live mode preview</p>
+          <h2 className="dev-card-title">Live mode</h2>
+          <p className="dev-card-subtitle">
+            High-level view of the runtime loop: status tiles, recent items, and a mock log while we
+            bring hardware online.
+          </p>
+        </div>
+        <div className="live-mode-hero-status">
+          <div className="live-mode-stream-pill">
+            {streamStatus.pill}
+          </div>
+          <p className="live-mode-stream-helper">{streamStatus.helper}</p>
+          <p className="live-mode-stream-detail">{streamStatus.detail}</p>
+          {dbStatusHelper && (
+            <p className="live-mode-stream-warning">{dbStatusHelper}</p>
+          )}
         </div>
       </section>
 
-      {/* PLC card: error only on transport/auth failures (DB-less status:"error" should still show “No data” / “Stale” etc.) */}
-      <PlcCard plc={runtimeStatus?.plc} error={fetchError} />
-
-      <section className="dev-card live-mode-signal-strip">
-        <header className="live-mode-section-head">
+      <section className="dev-card live-mode-signals-card">
+        <header className="live-mode-section-header">
           <div>
-            <p className="dev-card-eyebrow">Signals</p>
-            <h3>Jetson + MQTT (from /api/debug/runtime-status)</h3>
+            <p className="dev-card-eyebrow">Runtime signals</p>
+            <h3>Health &amp; connectivity</h3>
           </div>
-          <p className="live-mode-section-sub">
-            Polled snapshot · no realtime stream yet.
-          </p>
         </header>
-        <div className="live-mode-signal-grid">
-          {derivedSignalCards.map((card) => (
-            <article key={card.id} className="live-mode-signal-card">
-              <div className="live-mode-signal-top">
-                <span>{card.label}</span>
-                <span className={`dev-status-chip status-${card.status}`}>
-                  {card.status === 'ok' && 'Healthy'}
-                  {card.status === 'waiting' && 'Waiting'}
-                  {card.status === 'down' && 'Offline'}
-                </span>
-              </div>
-              <p className="live-mode-signal-metric">{card.metric}</p>
+        <div className="live-mode-signals-grid">
+          {signalCards.map((card) => (
+            <div
+              key={card.id}
+              className={`live-mode-signal-pill status-${card.status}`}
+            >
+              <div className="live-mode-signal-label">{card.label}</div>
+              <div className="live-mode-signal-metric">{card.metric}</div>
               <p className="live-mode-signal-helper">{card.helper}</p>
-            </article>
+            </div>
           ))}
         </div>
       </section>
 
+      <section className="dev-card live-mode-lanes-card">
+        <header className="live-mode-section-header">
+          <div>
+            <p className="dev-card-eyebrow">Runtime lanes</p>
+            <h3>PLC &amp; conveyor</h3>
+          </div>
+        </header>
+        <div className="live-mode-lanes-grid">
+          {lanes.map((lane) => (
+            <PlcCard key={lane.id} plc={lane} error={fetchError} />
+          ))}
+        </div>
+      </section>
+
+      <section className="dev-card live-mode-runtime-items-card">
+        <header className="live-mode-section-header">
+          <div>
+            <p className="dev-card-eyebrow">Recent runtime items</p>
+            <h3>Live item snapshots</h3>
+          </div>
+          <p className="live-mode-section-sub">
+            Last items seen by the runtime. Read-only; routing still follows Phase 0 simulation rules.
+          </p>
+        </header>
+        <div className="live-mode-runtime-items-body">
+          <p className="live-mode-runtime-items-meta">
+            {recentItemsLoading && 'Loading recent items…'}
+            {!recentItemsLoading && recentItemsError && (
+              <span className="live-mode-runtime-items-error">{recentItemsError}</span>
+            )}
+            {!recentItemsLoading && !recentItemsError && recentItems.length > 0 && (
+              <>
+                Showing latest <strong>{recentItems.length}</strong> items
+              </>
+            )}
+          </p>
+          <div className="live-mode-runtime-items-table-wrapper">
+            <table className="live-mode-runtime-items-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Item ID</th>
+                  <th>Category</th>
+                  <th>Chute</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentItems.map((item) => (
+                  <tr key={getItemId(item)}>
+                    <td>{formatShortTime(getItemSeenAt(item))}</td>
+                    <td>{getItemId(item)}</td>
+                    <td>{getCategory(item)}</td>
+                    <td>{getChuteId(item) || '—'}</td>
+                    <td>{computePipelineStatusForItem(item)}</td>
+                  </tr>
+                ))}
+                {!recentItemsLoading &&
+                  !recentItemsError &&
+                  recentItems.length === 0 && (
+                    <tr>
+                      <td colSpan={5}>
+                        <div className="live-mode-runtime-items-empty">
+                          No runtime items in the last few minutes.
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section className="dev-card live-mode-log-card">
-        <header className="live-mode-section-head">
+        <header className="live-mode-section-header">
           <div>
             <p className="dev-card-eyebrow">Mock activity log</p>
             <h3>Recent events</h3>
           </div>
           <p className="live-mode-section-sub">
-            Mock activity log (real events wiring will land in a later task).
+            Mock log only – real events will be wired later.
           </p>
         </header>
         <ul className="live-mode-log-list">

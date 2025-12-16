@@ -45,7 +45,11 @@ export async function getHealthReady() {
         (data && data.db && data.db.error) ||
         (typeof data === 'string' ? data : null) ||
         `HTTP ${res.status}`;
-      return { error: message || 'Request failed', status: res.status, data };
+      return {
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
     }
 
     return { data };
@@ -72,7 +76,12 @@ export async function getMockItems(limit) {
         (data && data.error) ||
         (typeof data === 'string' ? data : null) ||
         `HTTP ${res.status}`;
-      return { ok: false, error: message || 'Request failed', status: res.status, data };
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
     }
 
     return data;
@@ -116,7 +125,12 @@ export async function getRuntimeItems(params = {}) {
         (data && data.error) ||
         (typeof data === 'string' ? data : null) ||
         `HTTP ${res.status}`;
-      return { ok: false, error: message || 'Request failed', status: res.status, data };
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
     }
 
     return data;
@@ -137,44 +151,17 @@ export async function getRuntimeStatus() {
         (data && data.error) ||
         (typeof data === 'string' ? data : null) ||
         `HTTP ${res.status}`;
-      return { ok: false, error: message || 'Request failed', status: res.status, data };
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
     }
 
     return data;
   } catch (err) {
     return { ok: false, error: err.message || 'Network error' };
-  }
-}
-
-export async function getItemHistory(itemId) {
-  if (!itemId) {
-    return { error: 'Missing item id' };
-  }
-  try {
-    const res = await fetch(`${API_BASE}/api/items/${encodeURIComponent(itemId)}/history`, {
-      headers: getDebugHeaders(),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      const message =
-        (data && data.error) ||
-        (typeof data === 'string' ? data : null) ||
-        `HTTP ${res.status}`;
-      return {
-        error: message || 'Request failed',
-        status: res.status,
-        requestId: data?.requestId,
-      };
-    }
-    return {
-      events: data.events || [],
-      status: res.status,
-      requestId: data.requestId,
-      item_id: data.item_id,
-      count: data.count,
-    };
-  } catch (err) {
-    return { error: err.message || 'Network error' };
   }
 }
 
@@ -216,14 +203,7 @@ export async function getProgressSummary(options = {}) {
 export async function getProgressTimeline(options = {}) {
   try {
     const params = new URLSearchParams();
-    const { limit, topic, fresh } = options;
-    if (Number.isFinite(Number(limit))) {
-      params.set('limit', Number(limit));
-    }
-    if (topic) {
-      params.set('topic', topic);
-    }
-    if (fresh) {
+    if (options.fresh) {
       params.set('fresh', '1');
     }
     const url = params.toString()
@@ -255,65 +235,15 @@ export async function getProgressTimeline(options = {}) {
   }
 }
 
-export async function getPhaseProgress(phaseId, options = {}) {
-  if (!phaseId) {
-    return {
-      ok: false,
-      error: 'Missing phase id',
-    };
-  }
-
-  try {
-    const params = new URLSearchParams();
-    if (options.fresh) {
-      params.set('fresh', '1');
-    }
-    const url = params.toString()
-      ? `${API_BASE}/api/progress/phases/${encodeURIComponent(phaseId)}?${params.toString()}`
-      : `${API_BASE}/api/progress/phases/${encodeURIComponent(phaseId)}`;
-
-    const res = await fetch(url);
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      const message =
-        (data && data.error) ||
-        (typeof data === 'string' ? data : null) ||
-        `HTTP ${res.status}`;
-      return {
-        ok: false,
-        error: message || 'Request failed',
-        status: res.status,
-        data,
-      };
-    }
-
-    return data;
-  } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
-  }
-}
-
-// Owner Home telemetry helpers
-
 export async function getTelemetrySummaryAgents(options = {}) {
   try {
     const params = new URLSearchParams();
-    const { start_time, end_time } = options;
-    if (start_time) {
-      params.set('start_time', start_time);
-    }
-    if (end_time) {
-      params.set('end_time', end_time);
-    }
+    if (options.fresh) params.set('fresh', '1');
     const url = params.toString()
       ? `${API_BASE}/api/telemetry/summary/agents?${params.toString()}`
       : `${API_BASE}/api/telemetry/summary/agents`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getDebugHeaders() });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -331,28 +261,19 @@ export async function getTelemetrySummaryAgents(options = {}) {
 
     return data;
   } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
+    return { ok: false, error: err.message || 'Network error' };
   }
 }
 
 export async function getTelemetrySummaryIncidents(options = {}) {
   try {
     const params = new URLSearchParams();
-    const { start_time, end_time } = options;
-    if (start_time) {
-      params.set('start_time', start_time);
-    }
-    if (end_time) {
-      params.set('end_time', end_time);
-    }
+    if (options.fresh) params.set('fresh', '1');
     const url = params.toString()
       ? `${API_BASE}/api/telemetry/summary/incidents?${params.toString()}`
       : `${API_BASE}/api/telemetry/summary/incidents`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getDebugHeaders() });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -370,34 +291,19 @@ export async function getTelemetrySummaryIncidents(options = {}) {
 
     return data;
   } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
+    return { ok: false, error: err.message || 'Network error' };
   }
 }
 
 export async function getTelemetryReliabilityAgents(options = {}) {
   try {
     const params = new URLSearchParams();
-    const { agents, start_time, end_time, limit } = options;
-    if (agents && agents.length) {
-      params.set('agents', Array.isArray(agents) ? agents.join(',') : String(agents));
-    }
-    if (start_time) {
-      params.set('start_time', start_time);
-    }
-    if (end_time) {
-      params.set('end_time', end_time);
-    }
-    if (Number.isFinite(Number(limit))) {
-      params.set('limit', Number(limit));
-    }
+    if (options.fresh) params.set('fresh', '1');
     const url = params.toString()
       ? `${API_BASE}/api/telemetry/reliability/agents?${params.toString()}`
       : `${API_BASE}/api/telemetry/reliability/agents`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getDebugHeaders() });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -415,31 +321,19 @@ export async function getTelemetryReliabilityAgents(options = {}) {
 
     return data;
   } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
+    return { ok: false, error: err.message || 'Network error' };
   }
 }
 
 export async function getTelemetryAnalyticsOverview(options = {}) {
   try {
     const params = new URLSearchParams();
-    const { start_time, end_time, limit } = options;
-    if (start_time) {
-      params.set('start_time', start_time);
-    }
-    if (end_time) {
-      params.set('end_time', end_time);
-    }
-    if (Number.isFinite(Number(limit))) {
-      params.set('limit', Number(limit));
-    }
+    if (options.fresh) params.set('fresh', '1');
     const url = params.toString()
       ? `${API_BASE}/api/telemetry/analytics/overview?${params.toString()}`
       : `${API_BASE}/api/telemetry/analytics/overview`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getDebugHeaders() });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -457,38 +351,26 @@ export async function getTelemetryAnalyticsOverview(options = {}) {
 
     return data;
   } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
+    return { ok: false, error: err.message || 'Network error' };
   }
 }
 
 export async function getTelemetryAnalyticsForAgent(agentId, options = {}) {
   if (!agentId) {
-    return {
-      ok: false,
-      error: 'Missing agent id',
-    };
+    return { ok: false, error: 'Missing agentId' };
   }
 
   try {
     const params = new URLSearchParams();
-    const { start_time, end_time, limit } = options;
-    if (start_time) {
-      params.set('start_time', start_time);
-    }
-    if (end_time) {
-      params.set('end_time', end_time);
-    }
-    if (Number.isFinite(Number(limit))) {
-      params.set('limit', Number(limit));
-    }
+    if (options.fresh) params.set('fresh', '1');
+
     const url = params.toString()
-      ? `${API_BASE}/api/telemetry/analytics/agent/${encodeURIComponent(agentId)}?${params.toString()}`
+      ? `${API_BASE}/api/telemetry/analytics/agent/${encodeURIComponent(
+          agentId,
+        )}?${params.toString()}`
       : `${API_BASE}/api/telemetry/analytics/agent/${encodeURIComponent(agentId)}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: getDebugHeaders() });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -506,9 +388,43 @@ export async function getTelemetryAnalyticsForAgent(agentId, options = {}) {
 
     return data;
   } catch (err) {
-    return {
-      ok: false,
-      error: err.message || 'Network error',
-    };
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}
+
+export async function getRecentRuntimeItems(params = {}) {
+  try {
+    const search = new URLSearchParams();
+    const { siteId, lineId, limit } = params;
+
+    if (siteId) search.set('site_id', siteId);
+    if (lineId) search.set('line_id', lineId);
+    if (limit && Number.isFinite(Number(limit))) {
+      search.set('limit', Number(limit));
+    }
+
+    const url = search.toString()
+      ? `${API_BASE}/api/runtime/items?${search.toString()}`
+      : `${API_BASE}/api/runtime/items`;
+
+    const res = await fetch(url, { headers: getDebugHeaders() });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message =
+        (data && data.error) ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${res.status}`;
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
   }
 }
