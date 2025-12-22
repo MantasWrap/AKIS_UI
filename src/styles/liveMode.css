@@ -21,6 +21,12 @@
   align-items: flex-start;
 }
 
+.live-mode-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .live-mode-hero-status {
   display: flex;
   flex-direction: column;
@@ -86,6 +92,16 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.85rem;
+}
+
+.live-mode-errors-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--dev-error);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .live-mode-signal-pill {

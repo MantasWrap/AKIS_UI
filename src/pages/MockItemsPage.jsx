@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/items.css';
-import { getRuntimeItems } from '../api/client.js';
+import { getRuntimeItems, getItemTrace } from '../api/client.js';
 
 const TIME_WINDOWS = [
   { id: '15m', label: 'Last 15 min' },
@@ -132,6 +132,83 @@ function formatWeightKg(value) {
   const abs = Math.abs(value);
   const decimals = abs < 1 ? 3 : 2;
   return `${value.toFixed(decimals)} kg`;
+}
+
+function mapTraceEventToStep(event, index) {
+  if (!event) {
+    return {
+      id: `event-${index}`,
+      label: 'Unknown event',
+      summary: '',
+      time: '—',
+    };
+  }
+
+  const type = (event.type || '').toString().toUpperCase();
+  const ts = event.ts || event.timestamp || null;
+  const time = formatShortTime(ts);
+  const payload = event.payload || {};
+  let label;
+  let summary;
+
+  if (type === 'CAPTURE') {
+    label = 'CAPTURE · Seen by Jetson';
+    const cameraId =
+      payload.camera_id || payload.camera || payload.capture?.camera_id;
+    const laneId = payload.lane_id || payload.capture?.lane_id;
+    if (cameraId && laneId) {
+      summary = `Camera ${cameraId}, lane ${laneId}`;
+    } else if (cameraId) {
+      summary = `Camera ${cameraId}`;
+    } else if (laneId) {
+      summary = `Lane ${laneId}`;
+    } else {
+      summary = 'Image captured.';
+    }
+  } else if (type === 'AI_DECISION') {
+    label = 'AI DECISION · AI classified the item';
+    const category =
+      payload.category ||
+      payload.ai_category ||
+      payload.classes?.category;
+    const quality = payload.quality || payload.classes?.quality;
+    if (category && quality) {
+      summary = `${category}, quality ${quality}`;
+    } else if (category) {
+      summary = category;
+    } else {
+      summary = 'AI decision computed.';
+    }
+  } else if (type === 'ROUTING') {
+    label = 'ROUTING · Routing decided chute';
+    const chuteId = payload.chute_id || payload.routing?.chute_id;
+    if (chuteId != null) {
+      summary = `Routing decided chute ${chuteId}.`;
+    } else {
+      summary = 'Routing decision applied.';
+    }
+  } else if (type === 'PLC_FEEDBACK') {
+    label = 'PLC FEEDBACK · Fake PLC feedback';
+    const status =
+      (payload.pick_status || payload.status || '')
+        .toString()
+        .toUpperCase() || null;
+    if (status) {
+      summary = `Fake PLC feedback: ${status}`;
+    } else {
+      summary = 'Fake PLC feedback received.';
+    }
+  } else {
+    label = `${type || 'EVENT'} · Runtime event`;
+    summary = payload.message || 'Event recorded in runtime.';
+  }
+
+  return {
+    id: `${type || 'event'}-${index}`,
+    label,
+    summary,
+    time,
+  };
 }
 
 export default function MockItemsPage() {
@@ -557,6 +634,61 @@ function ItemDetail({ item }) {
   const missingWeightTelemetry =
     !formattedWeightBefore || !formattedWeightAfter || !formattedEstimatedWeight;
 
+  const [traceState, setTraceState] = useState({
+    loading: false,
+    error: '',
+    events: [],
+  });
+  const [isTraceOpen, setIsTraceOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTrace() {
+      if (!item || !isTraceOpen) {
+        return;
+      }
+
+      setTraceState((prev) => ({
+        ...prev,
+        loading: true,
+        error: '',
+      }));
+
+      const result = await getItemTrace({
+        // Phase 0: site/line are taken from controller defaults.
+        itemId: getItemId(item),
+      });
+
+      if (cancelled) return;
+
+      if (!result || result.ok === false) {
+        const message =
+          (result && result.error) ||
+          'Item trace is not available right now. Ask your engineer to check controller logs.';
+        setTraceState({
+          loading: false,
+          error: message,
+          events: [],
+        });
+        return;
+      }
+
+      const events = Array.isArray(result.events) ? result.events : [];
+      setTraceState({
+        loading: false,
+        error: '',
+        events,
+      });
+    }
+
+    loadTrace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item, isTraceOpen]);
+
   return (
     <div className="items-detail-card">
       <header className="items-detail-header">
@@ -663,6 +795,61 @@ function ItemDetail({ item }) {
           </p>
           {missingWeightTelemetry && (
             <p className="items-detail-helper">No weight telemetry for this item yet.</p>
+          )}
+        </section>
+
+        <section>
+          <div className="items-detail-section-header">
+            <h4 className="items-detail-section-title">Item trace (debug view)</h4>
+            <button
+              type="button"
+              className="items-filter-chip items-filter-chip-secondary"
+              onClick={() => setIsTraceOpen((open) => !open)}
+            >
+              {isTraceOpen ? 'Hide trace' : 'Show trace'}
+            </button>
+          </div>
+          <p className="items-detail-helper">
+            End-to-end timeline for this item: capture, AI, routing and Fake PLC feedback. Phase 0
+            debug view only.
+          </p>
+          {isTraceOpen && (
+            <div className="items-detail-trace">
+              {traceState.loading && (
+                <p className="items-detail-helper">Loading item trace…</p>
+              )}
+              {!traceState.loading && traceState.error && (
+                <p className="items-detail-helper">
+                  {traceState.error ||
+                    'Item trace is not available right now. Ask your engineer to check controller logs.'}
+                </p>
+              )}
+              {!traceState.loading &&
+                !traceState.error &&
+                (!traceState.events || traceState.events.length === 0) && (
+                  <p className="items-detail-helper">
+                    No history events found for this item yet.
+                  </p>
+                )}
+              {!traceState.loading && !traceState.error && traceState.events.length > 0 && (
+                <ol className="items-confidence-list">
+                  {traceState.events.slice(0, 8).map((event, index) => {
+                    const step = mapTraceEventToStep(event, index);
+                    return (
+                      <li key={step.id} className="items-confidence-row">
+                        <span className="items-confidence-key">
+                          {step.time !== '—' ? step.time : `Step ${index + 1}`}
+                        </span>
+                        <span className="items-confidence-value">
+                          {step.label}
+                          {step.summary ? ` — ${step.summary}` : ''}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
           )}
         </section>
       </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../styles/devDashboard.css';
 import { devDashboardMock } from '../mock/devConsoleMockData.js';
-import { getProgressSummary } from '../api/client';
+import { getProgressSummary, getRuntimeLinkMetrics } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 
 export default function StatusPage() {
@@ -13,6 +13,8 @@ export default function StatusPage() {
   } = devDashboardMock;
   const [copiedId, setCopiedId] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [runtimeMetrics, setRuntimeMetrics] = useState(null);
+  const [runtimeMetricsError, setRuntimeMetricsError] = useState('');
 
   useEffect(() => {
     let isCancelled = false;
@@ -38,6 +40,48 @@ export default function StatusPage() {
 
     return () => {
       isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRuntimeMetrics() {
+      try {
+        const result = await getRuntimeLinkMetrics({});
+        if (cancelled) return;
+
+        if (!result || result.ok === false) {
+          const message =
+            (result && result.error) ||
+            'Runtime link metrics are not available right now.';
+          setRuntimeMetrics(null);
+          setRuntimeMetricsError(message);
+          return;
+        }
+
+        const payload =
+          result.data && typeof result.data === 'object'
+            ? result.data
+            : result;
+
+        setRuntimeMetrics(payload);
+        setRuntimeMetricsError('');
+      } catch (error) {
+        console.warn('Runtime link metrics load failed', error);
+        if (!cancelled) {
+          setRuntimeMetrics(null);
+          setRuntimeMetricsError(
+            'Runtime link metrics are not available right now.',
+          );
+        }
+      }
+    }
+
+    loadRuntimeMetrics();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -143,6 +187,70 @@ export default function StatusPage() {
               <p className="pill-meta">{tile.meta}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="dev-card dev-runtime-link-card">
+        <header className="dev-dashboard-card-header">
+          <div>
+            <p className="dev-card-eyebrow">Runtime link</p>
+            <h3 className="dev-card-title">Items &amp; picks (last 5 min)</h3>
+          </div>
+        </header>
+        <div className="dev-runtime-link-body">
+          {runtimeMetricsError && (
+            <p className="dev-runtime-link-helper">
+              {runtimeMetricsError}
+            </p>
+          )}
+          {!runtimeMetricsError && (
+            <>
+              <p className="dev-runtime-link-helper">
+                Simple snapshot of how many items flowed through the runtime link in the last few
+                minutes. Phase 0 only, Fake PLC.
+              </p>
+              {runtimeMetrics && runtimeMetrics.counters ? (
+                <dl className="dev-runtime-link-grid">
+                  <div className="dev-runtime-link-group">
+                    <dt>Items seen</dt>
+                    <dd>{runtimeMetrics.counters.items_seen ?? '—'}</dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Items decided</dt>
+                    <dd>{runtimeMetrics.counters.items_decided ?? '—'}</dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Items routed</dt>
+                    <dd>{runtimeMetrics.counters.items_routed ?? '—'}</dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Picks OK</dt>
+                    <dd>{runtimeMetrics.counters.picks_success ?? '—'}</dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Missed</dt>
+                    <dd>{runtimeMetrics.counters.picks_missed ?? '—'}</dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Errors</dt>
+                    <dd>
+                      {((runtimeMetrics.counters.picks_error || 0) +
+                        (runtimeMetrics.counters.picks_cancelled || 0)) ||
+                        '0'}
+                    </dd>
+                  </div>
+                  <div className="dev-runtime-link-group">
+                    <dt>Timeout</dt>
+                    <dd>{runtimeMetrics.counters.picks_timeout ?? '—'}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="dev-runtime-link-helper">
+                  Runtime link metrics are not available right now.
+                </p>
+              )}
+            </>
+          )}
         </div>
       </section>
 

@@ -18,105 +18,49 @@ function formatAgeSeconds(ageS) {
   return `${d}d`;
 }
 
-function computeSignalStatus({ transportDown, runtimeStatusFlag, summary }) {
-  if (transportDown) return 'error';
-  if (runtimeStatusFlag === 'error') return 'error';
-  if (!summary) return 'waiting';
-  if (summary.status === 'error') return 'error';
-  if (summary.status === 'degraded') return 'degraded';
-  return 'ok';
-}
+function buildComponentCard({ id, label, node, transportDown }) {
+  if (!node) {
+    return {
+      id,
+      label,
+      status: 'waiting',
+      metric: 'No data yet',
+      helper: transportDown
+        ? 'Not reachable – check controller or network.'
+        : 'Waiting for first heartbeat.',
+    };
+  }
 
-function buildControllerCard({ transportDown, runtimeStatusFlag, summary }) {
-  const status = computeSignalStatus({ transportDown, runtimeStatusFlag, summary });
+  const ok = node.ok === true;
+  const hasError = node.ok === false;
+  const ageSec = typeof node.age_sec === 'number' ? node.age_sec : null;
+  const ageLabel = formatAgeSeconds(ageSec);
+
+  let status = 'waiting';
   let metric = 'Unknown';
-  let helper = 'Waiting for controller heartbeat.';
+  let helper = 'Waiting for signals.';
 
-  if (!summary) {
-    metric = 'No status yet';
-    helper = transportDown
-      ? 'Controller not reachable – check dev server.'
-      : 'Start the controller dev server.';
-  } else if (summary?.status === 'ok') {
+  if (hasError) {
+    status = 'error';
+    metric = 'Error';
+    helper = node.message || 'Reported an error.';
+  } else if (ok) {
+    status = 'ok';
     metric = 'Healthy';
-    helper = 'DB and controller heartbeat look OK.';
-  } else if (summary?.status === 'degraded') {
+    helper = node.message || 'Healthy.';
+  } else {
+    status = 'degraded';
     metric = 'Degraded';
-    helper = summary?.helper || 'Some checks are failing.';
-  } else if (summary?.status === 'error') {
-    metric = 'Error';
-    helper = summary?.helper || 'Runtime reported an error.';
+    helper = node.message || 'Signals look unusual.';
+  }
+
+  if (ageLabel && ageLabel !== '—') {
+    helper = `${helper} Last heartbeat ${ageLabel} ago.`;
   }
 
   return {
-    id: 'controllerHeartbeat',
-    label: 'Controller heartbeat',
-    status,
-    metric,
-    helper,
-  };
-}
-
-function buildJetsonCard({ transportDown, runtimeStatusFlag, jetsonSummary }) {
-  const status = computeSignalStatus({
-    transportDown,
-    runtimeStatusFlag,
-    summary: jetsonSummary,
-  });
-
-  let metric = 'Unknown';
-  let helper = 'Waiting for Jetson runtime.';
-
-  if (!jetsonSummary) {
-    metric = 'No signals yet';
-    helper = 'Start the Jetson dev runner.';
-  } else if (jetsonSummary?.status === 'ok') {
-    metric = 'Connected';
-    helper = 'Jetson runtime is sending events.';
-  } else if (jetsonSummary?.status === 'degraded') {
-    metric = 'Degraded';
-    helper = jetsonSummary?.helper || 'Some runtime checks are failing.';
-  } else if (jetsonSummary?.status === 'error') {
-    metric = 'Error';
-    helper = jetsonSummary?.helper || 'Runtime reported an error.';
-  }
-
-  return {
-    id: 'jetsonRuntime',
-    label: 'Jetson runtime',
-    status,
-    metric,
-    helper,
-  };
-}
-
-function buildMqttCard({ transportDown, runtimeStatusFlag, bridgeSummary }) {
-  const status = computeSignalStatus({
-    transportDown,
-    runtimeStatusFlag,
-    summary: bridgeSummary,
-  });
-
-  let metric = 'Unknown';
-  let helper = 'Waiting for MQTT bridge.';
-
-  if (!bridgeSummary) {
-    metric = 'No signals yet';
-    helper = 'Start the MQTT bridge / ws endpoint.';
-  } else if (bridgeSummary?.status === 'ok') {
-    metric = 'Connected';
-    helper = 'Bridge is connected and listening.';
-  } else if (bridgeSummary?.status === 'degraded') {
-    metric = 'Degraded';
-    helper = bridgeSummary?.helper || 'Bridge is connected but something is off.';
-  } else if (bridgeSummary?.status === 'error') {
-    metric = 'Error';
-    helper = bridgeSummary?.helper || 'Bridge reported an error.';
-  }
-
-  return {
-    id: 'mqttBridge',
-    label: 'MQTT bridge',
+    id,
+    label,
     status,
     metric,
     helper,
@@ -281,6 +225,7 @@ export default function RuntimeStatusPage() {
 
   const runtimeFlag = runtimeStatus?.status || null;
   const transportDown = Boolean(fetchError) || !runtimeStatus;
+  const hardwareMode = runtimeStatus?.hardware_mode === 'REAL' ? 'REAL' : 'FAKE';
 
   const streamStatus = useMemo(() => {
     if (!runtimeStatus) {
@@ -326,28 +271,20 @@ export default function RuntimeStatusPage() {
   const signalCards = useMemo(() => {
     if (!runtimeStatus) return liveModeMock.signalCards;
 
-    const jetsonSummary = runtimeStatus?.jetson_metrics_summary || null;
-    const bridgeSummary = runtimeStatus?.bridge_stats_summary || null;
-    const controllerSummary = runtimeStatus?.controller_summary || null;
-
-    return [
-      buildControllerCard({
-        transportDown,
-        runtimeStatusFlag: runtimeFlag,
-        summary: controllerSummary,
-      }),
-      buildJetsonCard({
-        transportDown,
-        runtimeStatusFlag: runtimeFlag,
-        jetsonSummary,
-      }),
-      buildMqttCard({
-        transportDown,
-        runtimeStatusFlag: runtimeFlag,
-        bridgeSummary,
-      }),
+    const components = [
+      { id: 'db', label: 'DB', node: runtimeStatus?.db },
+      { id: 'jetsonLink', label: 'Jetson link', node: runtimeStatus?.jetson_link },
+      { id: 'runtimeBridge', label: 'Runtime bridge', node: runtimeStatus?.runtime_bridge },
+      { id: 'plc', label: 'PLC', node: runtimeStatus?.plc },
     ];
-  }, [runtimeStatus, transportDown, runtimeFlag]);
+
+    return components.map((component) =>
+      buildComponentCard({
+        ...component,
+        transportDown,
+      }),
+    );
+  }, [runtimeStatus, transportDown]);
 
   const lanes =
     Array.isArray(runtimeStatus?.lanes) && runtimeStatus.lanes.length > 0
@@ -361,6 +298,11 @@ export default function RuntimeStatusPage() {
         <div className="live-mode-hero-copy">
           <p className="dev-card-eyebrow">Phase 0 · Live mode preview</p>
           <h2 className="dev-card-title">Live mode</h2>
+          <div className="live-mode-hero-badges">
+            <span className="dev-status-chip status-mock">
+              {hardwareMode === 'REAL' ? 'Real PLC (planned)' : 'Fake hardware (Phase 0)'}
+            </span>
+          </div>
           <p className="dev-card-subtitle">
             High-level view of the runtime loop: status tiles, recent items, and a mock log while we
             bring hardware online.
@@ -381,8 +323,11 @@ export default function RuntimeStatusPage() {
       <section className="dev-card live-mode-signals-card">
         <header className="live-mode-section-header">
           <div>
-            <p className="dev-card-eyebrow">Runtime signals</p>
-            <h3>Health &amp; connectivity</h3>
+            <p className="dev-card-eyebrow">Runtime health</p>
+            <h3>Links &amp; components</h3>
+            <p className="live-mode-section-sub">
+              {runtimeFlag === 'error' ? 'Needs attention' : 'All systems OK'}
+            </p>
           </div>
         </header>
         <div className="live-mode-signals-grid">
@@ -397,6 +342,16 @@ export default function RuntimeStatusPage() {
             </div>
           ))}
         </div>
+        {Array.isArray(runtimeStatus?.errors) && runtimeStatus.errors.length > 0 && (
+          <ul className="live-mode-errors-list">
+            {runtimeStatus.errors.map((err, index) => (
+              <li key={`${err.component || 'err'}-${index}`}>
+                {err.component ? `${err.component}: ` : ''}
+                {err.message || err.code || 'Error'}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="dev-card live-mode-lanes-card">

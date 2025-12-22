@@ -165,6 +165,86 @@ export async function getRuntimeStatus() {
   }
 }
 
+export async function getItemTrace(params = {}) {
+  try {
+    const search = new URLSearchParams();
+    const { siteId, lineId, itemId } = params || {};
+
+    if (siteId) search.set('site_id', siteId);
+    if (lineId) search.set('line_id', lineId);
+    if (itemId) search.set('item_id', itemId);
+
+    const url = search.toString()
+      ? `${API_BASE}/api/debug/item-trace?${search.toString()}`
+      : `${API_BASE}/api/debug/item-trace`;
+
+    const res = await fetch(url, {
+      headers: getDebugHeaders(),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message =
+        (data && data.error) ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${res.status}`;
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}
+
+export async function getRuntimeLinkMetrics(params = {}) {
+  try {
+    const search = new URLSearchParams();
+    const { siteId, lineId, windowSec } = params || {};
+
+    if (siteId) search.set('site_id', siteId);
+    if (lineId) search.set('line_id', lineId);
+    if (
+      typeof windowSec === 'number' &&
+      Number.isFinite(windowSec) &&
+      windowSec > 0
+    ) {
+      search.set('window_sec', String(windowSec));
+    }
+
+    const url = search.toString()
+      ? `${API_BASE}/api/metrics/runtime/links?${search.toString()}`
+      : `${API_BASE}/api/metrics/runtime/links`;
+
+    const res = await fetch(url, {
+      headers: getDebugHeaders(),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message =
+        (data && data.error) ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${res.status}`;
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}
+
 export async function getProgressSummary(options = {}) {
   try {
     const params = new URLSearchParams();

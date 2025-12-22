@@ -75,6 +75,51 @@
   color: var(--dev-text-soft);
 }
 
+.dev-runtime-link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dev-runtime-link-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dev-runtime-link-helper {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--dev-text-muted);
+}
+
+.dev-runtime-link-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.85rem;
+}
+
+.dev-runtime-link-group {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+  background: var(--dev-bg-soft);
+}
+
+.dev-runtime-link-group dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--dev-text-muted);
+  letter-spacing: 0.06em;
+}
+
+.dev-runtime-link-group dd {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .dev-controller-grid {
   margin: 0;
   display: grid;
