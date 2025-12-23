@@ -1,60 +1,66 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '../styles/devDashboard.css';
-import { devDashboardMock } from '../mock/devConsoleMockData.js';
-import { getProgressSummary, getRuntimeLinkMetrics } from '../api/client';
+import { getRuntimeLinkMetrics } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 
+const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
+
+function getPickCount(counters) {
+  if (!counters || typeof counters !== 'object') return null;
+  const values = [
+    counters.picks_success,
+    counters.picks_missed,
+    counters.picks_error,
+    counters.picks_cancelled,
+    counters.picks_timeout,
+  ];
+  const total = values.reduce((sum, value) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return sum;
+    return sum + value;
+  }, 0);
+  return Number.isFinite(total) ? total : null;
+}
+
+function deriveLineStatus({ counters, hasError }) {
+  if (hasError || !counters) return '⛔ Line is not receiving data.';
+  const itemsSeen = Number(counters.items_seen || 0);
+  const picksTotal = getPickCount(counters) ?? 0;
+  if (itemsSeen <= 0) return '⛔ Line is not receiving data.';
+  if (picksTotal <= 0) return '⚠️ Line is running but needs attention.';
+  return '✅ Line is running normally.';
+}
+
+function deriveStatusAttentionFlag({ counters, hasError }) {
+  if (hasError) return true;
+  if (!counters) return false;
+  const itemsSeen = Number(counters.items_seen || 0);
+  const picksTotal = getPickCount(counters) ?? 0;
+  return itemsSeen > 0 && picksTotal <= 0;
+}
+
+function hasMetricsData(counters) {
+  if (!counters || typeof counters !== 'object') return false;
+  return Object.values(counters).some(
+    (value) => typeof value === 'number' && Number.isFinite(value) && value > 0,
+  );
+}
+
 export default function StatusPage() {
-  const {
-    hero,
-    systemOverview,
-    controllerHealth,
-    endpoints,
-  } = devDashboardMock;
-  const [copiedId, setCopiedId] = useState(null);
-  const [summary, setSummary] = useState(null);
   const [runtimeMetrics, setRuntimeMetrics] = useState(null);
   const [runtimeMetricsError, setRuntimeMetricsError] = useState('');
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function loadSummary() {
-      try {
-        const data = await getProgressSummary({});
-        if (isCancelled) return;
-
-        if (!data) {
-          setSummary(null);
-          return;
-        }
-
-        const payload = data.data || data.summary || data;
-        setSummary(payload);
-      } catch (error) {
-        console.warn('Owner summary load failed', error);
-      }
-    }
-
-    loadSummary();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+  const [runtimeMetricsLoading, setRuntimeMetricsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadRuntimeMetrics() {
+      setRuntimeMetricsLoading(true);
       try {
         const result = await getRuntimeLinkMetrics({});
         if (cancelled) return;
 
         if (!result || result.ok === false) {
-          const message =
-            (result && result.error) ||
-            'Runtime link metrics are not available right now.';
+          const message = 'Could not load metrics right now.';
           setRuntimeMetrics(null);
           setRuntimeMetricsError(message);
           return;
@@ -71,9 +77,11 @@ export default function StatusPage() {
         console.warn('Runtime link metrics load failed', error);
         if (!cancelled) {
           setRuntimeMetrics(null);
-          setRuntimeMetricsError(
-            'Runtime link metrics are not available right now.',
-          );
+          setRuntimeMetricsError('Could not load metrics right now.');
+        }
+      } finally {
+        if (!cancelled) {
+          setRuntimeMetricsLoading(false);
         }
       }
     }
@@ -85,254 +93,171 @@ export default function StatusPage() {
     };
   }, []);
 
-  const currentPhaseText = (() => {
-    if (!summary) return '';
-
-    const { activePhaseId, phases, activePhase } = summary;
-    if (!Array.isArray(phases) || phases.length === 0) {
-      return activePhase || '';
-    }
-
-    const phase =
-      (activePhaseId && phases.find((p) => p.phaseId === activePhaseId)) ||
-      phases[0];
-
-    if (!phase) {
-      return activePhase || '';
-    }
-
-    const name = phase.name || activePhase || 'Current phase';
-    const checklist = phase.checklist || {};
-    const completed = Number(checklist.completed || 0);
-    const total = Number.isFinite(Number(checklist.total))
-      ? Number(checklist.total)
-      : 0;
-    const percent =
-      typeof checklist.percent === 'number'
-        ? Math.round(checklist.percent)
-        : total > 0
-          ? Math.round((completed / total) * 100)
-          : 0;
-
-    const totalLabel = total > 0 ? `${completed}/${total}` : `${completed}`;
-    return `${name} · ${totalLabel} items · ${percent}% done`;
-  })();
-
   const handleNavigate = (targetKey) => {
     emitNavigation(targetKey);
   };
 
-  const handleCopy = async (value, id) => {
-    if (!navigator?.clipboard || !value) return;
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 1600);
-    } catch (error) {
-      console.warn('Copy failed', error);
-    }
-  };
+  const runtimeCounters = runtimeMetrics?.counters || null;
+  const picksTotal = useMemo(() => getPickCount(runtimeCounters), [runtimeCounters]);
+  const lineStatus = useMemo(
+    () =>
+      deriveLineStatus({
+        counters: runtimeCounters,
+        hasError: Boolean(runtimeMetricsError),
+      }),
+    [runtimeCounters, runtimeMetricsError],
+  );
+  const needsAttention = useMemo(
+    () =>
+      deriveStatusAttentionFlag({
+        counters: runtimeCounters,
+        hasError: Boolean(runtimeMetricsError),
+      }),
+    [runtimeCounters, runtimeMetricsError],
+  );
+  const phaseLabel =
+    runtimeMetrics?.hardware_mode === 'REAL'
+      ? 'Production mode · Real PLC'
+      : DEFAULT_PHASE_LABEL;
+  const itemsSeen = runtimeCounters?.items_seen;
+  const itemsSeenLabel =
+    typeof itemsSeen === 'number' && Number.isFinite(itemsSeen) ? itemsSeen : '—';
+  const picksLabel =
+    typeof picksTotal === 'number' && Number.isFinite(picksTotal) ? picksTotal : '—';
+  const attentionHint = needsAttention
+    ? 'System needs attention – open Live Mode for details.'
+    : 'Open Live Mode to see live stream and components.';
+  const runtimeMetricsEmpty =
+    !runtimeMetricsError && runtimeCounters && !hasMetricsData(runtimeCounters);
 
   return (
     <div className="dev-dashboard-page">
-      <section className="dev-card dev-dashboard-card">
-        <header className="dev-dashboard-card-header">
+      <section className="dev-card system-overview-card">
+        <header className="system-overview-header">
           <div>
-            <p className="dev-card-eyebrow">{hero.eyebrow}</p>
-            <h2 className="dev-card-title">Dev dashboard</h2>
-            <p className="dev-card-subtitle">{hero.body}</p>
+            <p className="dev-card-eyebrow">Dev dashboard</p>
+            <h2 className="dev-card-title">System overview</h2>
           </div>
-          <span className="dev-status-chip status-mock">Mock only</span>
+          <div className="system-overview-actions">
+            <button
+              type="button"
+              className="dev-dashboard-quick-link"
+              onClick={() => handleNavigate('runtimeStatus')}
+            >
+              Open Live Mode
+            </button>
+            <button
+              type="button"
+              className="dev-dashboard-quick-link"
+              onClick={() => handleNavigate('items')}
+            >
+              Open Simulation items
+            </button>
+          </div>
         </header>
-        {currentPhaseText && (
-          <p
-            className="dev-dashboard-phase-line"
-          >
-            Current phase: {currentPhaseText}
-          </p>
-        )}
-        <div className="dev-dashboard-quick-links">
-          <button
-            type="button"
-            className="dev-dashboard-quick-link"
-            onClick={() => handleNavigate('progress')}
-          >
-            Progress overview
-          </button>
-          <button
-            type="button"
-            className="dev-dashboard-quick-link"
-            onClick={() => handleNavigate('runtimeStatus')}
-          >
-            Live mode
-          </button>
-          <button
-            type="button"
-            className="dev-dashboard-quick-link"
-            onClick={() => handleNavigate('items')}
-          >
-            Simulation items
-          </button>
-        </div>
-        <div className="dev-dashboard-pill-row">
-          {systemOverview.map((tile) => (
-            <article key={tile.id} className="dev-dashboard-pill">
-              <div className="pill-top">
-                <span className="pill-label">{tile.label}</span>
-                <span className={`pill-status pill-status-${tile.status}`}>
-                  {tile.statusLabel}
-                </span>
-              </div>
-              <p className="pill-description">{tile.description}</p>
-              <p className="pill-meta">{tile.meta}</p>
-            </article>
-          ))}
-        </div>
+        <p className="system-overview-status">{lineStatus}</p>
+        <p className="system-overview-meta">{phaseLabel}</p>
+        <p className="system-overview-meta">
+          Items in last 5 minutes: {itemsSeenLabel} · Picks in last 5 minutes: {picksLabel}
+        </p>
+        <p className="system-overview-hint">{attentionHint}</p>
       </section>
 
-      <section className="dev-card dev-runtime-link-card">
-        <header className="dev-dashboard-card-header">
-          <div>
-            <p className="dev-card-eyebrow">Runtime link</p>
-            <h3 className="dev-card-title">Items &amp; picks (last 5 min)</h3>
+      {needsAttention && (
+        <section className="system-attention-banner">
+          <p className="system-attention-text">
+            ⚠️ System needs attention. Check Live Mode and Simulation views for details.
+          </p>
+          <div className="system-overview-actions">
+            <button
+              type="button"
+              className="dev-dashboard-quick-link"
+              onClick={() => handleNavigate('runtimeStatus')}
+            >
+              Open Live Mode
+            </button>
+            <button
+              type="button"
+              className="dev-dashboard-quick-link"
+              onClick={() => handleNavigate('items')}
+            >
+              Open Simulation items
+            </button>
           </div>
-        </header>
-        <div className="dev-runtime-link-body">
-          {runtimeMetricsError && (
-            <p className="dev-runtime-link-helper">
-              {runtimeMetricsError}
-            </p>
-          )}
-          {!runtimeMetricsError && (
-            <>
-              <p className="dev-runtime-link-helper">
-                Simple snapshot of how many items flowed through the runtime link in the last few
-                minutes. Phase 0 only, Fake PLC.
+        </section>
+      )}
+
+      <section className="dev-dashboard-grid">
+        <section className="dev-card dev-runtime-link-card">
+          <header className="dev-dashboard-card-header">
+            <div>
+              <p className="dev-card-eyebrow">Runtime metrics</p>
+              <h3 className="dev-card-title">Items &amp; picks – last 5 minutes</h3>
+              <p className="dev-card-subtitle">
+                Items that reached the camera and AI, plus picks sent to PLC (real or Fake).
               </p>
-              {runtimeMetrics && runtimeMetrics.counters ? (
+            </div>
+          </header>
+          <div className="dev-runtime-link-body">
+            {runtimeMetricsError && (
+              <p className="dev-runtime-link-helper">
+                {runtimeMetricsError}
+              </p>
+            )}
+            {!runtimeMetricsError && runtimeMetricsLoading && (
+              <p className="dev-runtime-link-helper">Loading metrics…</p>
+            )}
+            {!runtimeMetricsError && !runtimeMetricsLoading && runtimeCounters && runtimeMetricsEmpty && (
+              <p className="dev-runtime-link-helper">
+                No data in this window yet.
+              </p>
+            )}
+            {!runtimeMetricsError &&
+              !runtimeMetricsLoading &&
+              runtimeCounters &&
+              !runtimeMetricsEmpty && (
                 <dl className="dev-runtime-link-grid">
                   <div className="dev-runtime-link-group">
                     <dt>Items seen</dt>
-                    <dd>{runtimeMetrics.counters.items_seen ?? '—'}</dd>
+                    <dd>{runtimeCounters.items_seen ?? '—'}</dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Items decided</dt>
-                    <dd>{runtimeMetrics.counters.items_decided ?? '—'}</dd>
+                    <dd>{runtimeCounters.items_decided ?? '—'}</dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Items routed</dt>
-                    <dd>{runtimeMetrics.counters.items_routed ?? '—'}</dd>
+                    <dd>{runtimeCounters.items_routed ?? '—'}</dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Picks OK</dt>
-                    <dd>{runtimeMetrics.counters.picks_success ?? '—'}</dd>
+                    <dd>{runtimeCounters.picks_success ?? '—'}</dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Missed</dt>
-                    <dd>{runtimeMetrics.counters.picks_missed ?? '—'}</dd>
+                    <dd>{runtimeCounters.picks_missed ?? '—'}</dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Errors</dt>
                     <dd>
-                      {((runtimeMetrics.counters.picks_error || 0) +
-                        (runtimeMetrics.counters.picks_cancelled || 0)) ||
+                      {((runtimeCounters.picks_error || 0) +
+                        (runtimeCounters.picks_cancelled || 0)) ||
                         '0'}
                     </dd>
                   </div>
                   <div className="dev-runtime-link-group">
                     <dt>Timeout</dt>
-                    <dd>{runtimeMetrics.counters.picks_timeout ?? '—'}</dd>
+                    <dd>{runtimeCounters.picks_timeout ?? '—'}</dd>
                   </div>
                 </dl>
-              ) : (
-                <p className="dev-runtime-link-helper">
-                  Runtime link metrics are not available right now.
-                </p>
               )}
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="dev-card dev-controller-card">
-        <header className="dev-dashboard-card-header">
-          <div>
-            <h3 className="dev-card-title">Controller &amp; database</h3>
-            <p className="dev-card-subtitle">Structured fields ready for live health data.</p>
-          </div>
-          <span className="dev-status-chip status-waiting">Awaiting runtime</span>
-        </header>
-        <p className="dev-controller-summary">{controllerHealth.summary}</p>
-        <dl className="dev-controller-grid">
-          {controllerHealth.fields.map((field) => (
-            <div key={field.id} className="dev-controller-field">
-              <dt>{field.label}</dt>
-              <dd className={field.placeholder ? 'is-placeholder' : ''}>
-                {field.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <div className="dev-controller-footnote">{controllerHealth.emptyState}</div>
-      </section>
-
-      <section className="dev-card dev-endpoints-card">
-        <header className="dev-dashboard-card-header">
-          <div>
-            <h3 className="dev-card-title">Endpoints &amp; tools</h3>
-            <p className="dev-card-subtitle">
-              Calm list of URLs we keep handy while everything is mock-only.
-            </p>
-          </div>
-        </header>
-        <div className="dev-endpoints-layout">
-          <div className="dev-endpoint-main">
-            <div>
-              <p className="dev-endpoint-eyebrow">API base</p>
-              <p className="dev-endpoint-title">{endpoints.apiBase}</p>
-              <p className="dev-endpoint-description">
-                Swap this to the real Owner API base when controller + runtime go live.
+            {!runtimeMetricsError && !runtimeMetricsLoading && !runtimeCounters && (
+              <p className="dev-runtime-link-helper">
+                Could not load metrics right now.
               </p>
-            </div>
+            )}
           </div>
-          <div className="dev-endpoint-lists">
-            <div className="dev-endpoint-list-block">
-              <p className="dev-endpoint-eyebrow">Health &amp; runtime</p>
-              <ul className="dev-endpoint-list">
-                {endpoints.list.map((endpoint) => (
-                  <li key={endpoint.id} className="dev-endpoint-item">
-                    <div className="dev-endpoint-item-main">
-                      <div>
-                        <p className="dev-endpoint-title">{endpoint.label}</p>
-                        <p className="dev-endpoint-description">{endpoint.description}</p>
-                      </div>
-                      <button
-                        type="button"
-                        className="dev-endpoint-copy"
-                        onClick={() => handleCopy(endpoint.path, endpoint.id)}
-                      >
-                        {copiedId === endpoint.id ? 'Copied' : 'Copy'}
-                      </button>
-                    </div>
-                    <code className="dev-endpoint-path">{endpoint.path}</code>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="dev-endpoint-docs">
-              <p className="dev-endpoint-eyebrow">Docs</p>
-              <ul>
-                {endpoints.docs.map((doc) => (
-                  <li key={doc.id}>
-                    <p className="dev-endpoint-title">{doc.label}</p>
-                    <p className="dev-endpoint-description">{doc.description}</p>
-                    <code>{doc.path}</code>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+        </section>
       </section>
     </div>
   );

@@ -17,6 +17,63 @@
   align-items: flex-start;
 }
 
+.system-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.system-overview-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.system-overview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.system-overview-status {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dev-text-primary);
+}
+
+.system-overview-meta {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--dev-text-muted);
+}
+
+.system-overview-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-soft);
+}
+
+.system-attention-banner {
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  background: rgba(234, 179, 8, 0.12);
+  border-radius: var(--dev-radius-lg);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.system-attention-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
 .dev-dashboard-pill-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
