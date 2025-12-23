@@ -18,82 +18,9 @@ function formatAgeSeconds(ageS) {
   return `${d}d`;
 }
 
-function buildComponentCard({ id, label, node, transportDown }) {
-  if (!node) {
-    return {
-      id,
-      label,
-      status: 'waiting',
-      metric: 'No data yet',
-      helper: transportDown
-        ? 'Not reachable – check controller or network.'
-        : 'Waiting for first heartbeat.',
-    };
-  }
-
-  const ok = node.ok === true;
-  const hasError = node.ok === false;
-  const ageSec = typeof node.age_sec === 'number' ? node.age_sec : null;
-  const ageLabel = formatAgeSeconds(ageSec);
-
-  let status = 'waiting';
-  let metric = 'Unknown';
-  let helper = 'Waiting for signals.';
-
-  if (hasError) {
-    status = 'error';
-    metric = 'Error';
-    helper = node.message || 'Reported an error.';
-  } else if (ok) {
-    status = 'ok';
-    metric = 'Healthy';
-    helper = node.message || 'Healthy.';
-  } else {
-    status = 'degraded';
-    metric = 'Degraded';
-    helper = node.message || 'Signals look unusual.';
-  }
-
-  if (ageLabel && ageLabel !== '—') {
-    helper = `${helper} Last heartbeat ${ageLabel} ago.`;
-  }
-
-  return {
-    id,
-    label,
-    status,
-    metric,
-    helper,
-  };
-}
-
-function computePipelineStatusForItem(item) {
-  const hasDecision = Boolean(item?.sorting_decision);
-  const pickStatus = item?.plc_feedback?.pick_status || null;
-
-  if (!hasDecision) return 'SEEN';
-  if (!pickStatus) return 'DECIDED';
-
-  const normalized = String(pickStatus).toUpperCase();
-  if (normalized === 'FIRED' || normalized === 'SUCCESS') return 'ROUTED';
-  if (normalized === 'MISSED' || normalized === 'FAILED' || normalized === 'ERROR') {
-    return 'DROPPED';
-  }
-
-  return 'DECIDED';
-}
-
-function getItemId(item) {
-  return item?.item_id || item?.id || '—';
-}
-
-function getItemSeenAt(item) {
-  return (
-    item?.capture?.timestamp ||
-    item?.meta?.created_at ||
-    item?.timestamp ||
-    null
-  );
+function formatWeightKg(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
+  return `${value.toFixed(3)} kg`;
 }
 
 function parseDate(value) {
@@ -113,6 +40,73 @@ function formatShortTime(value) {
   });
 }
 
+function buildComponentCard({ id, label, node, transportDown }) {
+  if (!node) {
+    return {
+      id,
+      label,
+      status: 'waiting',
+      metric: 'No data yet',
+      helper: transportDown
+        ? 'Not reachable – check controller or network.'
+        : 'Waiting for first heartbeat.',
+    };
+  }
+
+  const ok = node.ok === true;
+  const hasError = node.ok === false;
+  const ageSec = typeof node.age_sec === 'number' ? node.age_sec : null;
+  const ageLabel = formatAgeSeconds(ageSec);
+
+  let status = 'waiting';
+  let metric = 'No data yet';
+  let helper = 'Waiting for signals.';
+
+  if (hasError) {
+    status = 'error';
+    metric = 'Not working';
+    helper = node.message || 'Reported an error – needs help.';
+  } else if (ok) {
+    status = 'ok';
+    metric = 'Working normally';
+    helper = node.message || 'No issues reported.';
+  } else {
+    status = 'degraded';
+    metric = 'Working, but unstable';
+    helper = node.message || 'Signals look unusual – keep an eye on this.';
+  }
+
+  if (ageLabel && ageLabel !== '—') {
+    helper = `${helper} Last heartbeat ${ageLabel} ago.`;
+  }
+
+  return {
+    id,
+    label,
+    status,
+    metric,
+    helper,
+  };
+}
+
+function getItemSeenAt(item) {
+  return (
+    item?.capture?.timestamp ||
+    item?.meta?.created_at ||
+    item?.timestamp ||
+    null
+  );
+}
+
+function getItemId(item) {
+  return (
+    item?.meta?.id ||
+    item?.id ||
+    item?.capture?.id ||
+    '—'
+  );
+}
+
 function getCategory(item) {
   return item?.ai_prediction?.classes?.category || '—';
 }
@@ -126,14 +120,24 @@ function getEstimatedItemWeight(item) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function formatWeightKg(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-  const abs = Math.abs(value);
-  const decimals = abs < 1 ? 3 : 2;
-  return `${value.toFixed(decimals)} kg`;
+function computePipelineStatusForItem(item) {
+  const hasDecision = Boolean(item?.sorting_decision);
+  const pickStatus = item?.plc_feedback?.pick_status || null;
+
+  if (!hasDecision) return 'SEEN';
+  if (!pickStatus) return 'DECIDED';
+
+  const normalized = String(pickStatus).toUpperCase();
+  if (normalized === 'ENQUEUED_PICK') return 'ENQUEUED_PICK';
+  if (normalized === 'PICKED_OK') return 'PICKED_OK';
+  if (normalized === 'PICKED_LATE') return 'PICKED_LATE';
+  if (normalized === 'SKIPPED_NO_ITEM') return 'SKIPPED_NO_ITEM';
+  if (normalized === 'SKIPPED_OTHER') return 'SKIPPED_OTHER';
+
+  return 'UNKNOWN';
 }
 
-export default function RuntimeStatusPage() {
+function RuntimeStatusPage() {
   const [runtimeStatus, setRuntimeStatus] = useState(null);
   const [fetchError, setFetchError] = useState('');
   const [isPolling] = useState(true);
@@ -147,21 +151,14 @@ export default function RuntimeStatusPage() {
     let timerId;
 
     async function load() {
-      const result = await getRuntimeStatus();
-      if (cancelled) return;
-
-      if (result?.ok === false) {
-        setFetchError(result.error || 'Request failed');
-        setRuntimeStatus(null);
-        return;
-      }
-
-      if (result && typeof result === 'object') {
+      try {
+        const result = await getRuntimeStatus();
+        if (cancelled) return;
         setRuntimeStatus(result);
         setFetchError('');
-      } else {
-        setRuntimeStatus(null);
-        setFetchError('Unexpected runtime status payload.');
+      } catch (err) {
+        if (cancelled) return;
+        setFetchError(err?.message || 'Could not reach runtime status endpoint.');
       }
     }
 
@@ -181,32 +178,17 @@ export default function RuntimeStatusPage() {
     let timerId;
 
     async function loadRecentItems() {
-      setRecentItemsLoading(true);
       try {
-        const result = await getRecentRuntimeItems({ limit: 20 });
         if (cancelled) return;
-
-        if (result?.ok === false) {
-          setRecentItemsError(result.error || 'Failed to load recent runtime items.');
-          setRecentItems([]);
-        } else {
-          const payload = Array.isArray(result)
-            ? result
-            : Array.isArray(result?.items)
-            ? result.items
-            : [];
-          setRecentItems(payload);
-          setRecentItemsError('');
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setRecentItemsError(
-            loadError?.message
-              ? `Failed to load recent runtime items: ${loadError.message}`
-              : 'Failed to load recent runtime items.',
-          );
-          setRecentItems([]);
-        }
+        setRecentItemsLoading(true);
+        const result = await getRecentRuntimeItems();
+        if (cancelled) return;
+        const items = Array.isArray(result?.items) ? result.items : [];
+        setRecentItems(items);
+        setRecentItemsError('');
+      } catch (err) {
+        if (cancelled) return;
+        setRecentItemsError(err?.message || 'Could not load recent items.');
       } finally {
         if (!cancelled) {
           setRecentItemsLoading(false);
@@ -237,11 +219,23 @@ export default function RuntimeStatusPage() {
       typeof ageSeconds === 'number' ? ageSeconds : NaN,
     );
 
+    let freshnessLabel = null;
+    if (typeof ageSeconds === 'number' && Number.isFinite(ageSeconds) && ageSeconds >= 0) {
+      if (ageSeconds < 10) {
+        freshnessLabel = 'Fresh';
+      } else if (ageSeconds <= 60) {
+        freshnessLabel = 'Slight delay';
+      } else {
+        freshnessLabel = 'Stalled – check camera / Jetson link';
+      }
+    }
+
     if (runtimeFlag === 'error') {
       return {
         pill: 'Runtime error',
         helper: 'Runtime reported an error – check logs.',
         detail: `Last heartbeat ${ageLabel} ago.`,
+        freshnessLabel,
       };
     }
 
@@ -250,6 +244,7 @@ export default function RuntimeStatusPage() {
         pill: 'Runtime not reachable',
         helper: 'Controller could not reach runtime status endpoint.',
         detail: 'Check dev docker / port forwarding.',
+        freshnessLabel,
       };
     }
 
@@ -257,6 +252,7 @@ export default function RuntimeStatusPage() {
       pill: 'Runtime connected',
       helper: 'Runtime status endpoint is responding.',
       detail: `Last heartbeat ${ageLabel} ago.`,
+      freshnessLabel,
     };
   }, [runtimeStatus, runtimeFlag, transportDown]);
 
@@ -272,10 +268,10 @@ export default function RuntimeStatusPage() {
     if (!runtimeStatus) return liveModeMock.signalCards;
 
     const components = [
-      { id: 'db', label: 'DB', node: runtimeStatus?.db },
-      { id: 'jetsonLink', label: 'Jetson link', node: runtimeStatus?.jetson_link },
-      { id: 'runtimeBridge', label: 'Runtime bridge', node: runtimeStatus?.runtime_bridge },
-      { id: 'plc', label: 'PLC', node: runtimeStatus?.plc },
+      { id: 'db', label: 'Database', node: runtimeStatus?.db },
+      { id: 'jetsonLink', label: 'Camera & AI link', node: runtimeStatus?.jetson_link },
+      { id: 'runtimeBridge', label: 'Controller brain', node: runtimeStatus?.runtime_bridge },
+      { id: 'plc', label: 'PLC / sorter connection', node: runtimeStatus?.plc },
     ];
 
     return components.map((component) =>
@@ -286,10 +282,30 @@ export default function RuntimeStatusPage() {
     );
   }, [runtimeStatus, transportDown]);
 
+  const lineStatus = useMemo(() => {
+    if (!runtimeStatus || transportDown) {
+      return '⛔ Line is not receiving data.';
+    }
+
+    const hasComponentErrors =
+      Array.isArray(runtimeStatus?.errors) && runtimeStatus.errors.length > 0;
+
+    const hasUnstableComponent = signalCards.some(
+      (card) => card.status === 'error' || card.status === 'degraded',
+    );
+
+    if (runtimeFlag === 'error' || hasComponentErrors || hasUnstableComponent) {
+      return '⚠️ Line is running but needs attention.';
+    }
+
+    return '✅ Line is running normally.';
+  }, [runtimeStatus, runtimeFlag, transportDown, signalCards]);
+
   const lanes =
     Array.isArray(runtimeStatus?.lanes) && runtimeStatus.lanes.length > 0
       ? runtimeStatus.lanes
       : liveModeMock.lanes;
+
   const logEvents = liveModeMock.logEvents;
 
   return (
@@ -300,12 +316,14 @@ export default function RuntimeStatusPage() {
           <h2 className="dev-card-title">Live mode</h2>
           <div className="live-mode-hero-badges">
             <span className="dev-status-chip status-mock">
-              {hardwareMode === 'REAL' ? 'Real PLC (planned)' : 'Fake hardware (Phase 0)'}
+              {hardwareMode === 'REAL'
+                ? 'Production mode · Real PLC'
+                : 'Training mode · Fake hardware (Phase 0)'}
             </span>
           </div>
           <p className="dev-card-subtitle">
-            High-level view of the runtime loop: status tiles, recent items, and a mock log while we
-            bring hardware online.
+            Phase 0 training view with Fake hardware. Real PLC mode replaces this view once hardware is
+            online.
           </p>
         </div>
         <div className="live-mode-hero-status">
@@ -314,6 +332,10 @@ export default function RuntimeStatusPage() {
           </div>
           <p className="live-mode-stream-helper">{streamStatus.helper}</p>
           <p className="live-mode-stream-detail">{streamStatus.detail}</p>
+          {streamStatus.freshnessLabel && (
+            <p className="live-mode-stream-detail">{streamStatus.freshnessLabel}</p>
+          )}
+          <p className="live-mode-stream-helper">{lineStatus}</p>
           {dbStatusHelper && (
             <p className="live-mode-stream-warning">{dbStatusHelper}</p>
           )}
@@ -325,19 +347,16 @@ export default function RuntimeStatusPage() {
           <div>
             <p className="dev-card-eyebrow">Runtime health</p>
             <h3>Links &amp; components</h3>
-            <p className="live-mode-section-sub">
-              {runtimeFlag === 'error' ? 'Needs attention' : 'All systems OK'}
-            </p>
           </div>
         </header>
         <div className="live-mode-signals-grid">
           {signalCards.map((card) => (
             <div
               key={card.id}
-              className={`live-mode-signal-pill status-${card.status}`}
+              className={`live-mode-signal-card status-${card.status}`}
             >
-              <div className="live-mode-signal-label">{card.label}</div>
-              <div className="live-mode-signal-metric">{card.metric}</div>
+              <p className="live-mode-signal-label">{card.label}</p>
+              <p className="live-mode-signal-metric">{card.metric}</p>
               <p className="live-mode-signal-helper">{card.helper}</p>
             </div>
           ))}
@@ -390,43 +409,45 @@ export default function RuntimeStatusPage() {
               </>
             )}
           </p>
+          <p className="live-mode-runtime-items-meta">
+            These are the last items seen in training mode. Weights are simulated – real scales come later.
+          </p>
           <div className="live-mode-runtime-items-table-wrapper">
             <table className="live-mode-runtime-items-table">
-                    <thead>
-                      <tr>
-                        <th>Time</th>
-                        <th>Item ID</th>
-                        <th>Category</th>
-                        <th>Chute</th>
-                        <th>Status</th>
-                        <th>Weight (Fake HW)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentItems.map((item) => {
-                        const weight = getEstimatedItemWeight(item);
-                        const formattedWeight = formatWeightKg(weight);
-                        return (
-                          <tr key={getItemId(item)}>
-                            <td>{formatShortTime(getItemSeenAt(item))}</td>
-                            <td>{getItemId(item)}</td>
-                            <td>{getCategory(item)}</td>
-                            <td>{getChuteId(item) || '—'}</td>
-                            <td>{computePipelineStatusForItem(item)}</td>
-                            <td>{formattedWeight ? `~${formattedWeight}` : '—'}</td>
-                          </tr>
-                        );
-                      })}
-                      {!recentItemsLoading &&
-                        !recentItemsError &&
-                        recentItems.length === 0 && (
-                          <tr>
-                            <td colSpan={6}>
-                              <div className="live-mode-runtime-items-empty">
-                                No runtime items in the last few minutes.
-                              </div>
-                            </td>
-                          </tr>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Item ID</th>
+                  <th>Category</th>
+                  <th>Chute</th>
+                  <th>Status</th>
+                  <th>Weight (Simulated – Fake HW)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentItems.map((item) => {
+                  const weight = getEstimatedItemWeight(item);
+                  const formattedWeight = formatWeightKg(weight);
+                  const chuteId = getChuteId(item);
+                  const status = computePipelineStatusForItem(item);
+
+                  return (
+                    <tr key={getItemId(item)}>
+                      <td>{formatShortTime(getItemSeenAt(item))}</td>
+                      <td>{getItemId(item)}</td>
+                      <td>{getCategory(item)}</td>
+                      <td>{chuteId ?? '—'}</td>
+                      <td>{status}</td>
+                      <td>{formattedWeight}</td>
+                    </tr>
+                  );
+                })}
+                {!recentItemsLoading &&
+                  !recentItemsError &&
+                  recentItems.length === 0 && (
+                    <tr>
+                      <td colSpan={6}>No items yet.</td>
+                    </tr>
                   )}
               </tbody>
             </table>
@@ -463,3 +484,5 @@ export default function RuntimeStatusPage() {
     </div>
   );
 }
+
+export default RuntimeStatusPage;

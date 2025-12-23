@@ -1,123 +1,108 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import RuntimeStatusPage from './RuntimeStatusPage.jsx';
-import { getRuntimeStatus } from '../api/client.js';
+import { getRecentRuntimeItems, getRuntimeStatus } from '../api/client.js';
 
 vi.mock('../api/client.js', () => ({
   getRuntimeStatus: vi.fn(),
+  getRecentRuntimeItems: vi.fn(),
 }));
 
 function buildRuntimeStatus(overrides = {}) {
   return {
     status: 'ok',
+    hardware_mode: 'FAKE',
+    meta: {
+      age_seconds: 5,
+    },
     db: { ok: true },
-    jetson_metrics_summary: {
-      has_data: true,
-      last_heartbeat_at: '2025-01-01T00:00:00Z',
-      age_s: 5,
-      healthy: true,
-      raw: {},
-    },
-    bridge_stats_summary: {
-      has_data: true,
-      mqtt_connected: true,
-      last_update_at: '2025-01-01T00:00:00Z',
-      age_s: 4,
-      healthy: true,
-      raw: {},
-    },
-    plc: {
-      mode: 'stub',
-      notes: 'Stub PLC for dev/bring-up.',
-      metrics_summary: { has_data: false },
-    },
+    jetson_link: { ok: true },
+    runtime_bridge: { ok: true },
+    plc: { ok: true },
+    errors: [],
+    lanes: [],
     ...overrides,
   };
 }
 
-describe('RuntimeStatusPage (Task 11 Stage 3)', () => {
+describe('RuntimeStatusPage (Stage 1 Live mode UX polish)', () => {
+  beforeEach(() => {
+    getRecentRuntimeItems.mockResolvedValue({ items: [] });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('Healthy snapshot: shows Live API and Healthy chips', async () => {
+  it('Healthy snapshot: shows connected status, fresh stream, and working tiles', async () => {
     getRuntimeStatus.mockResolvedValue(buildRuntimeStatus());
 
     const { unmount } = render(<RuntimeStatusPage />);
 
-    expect(await screen.findByText('Live API')).toBeInTheDocument();
-    expect(screen.getByText('Jetson runtime')).toBeInTheDocument();
-    expect(screen.getByText('MQTT bridge')).toBeInTheDocument();
+    expect(await screen.findByText('Runtime connected')).toBeInTheDocument();
+    expect(screen.getByText('✅ Line is running normally.')).toBeInTheDocument();
+    expect(screen.getByText('Fresh')).toBeInTheDocument();
+    expect(screen.getByText('Training mode · Fake hardware (Phase 0)')).toBeInTheDocument();
 
-    const healthyChips = screen.getAllByText('Healthy');
-    expect(healthyChips.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Database')).toBeInTheDocument();
+    expect(screen.getByText('Camera & AI link')).toBeInTheDocument();
+    expect(screen.getByText('Controller brain')).toBeInTheDocument();
+    expect(screen.getByText('PLC / sorter connection')).toBeInTheDocument();
 
-    expect(screen.getByText('Heartbeat received')).toBeInTheDocument();
-    expect(screen.getByText('MQTT connected')).toBeInTheDocument();
+    const workingChips = screen.getAllByText('Working normally');
+    expect(workingChips.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('No issues reported.').length).toBeGreaterThanOrEqual(1);
 
     unmount();
   });
 
-  it('Degraded / DB-less soft-fail: shows Live API (degraded) + Waiting chips, PLC is not backend-error', async () => {
+  it('Degraded / DB-less soft-fail: shows warning line status and DB helper', async () => {
     getRuntimeStatus.mockResolvedValue(
       buildRuntimeStatus({
         status: 'error',
         db: { ok: false },
-        jetson_metrics_summary: { has_data: false, healthy: false, age_s: null },
-        bridge_stats_summary: { has_data: false, healthy: false, age_s: null, mqtt_connected: null },
-        plc: {
-          mode: 'stub',
-          notes: 'Stub PLC for dev/bring-up.',
-          metrics_summary: { has_data: false },
-        },
+        jetson_link: null,
+        runtime_bridge: null,
+        plc: { ok: false },
       }),
     );
 
     const { unmount } = render(<RuntimeStatusPage />);
 
-    expect(await screen.findByText('Live API (degraded)')).toBeInTheDocument();
-
-    const waitingChips = screen.getAllByText('Waiting');
-    expect(waitingChips.length).toBeGreaterThanOrEqual(2);
-
-    expect(screen.getAllByText(/Waiting for first heartbeat/i).length).toBeGreaterThanOrEqual(1);
-
-    // PLC should follow No data path, not backend error
-    expect(screen.queryByText('PLC status unavailable (backend error).')).toBeNull();
-    expect(screen.getByText('No PLC metrics received yet.')).toBeInTheDocument();
+    expect(await screen.findByText('Runtime error')).toBeInTheDocument();
+    expect(screen.getByText('⚠️ Line is running but needs attention.')).toBeInTheDocument();
+    expect(screen.getByText('Degraded: database not configured.')).toBeInTheDocument();
+    expect(screen.getAllByText('Waiting for first heartbeat.').length).toBeGreaterThanOrEqual(2);
 
     unmount();
   });
 
-  it('Transport/auth error: shows Backend error + Offline chips and PLC backend-error state', async () => {
-    getRuntimeStatus.mockResolvedValue({ ok: false, error: 'Network error' });
+  it('Transport/auth error: shows mock stream pill and no-data line status', async () => {
+    getRuntimeStatus.mockRejectedValue(new Error('Network error'));
 
     const { unmount } = render(<RuntimeStatusPage />);
 
-    expect(await screen.findByText('Backend error')).toBeInTheDocument();
-
-    const offlineChips = screen.getAllByText('Offline');
-    expect(offlineChips.length).toBeGreaterThanOrEqual(1);
-
-    expect(screen.getByText('PLC status unavailable (backend error).')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Runtime not connected · mock preview'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('⛔ Line is not receiving data.')).toBeInTheDocument();
 
     unmount();
   });
 
-  it('No data but healthy API: status ok + has_data=false → Waiting chips', async () => {
+  it('No data but healthy API: waiting helpers appear for missing components', async () => {
     getRuntimeStatus.mockResolvedValue(
       buildRuntimeStatus({
-        status: 'ok',
-        jetson_metrics_summary: { has_data: false, healthy: false, age_s: null },
-        bridge_stats_summary: { has_data: false, healthy: false, age_s: null, mqtt_connected: null },
+        jetson_link: null,
+        runtime_bridge: null,
       }),
     );
 
     const { unmount } = render(<RuntimeStatusPage />);
 
-    expect(await screen.findByText('Live API')).toBeInTheDocument();
-    const waitingChips = screen.getAllByText('Waiting');
-    expect(waitingChips.length).toBeGreaterThanOrEqual(2);
+    expect(await screen.findByText('Runtime connected')).toBeInTheDocument();
+    expect(screen.getByText('✅ Line is running normally.')).toBeInTheDocument();
+    expect(screen.getAllByText('Waiting for first heartbeat.').length).toBeGreaterThanOrEqual(2);
 
     unmount();
   });

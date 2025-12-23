@@ -38,13 +38,11 @@ const PAGE_META = getPageMetaMap();
 const DEFAULT_VIEW = DEFAULT_MODULE_KEY;
 
 function App() {
-  const pathname = window.location.pathname || '/';
-  if (pathname.startsWith('/builder')) {
-    const builderPath = pathname.replace(/^\/builder/, '') || '/';
-    return <BuilderPage urlPath={builderPath} />;
-  }
-
   const [view, setView] = useState(DEFAULT_VIEW);
+
+  const pathname = window.location.pathname || '/';
+  const isBuilder = pathname.startsWith('/builder');
+  const builderPath = isBuilder ? pathname.replace(/^\/builder/, '') || '/' : '/';
 
   const handleNavigate = useCallback((nextKey) => {
     if (!nextKey) return;
@@ -58,13 +56,18 @@ function App() {
   }, [setView]);
 
   useEffect(() => {
+    if (isBuilder) {
+      // No dev-console navigation wiring in builder mode.
+      return undefined;
+    }
+
     const unsubscribe = subscribeNavigation((key) => {
       if (key) {
         handleNavigate(key);
       }
     });
     return unsubscribe;
-  }, [handleNavigate]);
+  }, [handleNavigate, isBuilder]);
 
   const moduleFromView = useMemo(() => getModuleByKey(view), [view]);
   const activeModule = moduleFromView || getModuleByKey(DEFAULT_VIEW);
@@ -78,6 +81,10 @@ function App() {
     const Component = activeModule?.component || StatusPage;
     return <Component />;
   }, [activeModule]);
+
+  if (isBuilder) {
+    return <BuilderPage urlPath={builderPath} />;
+  }
 
   return (
     <DevConsoleLayout
