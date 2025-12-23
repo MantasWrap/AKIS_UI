@@ -1,31 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import '../styles/items.css';
 import { getRuntimeItems, getItemTrace } from '../api/client.js';
 
-const TIME_WINDOWS = [
-  { id: '15m', label: 'Last 15 min' },
-  { id: '1h', label: 'Last hour' },
-  { id: '24h', label: 'Last 24h' },
-  { id: '7d', label: 'Last 7 days' },
-  { id: 'all', label: 'All time' },
-];
-
-const STATUS_FILTERS = [
-  { id: 'all', label: 'All statuses' },
-  { id: 'SEEN', label: 'Seen' },
-  { id: 'DECIDED', label: 'Decided' },
-  { id: 'ROUTED', label: 'Routed' },
-  { id: 'DROPPED', label: 'Dropped' },
+const HEALTH_FILTERS = [
+  { id: 'all', label: 'All items' },
+  { id: 'ok', label: 'OK' },
+  { id: 'needs_attention', label: 'Needs attention' },
 ];
 
 const FILTER_DEFAULTS = {
-  timeWindow: '1h',
-  status: 'all',
   category: 'all',
-  quality: 'all',
-  camera: 'all',
-  chute: 'all',
-  lane: 'all',
+  health: 'all',
 };
 
 function getItemId(item) {
@@ -49,59 +34,8 @@ function parseDate(value) {
   return d;
 }
 
-function isWithinWindow(item, windowId) {
-  if (windowId === 'all') return true;
-  const seenAt = parseDate(getItemSeenAt(item));
-  if (!seenAt) return false;
-  const now = new Date();
-  const diffMs = now.getTime() - seenAt.getTime();
-  const diffMinutes = diffMs / (1000 * 60);
-
-  switch (windowId) {
-    case '15m':
-      return diffMinutes <= 15;
-    case '1h':
-      return diffMinutes <= 60;
-    case '24h':
-      return diffMinutes <= 60 * 24;
-    case '7d':
-      return diffMinutes <= 60 * 24 * 7;
-    default:
-      return true;
-  }
-}
-
-function computePipelineStatus(item) {
-  const hasDecision = Boolean(item?.sorting_decision);
-  const pickStatus = item?.plc_feedback?.pick_status || null;
-
-  if (!hasDecision) return 'SEEN';
-
-  if (!pickStatus) return 'DECIDED';
-
-  const normalized = String(pickStatus).toUpperCase();
-  if (normalized === 'FIRED' || normalized === 'SUCCESS') return 'ROUTED';
-  if (normalized === 'MISSED' || normalized === 'FAILED' || normalized === 'ERROR') {
-    return 'DROPPED';
-  }
-
-  return 'DECIDED';
-}
-
 function getCategory(item) {
   return item?.ai_prediction?.classes?.category || '—';
-}
-
-function getQuality(item) {
-  return item?.ai_prediction?.classes?.quality || '—';
-}
-
-function getCameraId(item) {
-  return item?.capture?.camera_id || null;
-}
-
-function getLaneId(item) {
-  return item?.lane_id || item?.capture?.lane_id || null;
 }
 
 function getChuteId(item) {
@@ -128,10 +62,180 @@ function formatShortDateTime(value) {
 }
 
 function formatWeightKg(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
   const abs = Math.abs(value);
   const decimals = abs < 1 ? 3 : 2;
   return `${value.toFixed(decimals)} kg`;
+}
+
+function getEstimatedItemWeight(item) {
+  const value = item?.weights?.estimated_item_weight_kg;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getItemTraceEvents(item) {
+  const traceEvents = item?.trace_events || item?.trace?.events || item?.traceEvents;
+  if (Array.isArray(traceEvents) && traceEvents.length > 0) {
+    return traceEvents;
+  }
+
+  const captureTs = item?.capture?.timestamp || item?.timestamp || null;
+  const events = [];
+
+  if (item?.capture) {
+    events.push({
+      type: 'CAPTURE',
+      timestamp: item.capture.timestamp || captureTs,
+      payload: item.capture,
+    });
+  }
+
+  if (item?.ai_prediction) {
+    events.push({
+      type: 'AI_DECISION',
+      timestamp: item.ai_prediction.timestamp || captureTs,
+      payload: item.ai_prediction,
+    });
+  }
+
+  if (item?.sorting_decision) {
+    events.push({
+      type: 'ROUTING',
+      timestamp: item.sorting_decision.timestamp || captureTs,
+      payload: item.sorting_decision,
+    });
+  }
+
+  if (item?.plc_feedback) {
+    events.push({
+      type: 'PLC_FEEDBACK',
+      timestamp: item.plc_feedback.pick_timestamp || captureTs,
+      payload: item.plc_feedback,
+    });
+  }
+
+  return events;
+}
+
+function getEventTimestamp(event) {
+  if (!event) return null;
+  return event.ts || event.timestamp || event.time || null;
+}
+
+function classifyItemHealth(item) {
+  const events = getItemTraceEvents(item)
+    .map((event) => ({
+      ...event,
+      type: (event.type || '').toString().toUpperCase(),
+      timestamp: getEventTimestamp(event),
+    }))
+    .filter((event) => event.type);
+
+  const capture = events.find((event) => event.type === 'CAPTURE');
+  const decision = events.find((event) => event.type === 'AI_DECISION');
+  const routing = events.find((event) => event.type === 'ROUTING');
+  const plc = events.find((event) => event.type === 'PLC_FEEDBACK');
+
+  if (!capture || !decision || !routing) {
+    return { health: 'needs_attention', label: '⚠️ Something missing' };
+  }
+
+  const captureTs = parseDate(capture.timestamp)?.getTime();
+  const decisionTs = parseDate(decision.timestamp)?.getTime();
+  const routingTs = parseDate(routing.timestamp)?.getTime();
+
+  if (!Number.isFinite(captureTs) || !Number.isFinite(decisionTs) || !Number.isFinite(routingTs)) {
+    return { health: 'needs_attention', label: '⚠️ Something missing' };
+  }
+
+  if (captureTs <= decisionTs && decisionTs <= routingTs) {
+    if (plc) {
+      return { health: 'ok', label: '✅ Everything OK' };
+    }
+    return { health: 'ok', label: '✅ OK (no Fake PLC feedback yet)' };
+  }
+
+  return { health: 'needs_attention', label: '⚠️ Something missing' };
+}
+
+function buildItemStorySteps(item) {
+  const events = getItemTraceEvents(item)
+    .map((event, index) => ({
+      ...event,
+      type: (event.type || '').toString().toUpperCase(),
+      timestamp: getEventTimestamp(event),
+      id: event.id || `${event.type || 'event'}-${index}`,
+    }))
+    .filter((event) => event.type)
+    .sort((a, b) => {
+      const aTs = parseDate(a.timestamp)?.getTime() || 0;
+      const bTs = parseDate(b.timestamp)?.getTime() || 0;
+      return aTs - bTs;
+    });
+
+  return events.reduce((steps, event) => {
+    const time = formatShortTime(event.timestamp);
+    const payload = event.payload || {};
+
+    if (event.type === 'CAPTURE') {
+      steps.push({
+        id: event.id,
+        time,
+        label: 'Camera saw the item',
+        detail: null,
+      });
+      return steps;
+    }
+
+    if (event.type === 'AI_DECISION') {
+      const category =
+        payload.category ||
+        payload.ai_category ||
+        payload.classes?.category ||
+        item?.ai_prediction?.classes?.category ||
+        null;
+      steps.push({
+        id: event.id,
+        time,
+        label: 'AI guessed the category',
+        detail: category ? `Category: ${category}` : null,
+      });
+      return steps;
+    }
+
+    if (event.type === 'ROUTING') {
+      const chuteId =
+        payload.chute_id ||
+        payload.routing?.chute_id ||
+        item?.sorting_decision?.chute_id ||
+        null;
+      steps.push({
+        id: event.id,
+        time,
+        label: 'Controller chose a chute',
+        detail: chuteId != null ? `Chute ${chuteId}` : null,
+      });
+      return steps;
+    }
+
+    if (event.type === 'PLC_FEEDBACK') {
+      const status =
+        (payload.pick_status || payload.status || '')
+          .toString()
+          .toUpperCase() || null;
+      steps.push({
+        id: event.id,
+        time,
+        label: 'Fake PLC confirmed the pick',
+        detail: status
+          ? `Result: ${status} · Fake PLC only – training mode, not real hardware.`
+          : 'Fake PLC only – training mode, not real hardware.',
+      });
+      return steps;
+    }
+
+    return steps;
+  }, []);
 }
 
 function mapTraceEventToStep(event, index) {
@@ -268,56 +372,24 @@ export default function MockItemsPage() {
 
   const derivedOptions = useMemo(() => {
     const categories = new Set();
-    const qualities = new Set();
-    const cameras = new Set();
-    const chutes = new Set();
-    const lanes = new Set();
 
     items.forEach((item) => {
       const cat = getCategory(item);
       if (cat && cat !== '—') categories.add(cat);
-
-      const q = getQuality(item);
-      if (q && q !== '—') qualities.add(q);
-
-      const cam = getCameraId(item);
-      if (cam) cameras.add(cam);
-
-      const chute = getChuteId(item);
-      if (chute) chutes.add(chute);
-
-      const lane = getLaneId(item);
-      if (lane) lanes.add(lane);
     });
 
     return {
       categories: Array.from(categories).sort(),
-      qualities: Array.from(qualities).sort(),
-      cameras: Array.from(cameras).sort(),
-      chutes: Array.from(chutes).sort(),
-      lanes: Array.from(lanes).sort(),
     };
   }, [items]);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const id = getItemId(item);
-      const pipelineStatus = computePipelineStatus(item);
       const category = getCategory(item);
-      const quality = getQuality(item);
-      const camera = getCameraId(item);
-      const chute = getChuteId(item);
-      const lane = getLaneId(item);
+      const { health } = classifyItemHealth(item);
 
       if (search && !String(id).toLowerCase().includes(search.toLowerCase())) {
-        return false;
-      }
-
-      if (!isWithinWindow(item, filters.timeWindow)) {
-        return false;
-      }
-
-      if (filters.status !== 'all' && pipelineStatus !== filters.status) {
         return false;
       }
 
@@ -325,19 +397,7 @@ export default function MockItemsPage() {
         return false;
       }
 
-      if (filters.quality !== 'all' && quality !== filters.quality) {
-        return false;
-      }
-
-      if (filters.camera !== 'all' && camera !== filters.camera) {
-        return false;
-      }
-
-      if (filters.chute !== 'all' && chute !== filters.chute) {
-        return false;
-      }
-
-      if (filters.lane !== 'all' && lane !== filters.lane) {
+      if (filters.health !== 'all' && health !== filters.health) {
         return false;
       }
 
@@ -368,11 +428,16 @@ export default function MockItemsPage() {
     <div className="items-page">
       <section className="dev-card items-hero-card">
         <div>
-          <p className="dev-card-eyebrow">Phase 0 · Runtime items preview</p>
+          <p className="dev-card-eyebrow">Phase 0 · Training mode</p>
           <h2 className="dev-card-title">Simulation items</h2>
           <p className="dev-card-subtitle">
-            Items from the runtime using the real AI schema. Phase 0 simulation only – PLC hardware is
-            not connected yet.
+            Phase 0 training replay. This view shows how items move through camera, AI and Fake PLC
+            with simulated weights.
+          </p>
+          <p className="items-hero-intro">
+            Each row below is one item that went through the system in training mode. For each item you
+            can see when the camera saw it, what AI guessed, which chute the controller chose, and if
+            Fake PLC confirmed the pick. Real PLC and real scales will replace this later in production.
           </p>
         </div>
         <div className="items-search">
@@ -398,65 +463,14 @@ export default function MockItemsPage() {
       </section>
 
       <div className="items-layout">
-        <aside className="items-filter-panel">
-          <FilterGroup
-            label="Time window"
-            value={filters.timeWindow}
-            onSelect={(value) => handleFilterChange('timeWindow', value)}
-            options={TIME_WINDOWS}
-          />
-          <FilterGroup
-            label="Status"
-            value={filters.status}
-            onSelect={(value) => handleFilterChange('status', value)}
-            options={STATUS_FILTERS}
-          />
-          <FilterGroup
-            label="Category"
-            value={filters.category}
-            onSelect={(value) => handleFilterChange('category', value)}
-            options={derivedOptions.categories}
-          />
-          <FilterGroup
-            label="Quality"
-            value={filters.quality}
-            onSelect={(value) => handleFilterChange('quality', value)}
-            options={derivedOptions.qualities}
-          />
-          {derivedOptions.cameras.length > 0 && (
-            <FilterGroup
-              label="Camera"
-              value={filters.camera}
-              onSelect={(value) => handleFilterChange('camera', value)}
-              options={derivedOptions.cameras}
-            />
-          )}
-          {derivedOptions.chutes.length > 0 && (
-            <FilterGroup
-              label="Chute"
-              value={filters.chute}
-              onSelect={(value) => handleFilterChange('chute', value)}
-              options={derivedOptions.chutes}
-            />
-          )}
-          {derivedOptions.lanes.length > 0 && (
-            <FilterGroup
-              label="Lane"
-              value={filters.lane}
-              onSelect={(value) => handleFilterChange('lane', value)}
-              options={derivedOptions.lanes}
-            />
-          )}
-        </aside>
-
         <section className="items-table-section dev-card">
           <header className="items-table-header">
             <div>
               <p className="dev-card-eyebrow">Runtime items</p>
               <h3>Simulation items table</h3>
               <p className="items-table-subtitle">
-                Read-only view of recent runtime items. Use it to check clothing tags and routing
-                decisions before real hardware is connected.
+                Read-only view of recent runtime items. It keeps the focus on training mode events and
+                simple outcomes.
               </p>
             </div>
             <p className="items-table-meta">
@@ -472,6 +486,23 @@ export default function MockItemsPage() {
               )}
             </p>
           </header>
+          <div className="items-filter-bar">
+            <FilterGroup
+              label="Category"
+              value={filters.category}
+              onSelect={(value) => handleFilterChange('category', value)}
+              options={[{ id: 'all', label: 'All categories' }, ...derivedOptions.categories]}
+            />
+            <FilterGroup
+              label="Status"
+              value={filters.health}
+              onSelect={(value) => handleFilterChange('health', value)}
+              options={HEALTH_FILTERS}
+            />
+          </div>
+          <p className="items-table-helper">
+            Weights here are simulated. The goal is to test logic, not real scales.
+          </p>
 
           <div className="items-table-wrapper">
             <table className="items-table">
@@ -480,62 +511,87 @@ export default function MockItemsPage() {
                   <th>Time</th>
                   <th>Item ID</th>
                   <th>Category</th>
-                  <th>Quality</th>
-                  <th>Status</th>
-                  <th>Lane</th>
-                  <th>Camera</th>
                   <th>Chute</th>
+                  <th>Weight (Simulated – Fake HW)</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map((item) => {
                   const id = getItemId(item);
                   const seenAt = getItemSeenAt(item);
-                  const pipelineStatus = computePipelineStatus(item);
                   const category = getCategory(item);
-                  const quality = getQuality(item);
-                  const lane = getLaneId(item) || '—';
-                  const camera = getCameraId(item) || '—';
                   const chute = getChuteId(item) || '—';
+                  const weight = getEstimatedItemWeight(item);
+                  const formattedWeight = formatWeightKg(weight);
+                  const health = classifyItemHealth(item);
+                  const storySteps = buildItemStorySteps(item);
                   const isSelected = selectedId === id;
 
                   return (
-                    <tr
-                      key={id}
-                      className={isSelected ? 'is-selected' : ''}
-                      onClick={() => setSelectedId(isSelected ? null : id)}
-                    >
-                      <td>{formatShortTime(seenAt)}</td>
-                      <td>{id}</td>
-                      <td>{category}</td>
-                      <td>{quality}</td>
-                      <td>{pipelineStatus}</td>
-                      <td>{lane}</td>
-                      <td>{camera}</td>
-                      <td>{chute}</td>
-                    </tr>
+                    <Fragment key={id}>
+                      <tr
+                        className={isSelected ? 'is-selected' : ''}
+                        onClick={() => setSelectedId(isSelected ? null : id)}
+                      >
+                        <td>{formatShortTime(seenAt)}</td>
+                        <td>{id}</td>
+                        <td>{category}</td>
+                        <td>{chute}</td>
+                        <td>{formattedWeight}</td>
+                        <td>
+                          <span
+                            className={`dev-status-chip ${
+                              health.health === 'ok' ? 'status-ok' : 'status-waiting'
+                            }`}
+                          >
+                            {health.label}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr className="items-story-row">
+                        <td colSpan={6}>
+                          {storySteps.length === 0 ? (
+                            <p className="items-story-empty">
+                              No story steps available yet for this item.
+                            </p>
+                          ) : (
+                            <ul className="items-story-list">
+                              {storySteps.map((step) => (
+                                <li key={step.id} className="items-story-step">
+                                  <span className="items-story-time">{step.time}</span>
+                                  <span className="items-story-label">{step.label}</span>
+                                  {step.detail && (
+                                    <span className="items-story-detail">{step.detail}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </td>
+                      </tr>
+                    </Fragment>
                   );
                 })}
                 {!loading && !error && filteredItems.length === 0 && (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={6}>
                       <div className="items-empty-state">
-                        No items match the current filters yet. Try widening the time window or
-                        clearing some filters.
+                        No items match the current filters yet. Try clearing some filters.
                       </div>
                     </td>
                   </tr>
                 )}
                 {loading && (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={6}>
                       <div className="items-empty-state">Loading items from runtime…</div>
                     </td>
                   </tr>
                 )}
                 {!loading && error && (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={6}>
                       <div className="items-empty-state">
                         {error} If this keeps happening, ask your engineer to check the controller logs
                         and the /api/items endpoint.
@@ -553,8 +609,8 @@ export default function MockItemsPage() {
             <ItemDetail item={selectedItem} />
           ) : (
             <div className="items-detail-empty">
-              Select an item in the table to see clothing attributes, AI confidences, routing, PLC
-              feedback, and Fake Hardware weights.
+              Select an item in the table to see training details, AI guesses, routing, Fake PLC
+              feedback, and simulated weights.
             </div>
           )}
         </section>
@@ -617,7 +673,7 @@ function ItemDetail({ item }) {
   const plc = item?.plc_feedback || {};
   const weights = item?.weights || {};
   const seenAt = getItemSeenAt(item);
-  const pipelineStatus = computePipelineStatus(item);
+  const health = classifyItemHealth(item);
 
   const confidenceEntries = useMemo(() => {
     const confidences =
@@ -632,7 +688,9 @@ function ItemDetail({ item }) {
   const formattedWeightAfter = formatWeightKg(weights.box_weight_kg_after);
   const formattedEstimatedWeight = formatWeightKg(weights.estimated_item_weight_kg);
   const missingWeightTelemetry =
-    !formattedWeightBefore || !formattedWeightAfter || !formattedEstimatedWeight;
+    formattedWeightBefore === '—' ||
+    formattedWeightAfter === '—' ||
+    formattedEstimatedWeight === '—';
 
   const [traceState, setTraceState] = useState({
     loading: false,
@@ -696,7 +754,7 @@ function ItemDetail({ item }) {
           <p className="dev-card-eyebrow">Item detail</p>
           <h3>{getItemId(item)}</h3>
           <p className="items-detail-subtitle">
-            {pipelineStatus} · seen at {formatShortDateTime(seenAt)}
+            {health.label} · seen at {formatShortDateTime(seenAt)}
           </p>
         </div>
       </header>
@@ -772,10 +830,13 @@ function ItemDetail({ item }) {
             />
             <DetailRow label="Pick command ID" value={plc.pick_command_id} />
           </div>
+          <p className="items-detail-helper">
+            Fake PLC only – training mode, not real hardware.
+          </p>
         </section>
 
         <section>
-          <h4 className="items-detail-section-title">Weights (Fake Hardware, Phase 0)</h4>
+          <h4 className="items-detail-section-title">Weight (Simulated – Fake HW)</h4>
           <div className="items-detail-grid-inner">
             <DetailRow
               label="Chute weight before drop"
@@ -791,7 +852,7 @@ function ItemDetail({ item }) {
             />
           </div>
           <p className="items-detail-helper">
-            Weights are simulated by Fake Hardware in Phase 0. Not a real scale.
+            Weights here are simulated. The goal is to test logic, not real scales.
           </p>
           {missingWeightTelemetry && (
             <p className="items-detail-helper">No weight telemetry for this item yet.</p>
