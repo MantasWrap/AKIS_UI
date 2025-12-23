@@ -154,10 +154,22 @@ function RuntimeStatusPage() {
       try {
         const result = await getRuntimeStatus();
         if (cancelled) return;
-        setRuntimeStatus(result);
-        setFetchError('');
+        if (result?.ok === false) {
+          setFetchError(result.error || 'Request failed');
+          setRuntimeStatus(null);
+          return;
+        }
+
+        if (result && typeof result === 'object') {
+          setRuntimeStatus(result);
+          setFetchError('');
+        } else {
+          setRuntimeStatus(null);
+          setFetchError('Unexpected runtime status payload.');
+        }
       } catch (err) {
         if (cancelled) return;
+        setRuntimeStatus(null);
         setFetchError(err?.message || 'Could not reach runtime status endpoint.');
       }
     }
@@ -181,13 +193,20 @@ function RuntimeStatusPage() {
       try {
         if (cancelled) return;
         setRecentItemsLoading(true);
-        const result = await getRecentRuntimeItems();
+        const result = await getRecentRuntimeItems({ limit: 20 });
         if (cancelled) return;
+        if (result?.ok === false) {
+          setRecentItems([]);
+          setRecentItemsError(result.error || 'Could not load recent items.');
+          return;
+        }
+
         const items = Array.isArray(result?.items) ? result.items : [];
         setRecentItems(items);
         setRecentItemsError('');
       } catch (err) {
         if (cancelled) return;
+        setRecentItems([]);
         setRecentItemsError(err?.message || 'Could not load recent items.');
       } finally {
         if (!cancelled) {
@@ -265,8 +284,6 @@ function RuntimeStatusPage() {
   }, [runtimeStatus, runtimeFlag]);
 
   const signalCards = useMemo(() => {
-    if (!runtimeStatus) return liveModeMock.signalCards;
-
     const components = [
       { id: 'db', label: 'Database', node: runtimeStatus?.db },
       { id: 'jetsonLink', label: 'Camera & AI link', node: runtimeStatus?.jetson_link },
@@ -353,11 +370,19 @@ function RuntimeStatusPage() {
           {signalCards.map((card) => (
             <div
               key={card.id}
-              className={`live-mode-signal-card status-${card.status}`}
+              className={`live-mode-component-card live-mode-component-card--${card.status}`}
             >
-              <p className="live-mode-signal-label">{card.label}</p>
-              <p className="live-mode-signal-metric">{card.metric}</p>
-              <p className="live-mode-signal-helper">{card.helper}</p>
+              <div className="live-mode-component-card-header">
+                <span className="live-mode-component-card-label">{card.label}</span>
+                <span
+                  className={`live-mode-component-card-pill live-mode-component-card-pill--${card.status}`}
+                >
+                  {card.metric}
+                </span>
+              </div>
+              <div className="live-mode-component-card-body">
+                <p className="live-mode-component-card-helper">{card.helper}</p>
+              </div>
             </div>
           ))}
         </div>

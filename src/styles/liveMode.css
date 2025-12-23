@@ -94,6 +94,91 @@
   gap: 0.85rem;
 }
 
+.live-mode-component-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 23, 42, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.live-mode-component-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+  box-shadow: inset 4px 0 0 rgba(34, 197, 94, 0.7);
+}
+
+.live-mode-component-card--degraded {
+  border-color: rgba(234, 179, 8, 0.35);
+  background: rgba(234, 179, 8, 0.08);
+  box-shadow: inset 4px 0 0 rgba(234, 179, 8, 0.7);
+}
+
+.live-mode-component-card--error {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  box-shadow: inset 4px 0 0 rgba(239, 68, 68, 0.75);
+}
+
+.live-mode-component-card--waiting {
+  border-color: rgba(148, 163, 184, 0.5);
+  background: rgba(148, 163, 184, 0.08);
+  box-shadow: inset 4px 0 0 rgba(148, 163, 184, 0.7);
+}
+
+.live-mode-component-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.live-mode-component-card-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-component-card-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--dev-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.live-mode-component-card-pill--ok {
+  background: rgba(34, 197, 94, 0.18);
+  color: #15803d;
+}
+
+.live-mode-component-card-pill--degraded {
+  background: rgba(234, 179, 8, 0.2);
+  color: #a16207;
+}
+
+.live-mode-component-card-pill--error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #b91c1c;
+}
+
+.live-mode-component-card-pill--waiting {
+  background: rgba(148, 163, 184, 0.2);
+  color: #475569;
+}
+
+.live-mode-component-card-helper {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-soft);
+}
+
 .live-mode-errors-list {
   margin: 0;
   padding-left: 1.1rem;
