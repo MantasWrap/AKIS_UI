@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import RuntimeStatusPage from './RuntimeStatusPage.jsx';
-import { getRecentRuntimeItems, getRuntimeStatus } from '../api/client.js';
+import {
+  getPlcLaneMetrics,
+  getRecentRuntimeItems,
+  getRuntimeStatus,
+} from '../api/client.js';
 
 vi.mock('../api/client.js', () => ({
   getRuntimeStatus: vi.fn(),
   getRecentRuntimeItems: vi.fn(),
+  getPlcLaneMetrics: vi.fn(),
 }));
 
 function buildRuntimeStatus(overrides = {}) {
@@ -28,6 +33,7 @@ function buildRuntimeStatus(overrides = {}) {
 describe('RuntimeStatusPage (Stage 1 Live mode UX polish)', () => {
   beforeEach(() => {
     getRecentRuntimeItems.mockResolvedValue({ items: [] });
+    getPlcLaneMetrics.mockResolvedValue({ lanes: [] });
   });
 
   afterEach(() => {

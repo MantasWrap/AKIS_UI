@@ -245,6 +245,49 @@ export async function getRuntimeLinkMetrics(params = {}) {
   }
 }
 
+export async function getPlcLaneMetrics(params = {}) {
+  try {
+    const search = new URLSearchParams();
+    const { siteId, lineId, windowSec } = params || {};
+
+    if (siteId) search.set('site_id', siteId);
+    if (lineId) search.set('line_id', lineId);
+    if (
+      typeof windowSec === 'number' &&
+      Number.isFinite(windowSec) &&
+      windowSec > 0
+    ) {
+      search.set('window_sec', String(windowSec));
+    }
+
+    const url = search.toString()
+      ? `${API_BASE}/api/metrics/runtime/plc-lanes?${search.toString()}`
+      : `${API_BASE}/api/metrics/runtime/plc-lanes`;
+
+    const res = await fetch(url, {
+      headers: getDebugHeaders(),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message =
+        (data && data.error) ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${res.status}`;
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}
+
 export async function getProgressSummary(options = {}) {
   try {
     const params = new URLSearchParams();

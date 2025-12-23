@@ -434,6 +434,69 @@
   gap: 1rem;
 }
 
+.plc-lanes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.plc-lane-card {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.plc-lane-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.plc-lane-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.plc-lane-window {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.plc-lane-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+.plc-lane-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--dev-text-soft);
+}
+
+.plc-lane-metric strong {
+  font-weight: 650;
+  color: var(--dev-text-primary);
+}
+
+.plc-lanes-helper {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.plc-lanes-helper.is-error {
+  color: var(--dev-danger);
+}
+
 .live-mode-runtime-items-card {
   display: flex;
   flex-direction: column;

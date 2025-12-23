@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/liveMode.css';
-import { getRecentRuntimeItems, getRuntimeStatus } from '../api/client.js';
-import PlcCard from '../components/runtime/PlcCard.jsx';
+import {
+  getPlcLaneMetrics,
+  getRecentRuntimeItems,
+  getRuntimeStatus,
+} from '../api/client.js';
 
 const DEFAULT_POLL_MS = 3000;
 
@@ -154,6 +157,8 @@ function RuntimeStatusPage() {
   const [recentItems, setRecentItems] = useState([]);
   const [recentItemsError, setRecentItemsError] = useState('');
   const [recentItemsLoading, setRecentItemsLoading] = useState(false);
+  const [plcMetrics, setPlcMetrics] = useState(null);
+  const [plcMetricsError, setPlcMetricsError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -226,6 +231,42 @@ function RuntimeStatusPage() {
 
     loadRecentItems();
     timerId = setInterval(loadRecentItems, DEFAULT_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearInterval(timerId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timerId;
+
+    async function loadPlcMetrics() {
+      try {
+        const result = await getPlcLaneMetrics();
+        if (cancelled) return;
+
+        if (!result || result.ok === false || result.status === 'error') {
+          const message =
+            (result && result.error) ||
+            'Could not load PLC lane metrics right now.';
+          setPlcMetrics(null);
+          setPlcMetricsError(message);
+          return;
+        }
+
+        setPlcMetrics(result);
+        setPlcMetricsError('');
+      } catch {
+        if (cancelled) return;
+        setPlcMetrics(null);
+        setPlcMetricsError('Could not load PLC lane metrics right now.');
+      }
+    }
+
+    loadPlcMetrics();
+    timerId = setInterval(loadPlcMetrics, DEFAULT_POLL_MS);
 
     return () => {
       cancelled = true;
@@ -339,10 +380,15 @@ function RuntimeStatusPage() {
     };
   }, [runtimeStatus, runtimeFlag, transportDown, lineStatus]);
 
-  const lanes =
-    Array.isArray(runtimeStatus?.lanes) && runtimeStatus.lanes.length > 0
-      ? runtimeStatus.lanes
-      : [];
+  const plcLanes =
+    Array.isArray(plcMetrics?.lanes) ? plcMetrics.lanes : [];
+
+  const hasPlcLaneData = plcLanes.some((lane) => {
+    const counters = lane?.counters || lane?.metrics || {};
+    return Object.values(counters).some(
+      (value) => typeof value === 'number' && Number.isFinite(value) && value > 0,
+    );
+  });
 
   return (
     <div className="live-mode-page">
@@ -413,19 +459,58 @@ function RuntimeStatusPage() {
             <h3>PLC &amp; conveyor</h3>
           </div>
         </header>
-        <div className="live-mode-lanes-grid">
-          {lanes.length > 0 ? (
-            lanes.map((lane) => (
-              <PlcCard key={lane.id} plc={lane} error={fetchError} />
-            ))
-          ) : (
-            <div className="plc-empty">
-              <p className="plc-empty-title">PLC lane metrics not connected yet.</p>
-              <p className="plc-empty-sub">
-                PLC lane metrics will appear here once PLC metrics are connected. For now, use Live
-                items and Simulation items views.
-              </p>
-            </div>
+        <div className="plc-lanes-grid">
+          {plcMetricsError && (
+            <p className="plc-lanes-helper is-error">{plcMetricsError}</p>
+          )}
+          {!plcMetricsError && plcLanes.length > 0 && hasPlcLaneData && (
+            <>
+              {plcLanes.map((lane, index) => {
+                const counters = lane?.counters || lane?.metrics || {};
+                const picksOk = counters.picks_success ?? counters.picks_ok ?? 0;
+                const picksMissed = counters.picks_missed ?? 0;
+                const picksTimeout = counters.picks_timeout ?? 0;
+                const picksErrors =
+                  (counters.picks_error || 0) + (counters.picks_cancelled || 0);
+                const laneLabel = lane?.lane_id || lane?.id || `Lane ${index + 1}`;
+
+                return (
+                  <div key={laneLabel} className="plc-lane-card">
+                    <div className="plc-lane-header">
+                      <p className="plc-lane-title">{laneLabel}</p>
+                      {lane?.window_sec && (
+                        <span className="plc-lane-window">
+                          Last {Math.round(lane.window_sec / 60)}m
+                        </span>
+                      )}
+                    </div>
+                    <div className="plc-lane-metrics">
+                      <div className="plc-lane-metric">
+                        <span>OK</span>
+                        <strong>{picksOk}</strong>
+                      </div>
+                      <div className="plc-lane-metric">
+                        <span>Missed</span>
+                        <strong>{picksMissed}</strong>
+                      </div>
+                      <div className="plc-lane-metric">
+                        <span>Timeout</span>
+                        <strong>{picksTimeout}</strong>
+                      </div>
+                      <div className="plc-lane-metric">
+                        <span>Errors</span>
+                        <strong>{picksErrors}</strong>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          {!plcMetricsError && (!plcLanes.length || !hasPlcLaneData) && (
+            <p className="plc-lanes-helper">
+              No picks in this window yet. Run items to see PLC lane metrics.
+            </p>
           )}
         </div>
       </section>
