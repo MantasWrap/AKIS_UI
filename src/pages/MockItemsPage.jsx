@@ -321,6 +321,7 @@ export default function MockItemsPage() {
   const [error, setError] = useState('');
   const [filters, setFilters] = useState(FILTER_DEFAULTS);
   const [search, setSearch] = useState('');
+  const [expandedItemIds, setExpandedItemIds] = useState(() => new Set());
   const [selectedId, setSelectedId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -422,6 +423,18 @@ export default function MockItemsPage() {
     if (!loading) {
       setRefreshKey((prev) => prev + 1);
     }
+  };
+
+  const handleToggleStory = (id) => {
+    setExpandedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   return (
@@ -527,6 +540,7 @@ export default function MockItemsPage() {
                   const health = classifyItemHealth(item);
                   const storySteps = buildItemStorySteps(item);
                   const isSelected = selectedId === id;
+                  const isExpanded = expandedItemIds.has(id);
 
                   return (
                     <Fragment key={id}>
@@ -540,36 +554,50 @@ export default function MockItemsPage() {
                         <td>{chute}</td>
                         <td>{formattedWeight}</td>
                         <td>
-                          <span
-                            className={`dev-status-chip ${
-                              health.health === 'ok' ? 'status-ok' : 'status-waiting'
-                            }`}
-                          >
-                            {health.label}
-                          </span>
+                          <div className="items-status-cell">
+                            <span
+                              className={`dev-status-chip ${
+                                health.health === 'ok' ? 'status-ok' : 'status-waiting'
+                              }`}
+                            >
+                              {health.label}
+                            </span>
+                            <button
+                              type="button"
+                              className="items-story-toggle"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleToggleStory(id);
+                              }}
+                            >
+                              {isExpanded ? 'Hide steps' : 'Show steps'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                      <tr className="items-story-row">
-                        <td colSpan={6}>
-                          {storySteps.length === 0 ? (
-                            <p className="items-story-empty">
-                              No story steps available yet for this item.
-                            </p>
-                          ) : (
-                            <ul className="items-story-list">
-                              {storySteps.map((step) => (
-                                <li key={step.id} className="items-story-step">
-                                  <span className="items-story-time">{step.time}</span>
-                                  <span className="items-story-label">{step.label}</span>
-                                  {step.detail && (
-                                    <span className="items-story-detail">{step.detail}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
+                      {isExpanded && (
+                        <tr className="items-story-row">
+                          <td colSpan={6}>
+                            {storySteps.length === 0 ? (
+                              <p className="items-story-empty">
+                                No story steps available yet for this item.
+                              </p>
+                            ) : (
+                              <ul className="items-story-list">
+                                {storySteps.map((step) => (
+                                  <li key={step.id} className="items-story-step">
+                                    <span className="items-story-time">{step.time}</span>
+                                    <span className="items-story-label">{step.label}</span>
+                                    {step.detail && (
+                                      <span className="items-story-detail">{step.detail}</span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
+                        </tr>
+                      )}
                     </Fragment>
                   );
                 })}
@@ -750,17 +778,22 @@ function ItemDetail({ item }) {
   return (
     <div className="items-detail-card">
       <header className="items-detail-header">
-        <div>
+        <div className="items-detail-header-main">
           <p className="dev-card-eyebrow">Item detail</p>
           <h3>{getItemId(item)}</h3>
-          <p className="items-detail-subtitle">
-            {health.label} · seen at {formatShortDateTime(seenAt)}
-          </p>
         </div>
+        <span
+          className={`dev-status-chip ${health.health === 'ok' ? 'status-ok' : 'status-waiting'}`}
+        >
+          {health.label}
+        </span>
       </header>
+      <p className="items-detail-subtitle">
+        Last seen {formatShortDateTime(seenAt)}
+      </p>
 
       <div className="items-detail-grid">
-        <section>
+        <section className="items-detail-block">
           <h4 className="items-detail-section-title">Clothing attributes</h4>
           <div className="items-detail-grid-inner">
             <DetailRow label="Category" value={classes.category} />
@@ -774,7 +807,7 @@ function ItemDetail({ item }) {
           </div>
         </section>
 
-        <section>
+        <section className="items-detail-block">
           <h4 className="items-detail-section-title">AI confidences</h4>
           {confidenceEntries.length === 0 ? (
             <p className="items-detail-helper">
@@ -794,48 +827,21 @@ function ItemDetail({ item }) {
           )}
         </section>
 
-        <section>
-          <h4 className="items-detail-section-title">Routing decision</h4>
+        <section className="items-detail-block">
+          <h4 className="items-detail-section-title">Routing &amp; Fake PLC</h4>
           <div className="items-detail-grid-inner">
-            <DetailRow label="Chute" value={routing.chute_id} />
+            <DetailRow label="Chosen chute" value={routing.chute_id} />
             <DetailRow label="Rule set" value={routing.rule_set_id} />
             <DetailRow label="Target product" value={routing.target_product_code} />
-            <DetailRow
-              label="Encoder fire position"
-              value={
-                routing.encoder_fire_position != null
-                  ? String(routing.encoder_fire_position)
-                  : null
-              }
-            />
-            <DetailRow
-              label="Valve open (ms)"
-              value={
-                routing.valve_open_ms != null ? String(routing.valve_open_ms) : null
-              }
-            />
-          </div>
-        </section>
-
-        <section>
-          <h4 className="items-detail-section-title">PLC feedback</h4>
-          <div className="items-detail-grid-inner">
             <DetailRow label="Pick status" value={plc.pick_status} />
             <DetailRow label="Pick time" value={plc.pick_timestamp} />
-            <DetailRow
-              label="Pick error code"
-              value={
-                plc.pick_error_code != null ? String(plc.pick_error_code) : null
-              }
-            />
-            <DetailRow label="Pick command ID" value={plc.pick_command_id} />
           </div>
           <p className="items-detail-helper">
             Fake PLC only – training mode, not real hardware.
           </p>
         </section>
 
-        <section>
+        <section className="items-detail-block">
           <h4 className="items-detail-section-title">Weight (Simulated – Fake HW)</h4>
           <div className="items-detail-grid-inner">
             <DetailRow
@@ -859,7 +865,7 @@ function ItemDetail({ item }) {
           )}
         </section>
 
-        <section>
+        <section className="items-detail-block items-detail-block--trace">
           <div className="items-detail-section-header">
             <h4 className="items-detail-section-title">Item trace (debug view)</h4>
             <button

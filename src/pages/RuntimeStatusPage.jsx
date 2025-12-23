@@ -39,7 +39,17 @@ function formatShortTime(value) {
   });
 }
 
-function buildComponentCard({ id, label, node, transportDown }) {
+function buildComponentCard({ id, label, node, transportDown, runtimeOffline }) {
+  if (runtimeOffline) {
+    return {
+      id,
+      label,
+      status: 'offline',
+      metric: 'Turned off',
+      helper: 'Runtime is turned off on this controller.',
+    };
+  }
+
   if (!node) {
     return {
       id,
@@ -225,6 +235,7 @@ function RuntimeStatusPage() {
 
   const runtimeFlag = runtimeStatus?.status || null;
   const transportDown = Boolean(fetchError) || !runtimeStatus;
+  const runtimeOffline = Boolean(fetchError);
   const hardwareMode = runtimeStatus?.hardware_mode === 'REAL' ? 'REAL' : 'FAKE';
 
   const dbStatusHelper = useMemo(() => {
@@ -247,9 +258,10 @@ function RuntimeStatusPage() {
       buildComponentCard({
         ...component,
         transportDown,
+        runtimeOffline,
       }),
     );
-  }, [runtimeStatus, transportDown]);
+  }, [runtimeStatus, transportDown, runtimeOffline]);
 
   const lineStatus = useMemo(() => {
     if (!runtimeStatus || transportDown) {
