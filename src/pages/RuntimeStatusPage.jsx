@@ -65,15 +65,15 @@ function buildComponentCard({ id, label, node, transportDown }) {
   if (hasError) {
     status = 'error';
     metric = 'Not working';
-    helper = node.message || 'Reported an error – needs help.';
+    helper = 'Reported an error – needs help.';
   } else if (ok) {
     status = 'ok';
     metric = 'Working normally';
-    helper = node.message || 'No issues reported.';
+    helper = 'No issues reported.';
   } else {
     status = 'degraded';
     metric = 'Working, but unstable';
-    helper = node.message || 'Signals look unusual – keep an eye on this.';
+    helper = 'Signals look unusual – keep an eye on this.';
   }
 
   if (ageLabel && ageLabel !== '—') {
