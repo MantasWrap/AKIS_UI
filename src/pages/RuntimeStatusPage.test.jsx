@@ -83,7 +83,7 @@ describe('RuntimeStatusPage (Stage 1 Live mode UX polish)', () => {
     const { unmount } = render(<RuntimeStatusPage />);
 
     expect(
-      await screen.findByText('Runtime not connected · mock preview'),
+      await screen.findByText('Runtime not reachable'),
     ).toBeInTheDocument();
     expect(screen.getByText('⛔ Line is not receiving data.')).toBeInTheDocument();
 

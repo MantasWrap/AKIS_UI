@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/liveMode.css';
-import { liveModeMock } from '../mock/devConsoleMockData.js';
 import { getRecentRuntimeItems, getRuntimeStatus } from '../api/client.js';
 import PlcCard from '../components/runtime/PlcCard.jsx';
 
@@ -228,53 +227,6 @@ function RuntimeStatusPage() {
   const transportDown = Boolean(fetchError) || !runtimeStatus;
   const hardwareMode = runtimeStatus?.hardware_mode === 'REAL' ? 'REAL' : 'FAKE';
 
-  const streamStatus = useMemo(() => {
-    if (!runtimeStatus) {
-      return liveModeMock.streamStatus;
-    }
-
-    const ageSeconds = runtimeStatus?.meta?.age_seconds;
-    const ageLabel = formatAgeSeconds(
-      typeof ageSeconds === 'number' ? ageSeconds : NaN,
-    );
-
-    let freshnessLabel = null;
-    if (typeof ageSeconds === 'number' && Number.isFinite(ageSeconds) && ageSeconds >= 0) {
-      if (ageSeconds < 10) {
-        freshnessLabel = 'Fresh';
-      } else if (ageSeconds <= 60) {
-        freshnessLabel = 'Slight delay';
-      } else {
-        freshnessLabel = 'Stalled – check camera / Jetson link';
-      }
-    }
-
-    if (runtimeFlag === 'error') {
-      return {
-        pill: 'Runtime error',
-        helper: 'Runtime reported an error – check logs.',
-        detail: `Last heartbeat ${ageLabel} ago.`,
-        freshnessLabel,
-      };
-    }
-
-    if (transportDown) {
-      return {
-        pill: 'Runtime not reachable',
-        helper: 'Controller could not reach runtime status endpoint.',
-        detail: 'Check dev docker / port forwarding.',
-        freshnessLabel,
-      };
-    }
-
-    return {
-      pill: 'Runtime connected',
-      helper: 'Runtime status endpoint is responding.',
-      detail: `Last heartbeat ${ageLabel} ago.`,
-      freshnessLabel,
-    };
-  }, [runtimeStatus, runtimeFlag, transportDown]);
-
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
     if (runtimeStatus?.db?.ok === false) {
@@ -318,12 +270,67 @@ function RuntimeStatusPage() {
     return '✅ Line is running normally.';
   }, [runtimeStatus, runtimeFlag, transportDown, signalCards]);
 
+  const streamStatus = useMemo(() => {
+    if (!runtimeStatus) {
+      return {
+        pill: 'Runtime not reachable',
+        helper: 'Controller could not reach runtime status endpoint.',
+        detail: 'Check dev docker / port forwarding.',
+        freshnessLabel: null,
+        tone: 'error',
+      };
+    }
+
+    const ageSeconds = runtimeStatus?.meta?.age_seconds;
+    const ageLabel = formatAgeSeconds(
+      typeof ageSeconds === 'number' ? ageSeconds : NaN,
+    );
+
+    let freshnessLabel = null;
+    if (typeof ageSeconds === 'number' && Number.isFinite(ageSeconds) && ageSeconds >= 0) {
+      if (ageSeconds < 10) {
+        freshnessLabel = 'Fresh';
+      } else if (ageSeconds <= 60) {
+        freshnessLabel = 'Slight delay';
+      } else {
+        freshnessLabel = 'Stalled – check camera / Jetson link';
+      }
+    }
+
+    if (runtimeFlag === 'error') {
+      return {
+        pill: 'Runtime error',
+        helper: 'Runtime reported an error – check logs.',
+        detail: `Last heartbeat ${ageLabel} ago.`,
+        freshnessLabel,
+        tone: 'error',
+      };
+    }
+
+    if (transportDown) {
+      return {
+        pill: 'Runtime not reachable',
+        helper: 'Controller could not reach runtime status endpoint.',
+        detail: 'Check dev docker / port forwarding.',
+        freshnessLabel,
+        tone: 'error',
+      };
+    }
+
+    const attentionTone = lineStatus.includes('needs attention') ? 'warning' : 'ok';
+    return {
+      pill: attentionTone === 'warning' ? 'Runtime warning' : 'Runtime connected',
+      helper: 'Runtime status endpoint is responding.',
+      detail: `Last heartbeat ${ageLabel} ago.`,
+      freshnessLabel,
+      tone: attentionTone,
+    };
+  }, [runtimeStatus, runtimeFlag, transportDown, lineStatus]);
+
   const lanes =
     Array.isArray(runtimeStatus?.lanes) && runtimeStatus.lanes.length > 0
       ? runtimeStatus.lanes
-      : liveModeMock.lanes;
-
-  const logEvents = liveModeMock.logEvents;
+      : [];
 
   return (
     <div className="live-mode-page">
@@ -339,12 +346,11 @@ function RuntimeStatusPage() {
             </span>
           </div>
           <p className="dev-card-subtitle">
-            Phase 0 training view with Fake hardware. Real PLC mode replaces this view once hardware is
-            online.
+            Jetson runtime, blowers and conveyor view for Phase 0 training with Fake hardware.
           </p>
         </div>
         <div className="live-mode-hero-status">
-          <div className="live-mode-stream-pill">
+          <div className={`live-mode-runtime-pill live-mode-runtime-pill--${streamStatus.tone}`}>
             {streamStatus.pill}
           </div>
           <p className="live-mode-stream-helper">{streamStatus.helper}</p>
@@ -386,16 +392,6 @@ function RuntimeStatusPage() {
             </div>
           ))}
         </div>
-        {Array.isArray(runtimeStatus?.errors) && runtimeStatus.errors.length > 0 && (
-          <ul className="live-mode-errors-list">
-            {runtimeStatus.errors.map((err, index) => (
-              <li key={`${err.component || 'err'}-${index}`}>
-                {err.component ? `${err.component}: ` : ''}
-                {err.message || err.code || 'Error'}
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
 
       <section className="dev-card live-mode-lanes-card">
@@ -406,9 +402,19 @@ function RuntimeStatusPage() {
           </div>
         </header>
         <div className="live-mode-lanes-grid">
-          {lanes.map((lane) => (
-            <PlcCard key={lane.id} plc={lane} error={fetchError} />
-          ))}
+          {lanes.length > 0 ? (
+            lanes.map((lane) => (
+              <PlcCard key={lane.id} plc={lane} error={fetchError} />
+            ))
+          ) : (
+            <div className="plc-empty">
+              <p className="plc-empty-title">PLC lane metrics not connected yet.</p>
+              <p className="plc-empty-sub">
+                PLC lane metrics will appear here once PLC metrics are connected. For now, use Live
+                items and Simulation items views.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -480,32 +486,6 @@ function RuntimeStatusPage() {
         </div>
       </section>
 
-      <section className="dev-card live-mode-log-card">
-        <header className="live-mode-section-header">
-          <div>
-            <p className="dev-card-eyebrow">Mock activity log</p>
-            <h3>Recent events</h3>
-          </div>
-          <p className="live-mode-section-sub">
-            Mock log only – real events will be wired later.
-          </p>
-        </header>
-        <ul className="live-mode-log-list">
-          {logEvents.map((event) => (
-            <li key={event.id} className="live-mode-log-row">
-              <span className={`live-mode-log-pill level-${event.level}`}>
-                {event.level}
-              </span>
-              <div>
-                <p className="live-mode-log-meta">
-                  {event.time} · {event.source}
-                </p>
-                <p className="live-mode-log-message">{event.message}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

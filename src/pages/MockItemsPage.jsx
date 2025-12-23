@@ -432,7 +432,7 @@ export default function MockItemsPage() {
           <h2 className="dev-card-title">Simulation items</h2>
           <p className="dev-card-subtitle">
             Phase 0 training replay. This view shows how items move through camera, AI and Fake PLC
-            with simulated weights.
+            with simulated weights. Not live production data.
           </p>
           <p className="items-hero-intro">
             Each row below is one item that went through the system in training mode. For each item you
