@@ -183,7 +183,7 @@ function RuntimeStatusPage() {
   const [plcMetrics, setPlcMetrics] = useState(null);
   const [plcMetricsError, setPlcMetricsError] = useState('');
   const showAdvancedRuntimeItems = false;
-  const [pendingAction, setPendingAction] = useState(null);
+  const [lineCommandLoading, setLineCommandLoading] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
@@ -404,12 +404,12 @@ function RuntimeStatusPage() {
   const canResetFault = hasLineData && !eStop && lineState === 'FAULT_STOP';
 
   const handleAction = async (action) => {
-    if (!action || pendingAction) return;
-    setPendingAction(action);
+    if (!action || lineCommandLoading) return;
+    setLineCommandLoading(action);
     try {
       await sendLineCommand(action);
     } finally {
-      setPendingAction(null);
+      setLineCommandLoading(null);
     }
   };
 
@@ -599,9 +599,9 @@ function RuntimeStatusPage() {
               type="button"
               className={startButtonClass}
               onClick={() => setConfirmAction('START')}
-              disabled={!canStart || pendingAction !== null}
+              disabled={!canStart || lineCommandLoading !== null}
             >
-              {pendingAction === 'START' ? (
+              {lineCommandLoading === 'START' ? (
                 <span className="live-mode-control-inline">
                   <span className="live-mode-control-spinner" />
                   Starting…
@@ -614,9 +614,9 @@ function RuntimeStatusPage() {
               type="button"
               className={pauseButtonClass}
               onClick={() => setConfirmAction('PAUSE')}
-              disabled={!canPause || pendingAction !== null}
+              disabled={!canPause || lineCommandLoading !== null}
             >
-              {pendingAction === 'PAUSE' ? (
+              {lineCommandLoading === 'PAUSE' ? (
                 <span className="live-mode-control-inline">
                   <span className="live-mode-control-spinner" />
                   Pausing…
@@ -629,9 +629,9 @@ function RuntimeStatusPage() {
               type="button"
               className={stopButtonClass}
               onClick={() => setConfirmAction('STOP')}
-              disabled={!canStop || pendingAction !== null}
+              disabled={!canStop || lineCommandLoading !== null}
             >
-              {pendingAction === 'STOP' ? (
+              {lineCommandLoading === 'STOP' ? (
                 <span className="live-mode-control-inline">
                   <span className="live-mode-control-spinner" />
                   Stopping…
@@ -644,9 +644,9 @@ function RuntimeStatusPage() {
               type="button"
               className={resetButtonClass}
               onClick={() => setConfirmAction('RESET_FAULT')}
-              disabled={!canResetFault || pendingAction !== null}
+              disabled={!canResetFault || lineCommandLoading !== null}
             >
-              {pendingAction === 'RESET_FAULT' ? (
+              {lineCommandLoading === 'RESET_FAULT' ? (
                 <span className="live-mode-control-inline">
                   <span className="live-mode-control-spinner" />
                   Resetting…
@@ -857,7 +857,7 @@ function RuntimeStatusPage() {
         <div
           className="dev-modal-overlay"
           onClick={() => {
-            if (!pendingAction) setConfirmAction(null);
+            if (!lineCommandLoading) setConfirmAction(null);
           }}
         >
           <div
@@ -879,7 +879,7 @@ function RuntimeStatusPage() {
                 type="button"
                 className="dev-ghost-button"
                 onClick={() => setConfirmAction(null)}
-                disabled={pendingAction !== null}
+                disabled={lineCommandLoading !== null}
               >
                 Cancel
               </button>
@@ -887,9 +887,9 @@ function RuntimeStatusPage() {
                 type="button"
                 className="live-mode-control-button is-success is-active"
                 onClick={handleConfirmAction}
-                disabled={pendingAction !== null}
+                disabled={lineCommandLoading !== null}
               >
-                {pendingAction ? 'Sending…' : confirmContent.confirmLabel}
+                {lineCommandLoading ? 'Sending…' : confirmContent.confirmLabel}
               </button>
             </div>
           </div>

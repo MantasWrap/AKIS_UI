@@ -169,21 +169,32 @@ export default function StatusPage() {
       ? 'Production mode · Real PLC'
       : DEFAULT_PHASE_LABEL;
   const isPhase0Fake = Boolean(runtimeMetrics) && runtimeMetrics?.hardware_mode !== 'REAL';
-  const lineState = runtimeStatus?.line_state || null;
-  const mainLineStatus = useMemo(() => {
-    if (!lineState) return lineStatus;
-    if (lineState === 'RUNNING') return '✅ Line is running normally.';
-    if (lineState === 'PAUSED') return '⏸️ Line is paused.';
-    if (lineState === 'SAFE_STOP') return '⛔ Emergency stop is active on the line.';
-    if (lineState === 'FAULT_STOP') return '⚠️ Line stopped due to a fault.';
-    if (lineState === 'IDLE') return '⏸️ Line is idle.';
-    return 'Line state unknown.';
+  const lineState = runtimeStatus?.line_state || 'UNKNOWN';
+  const lineStateLabel = useMemo(() => {
+    if (lineState === 'RUNNING') return 'Line is running normally.';
+    if (lineState === 'PAUSED') {
+      return 'Line is paused. No new items are being processed.';
+    }
+    if (lineState === 'SAFE_STOP') {
+      return 'Emergency stop is active on the line.';
+    }
+    if (lineState === 'FAULT_STOP') {
+      return 'Line stopped due to a fault.';
+    }
+    if (lineState === 'IDLE') return 'Line is idle.';
+    return lineStatus || 'Line state unknown.';
   }, [lineState, lineStatus]);
+  const lineStateTone = useMemo(() => {
+    if (lineState === 'RUNNING') return 'running';
+    if (lineState === 'PAUSED') return 'paused';
+    if (lineState === 'SAFE_STOP' || lineState === 'FAULT_STOP') return 'stopped';
+    if (lineState === 'IDLE') return 'idle';
+    return 'unknown';
+  }, [lineState]);
   const lineStateHelper = useMemo(() => {
-    if (runtimeStatusError && !lineState) {
+    if (runtimeStatusError && lineState === 'UNKNOWN') {
       return 'Live line status is unavailable right now.';
     }
-    if (!lineState) return null;
     if (lineState === 'PAUSED') {
       return 'No new items are being processed while the line is paused.';
     }
@@ -258,7 +269,12 @@ export default function StatusPage() {
             </button>
           </div>
         </header>
-        <p className="system-overview-status">{mainLineStatus}</p>
+        <div className="system-overview-state">
+          <span className={`system-overview-pill system-overview-pill--${lineStateTone}`}>
+            {lineState}
+          </span>
+          <span className="system-overview-status-text">{lineStateLabel}</span>
+        </div>
         {lineStateHelper && (
           <p className="system-overview-helper">{lineStateHelper}</p>
         )}
