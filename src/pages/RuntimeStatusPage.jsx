@@ -184,6 +184,7 @@ function RuntimeStatusPage() {
   const [plcMetricsError, setPlcMetricsError] = useState('');
   const showAdvancedRuntimeItems = false;
   const [pendingAction, setPendingAction] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -439,6 +440,45 @@ function RuntimeStatusPage() {
       ? 'live-mode-control-button is-danger is-outline'
       : 'live-mode-control-button is-danger is-outline';
   const resetButtonClass = 'live-mode-control-button is-neutral';
+  const confirmContent = useMemo(() => {
+    switch (confirmAction) {
+      case 'START':
+        return {
+          title: 'Start the line?',
+          description: 'This will allow new items to be processed on this line.',
+          confirmLabel: 'Start line',
+        };
+      case 'PAUSE':
+        return {
+          title: 'Pause the line?',
+          description: 'This will pause the line and stop processing new items.',
+          confirmLabel: 'Pause line',
+        };
+      case 'STOP':
+        return {
+          title: 'Stop the line?',
+          description: 'This will stop the line. Operators may need to restart it manually.',
+          confirmLabel: 'Stop line',
+        };
+      case 'RESET_FAULT':
+        return {
+          title: 'Reset line fault?',
+          description: 'Only do this after checking the physical line for issues.',
+          confirmLabel: 'Reset fault',
+        };
+      default:
+        return null;
+    }
+  }, [confirmAction]);
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    try {
+      await handleAction(confirmAction);
+    } finally {
+      setConfirmAction(null);
+    }
+  };
 
   const streamStatus = useMemo(() => {
     if (!runtimeStatus) {
@@ -558,34 +598,62 @@ function RuntimeStatusPage() {
             <button
               type="button"
               className={startButtonClass}
-              onClick={() => handleAction('START')}
-              disabled={!canStart || pendingAction === 'START'}
+              onClick={() => setConfirmAction('START')}
+              disabled={!canStart || pendingAction !== null}
             >
-              {pendingAction === 'START' ? 'Starting…' : 'Start'}
+              {pendingAction === 'START' ? (
+                <span className="live-mode-control-inline">
+                  <span className="live-mode-control-spinner" />
+                  Starting…
+                </span>
+              ) : (
+                'Start'
+              )}
             </button>
             <button
               type="button"
               className={pauseButtonClass}
-              onClick={() => handleAction('PAUSE')}
-              disabled={!canPause || pendingAction === 'PAUSE'}
+              onClick={() => setConfirmAction('PAUSE')}
+              disabled={!canPause || pendingAction !== null}
             >
-              {pendingAction === 'PAUSE' ? 'Pausing…' : 'Pause'}
+              {pendingAction === 'PAUSE' ? (
+                <span className="live-mode-control-inline">
+                  <span className="live-mode-control-spinner" />
+                  Pausing…
+                </span>
+              ) : (
+                'Pause'
+              )}
             </button>
             <button
               type="button"
               className={stopButtonClass}
-              onClick={() => handleAction('STOP')}
-              disabled={!canStop || pendingAction === 'STOP'}
+              onClick={() => setConfirmAction('STOP')}
+              disabled={!canStop || pendingAction !== null}
             >
-              {pendingAction === 'STOP' ? 'Stopping…' : 'Stop'}
+              {pendingAction === 'STOP' ? (
+                <span className="live-mode-control-inline">
+                  <span className="live-mode-control-spinner" />
+                  Stopping…
+                </span>
+              ) : (
+                'Stop'
+              )}
             </button>
             <button
               type="button"
               className={resetButtonClass}
-              onClick={() => handleAction('RESET_FAULT')}
-              disabled={!canResetFault || pendingAction === 'RESET_FAULT'}
+              onClick={() => setConfirmAction('RESET_FAULT')}
+              disabled={!canResetFault || pendingAction !== null}
             >
-              {pendingAction === 'RESET_FAULT' ? 'Resetting…' : 'Reset fault'}
+              {pendingAction === 'RESET_FAULT' ? (
+                <span className="live-mode-control-inline">
+                  <span className="live-mode-control-spinner" />
+                  Resetting…
+                </span>
+              ) : (
+                'Reset fault'
+              )}
             </button>
           </div>
           <p className="live-mode-controls-helper">{lineStateMessage}</p>
@@ -783,6 +851,49 @@ function RuntimeStatusPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {confirmAction && confirmContent && (
+        <div
+          className="dev-modal-overlay"
+          onClick={() => {
+            if (!pendingAction) setConfirmAction(null);
+          }}
+        >
+          <div
+            className="live-mode-confirm-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Line command confirmation"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <div className="live-mode-confirm-header">
+              <p className="dev-card-eyebrow">Confirm action</p>
+              <h3 className="live-mode-confirm-title">{confirmContent.title}</h3>
+              <p className="live-mode-confirm-description">{confirmContent.description}</p>
+            </div>
+            <div className="live-mode-confirm-actions">
+              <button
+                type="button"
+                className="dev-ghost-button"
+                onClick={() => setConfirmAction(null)}
+                disabled={pendingAction !== null}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="live-mode-control-button is-success is-active"
+                onClick={handleConfirmAction}
+                disabled={pendingAction !== null}
+              >
+                {pendingAction ? 'Sending…' : confirmContent.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

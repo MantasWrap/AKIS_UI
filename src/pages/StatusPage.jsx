@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/devDashboard.css';
-import { getRuntimeLinkMetrics } from '../api/client';
+import { getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 
@@ -52,6 +52,8 @@ export default function StatusPage() {
   const [runtimeMetricsLoading, setRuntimeMetricsLoading] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const hasLoadedOnce = useRef(false);
+  const [runtimeStatus, setRuntimeStatus] = useState(null);
+  const [runtimeStatusError, setRuntimeStatusError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +105,43 @@ export default function StatusPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    let timerId;
+
+    async function loadRuntimeStatus() {
+      try {
+        const result = await getRuntimeStatus();
+        if (cancelled) return;
+        if (result?.ok === false) {
+          setRuntimeStatus(null);
+          setRuntimeStatusError(result.error || 'Could not load runtime status.');
+          return;
+        }
+        if (result && typeof result === 'object') {
+          setRuntimeStatus(result);
+          setRuntimeStatusError('');
+          return;
+        }
+        setRuntimeStatus(null);
+        setRuntimeStatusError('Unexpected runtime status payload.');
+      } catch (error) {
+        if (!cancelled) {
+          setRuntimeStatus(null);
+          setRuntimeStatusError(error?.message || 'Could not load runtime status.');
+        }
+      }
+    }
+
+    loadRuntimeStatus();
+    timerId = setInterval(loadRuntimeStatus, RUNTIME_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearInterval(timerId);
+    };
+  }, []);
+
   const handleNavigate = (targetKey) => {
     emitNavigation(targetKey);
   };
@@ -130,6 +169,32 @@ export default function StatusPage() {
       ? 'Production mode · Real PLC'
       : DEFAULT_PHASE_LABEL;
   const isPhase0Fake = Boolean(runtimeMetrics) && runtimeMetrics?.hardware_mode !== 'REAL';
+  const lineState = runtimeStatus?.line_state || null;
+  const mainLineStatus = useMemo(() => {
+    if (!lineState) return lineStatus;
+    if (lineState === 'RUNNING') return '✅ Line is running normally.';
+    if (lineState === 'PAUSED') return '⏸️ Line is paused.';
+    if (lineState === 'SAFE_STOP') return '⛔ Emergency stop is active on the line.';
+    if (lineState === 'FAULT_STOP') return '⚠️ Line stopped due to a fault.';
+    if (lineState === 'IDLE') return '⏸️ Line is idle.';
+    return 'Line state unknown.';
+  }, [lineState, lineStatus]);
+  const lineStateHelper = useMemo(() => {
+    if (runtimeStatusError && !lineState) {
+      return 'Live line status is unavailable right now.';
+    }
+    if (!lineState) return null;
+    if (lineState === 'PAUSED') {
+      return 'No new items are being processed while the line is paused.';
+    }
+    if (lineState === 'SAFE_STOP') {
+      return 'Fix the emergency stop on the physical line, then reset in PLC.';
+    }
+    if (lineState === 'FAULT_STOP') {
+      return 'Reset the fault before starting the line again.';
+    }
+    return null;
+  }, [lineState, runtimeStatusError]);
   const itemsSeen = runtimeCounters?.items_seen;
   const itemsSeenLabel =
     typeof itemsSeen === 'number' && Number.isFinite(itemsSeen) ? itemsSeen : '—';
@@ -137,6 +202,15 @@ export default function StatusPage() {
     typeof picksTotal === 'number' && Number.isFinite(picksTotal) ? picksTotal : '—';
   const phase0StatusHelper = useMemo(() => {
     if (!isPhase0Fake) return null;
+    if (lineState === 'PAUSED') {
+      return 'Phase 0 – training mode with fake hardware. Line is paused.';
+    }
+    if (lineState === 'SAFE_STOP') {
+      return 'Phase 0 – training mode with fake hardware. Emergency stop is active.';
+    }
+    if (lineState === 'FAULT_STOP') {
+      return 'Phase 0 – training mode with fake hardware. Line is stopped.';
+    }
     if (lineStatus.includes('needs attention')) {
       return 'Training mode with fake hardware. Check Live Mode for simulated issues.';
     }
@@ -144,8 +218,9 @@ export default function StatusPage() {
       return 'Training mode with fake hardware. In production this will reflect real conveyor data.';
     }
     return 'Training mode with fake hardware – no real PLC or motors yet.';
-  }, [isPhase0Fake, lineStatus]);
-  const attentionHint = needsAttention
+  }, [isPhase0Fake, lineStatus, lineState]);
+  const needsAttentionFlag = lineState ? lineState !== 'RUNNING' : needsAttention;
+  const attentionHint = needsAttentionFlag
     ? 'System needs attention – open Live Mode for details.'
     : 'Open Live Mode to see live stream and components.';
   const runtimeMetricsEmpty =
@@ -183,7 +258,10 @@ export default function StatusPage() {
             </button>
           </div>
         </header>
-        <p className="system-overview-status">{lineStatus}</p>
+        <p className="system-overview-status">{mainLineStatus}</p>
+        {lineStateHelper && (
+          <p className="system-overview-helper">{lineStateHelper}</p>
+        )}
         {phase0StatusHelper && (
           <p className="system-overview-helper">{phase0StatusHelper}</p>
         )}
@@ -194,7 +272,7 @@ export default function StatusPage() {
         <p className="system-overview-hint">{attentionHint}</p>
       </section>
 
-      {needsAttention && (
+      {needsAttentionFlag && (
         <section className="system-attention-banner">
           <p className="system-attention-text">
             ⚠️ System needs attention. Check Live Mode and Simulation views for details.

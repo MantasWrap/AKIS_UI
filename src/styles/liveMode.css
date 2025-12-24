@@ -176,6 +176,30 @@
   border-color: rgba(71, 85, 105, 0.65);
 }
 
+.live-mode-control-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-mode-control-spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: live-mode-spin 0.8s linear infinite;
+}
+
+@keyframes live-mode-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .live-mode-controls-helper {
   margin: 0;
   font-size: 0.9rem;
@@ -198,6 +222,42 @@
   margin: 0;
   font-size: 0.85rem;
   color: var(--dev-text-muted);
+}
+
+.live-mode-confirm-panel {
+  background: var(--dev-bg-card);
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: var(--dev-radius-lg);
+  box-shadow: var(--dev-shadow-soft);
+  width: min(420px, 92vw);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.live-mode-confirm-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.live-mode-confirm-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.live-mode-confirm-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .live-mode-section-header {
