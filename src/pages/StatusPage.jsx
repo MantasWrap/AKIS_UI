@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/devDashboard.css';
 import { getRuntimeLinkMetrics } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
+import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 
 const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
 
@@ -49,12 +50,17 @@ export default function StatusPage() {
   const [runtimeMetrics, setRuntimeMetrics] = useState(null);
   const [runtimeMetricsError, setRuntimeMetricsError] = useState('');
   const [runtimeMetricsLoading, setRuntimeMetricsLoading] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    let timerId;
 
     async function loadRuntimeMetrics() {
-      setRuntimeMetricsLoading(true);
+      if (!hasLoadedOnce.current) {
+        setRuntimeMetricsLoading(true);
+      }
       try {
         const result = await getRuntimeLinkMetrics({});
         if (cancelled) return;
@@ -73,6 +79,7 @@ export default function StatusPage() {
 
         setRuntimeMetrics(payload);
         setRuntimeMetricsError('');
+        setLastUpdatedAt(new Date());
       } catch (error) {
         console.warn('Runtime link metrics load failed', error);
         if (!cancelled) {
@@ -82,14 +89,17 @@ export default function StatusPage() {
       } finally {
         if (!cancelled) {
           setRuntimeMetricsLoading(false);
+          hasLoadedOnce.current = true;
         }
       }
     }
 
     loadRuntimeMetrics();
+    timerId = setInterval(loadRuntimeMetrics, RUNTIME_POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
+      if (timerId) clearInterval(timerId);
     };
   }, []);
 
@@ -140,6 +150,13 @@ export default function StatusPage() {
     : 'Open Live Mode to see live stream and components.';
   const runtimeMetricsEmpty =
     !runtimeMetricsError && runtimeCounters && !hasMetricsData(runtimeCounters);
+  const lastUpdatedLabel = lastUpdatedAt
+    ? lastUpdatedAt.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : null;
 
   return (
     <div className="dev-dashboard-page">
@@ -211,6 +228,9 @@ export default function StatusPage() {
                 Items that reached the camera and AI, plus picks sent to PLC (real or Fake).
               </p>
             </div>
+            {lastUpdatedLabel && (
+              <p className="dev-card-subtitle">Last updated {lastUpdatedLabel}</p>
+            )}
           </header>
           <div className="dev-runtime-link-body">
             {runtimeMetricsError && (

@@ -5,8 +5,7 @@ import {
   getRecentRuntimeItems,
   getRuntimeStatus,
 } from '../api/client.js';
-
-const DEFAULT_POLL_MS = 3000;
+import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 
 function formatAgeSeconds(ageS) {
   if (typeof ageS !== 'number' || !Number.isFinite(ageS) || ageS < 0) return '—';
@@ -159,6 +158,7 @@ function RuntimeStatusPage() {
   const [recentItemsLoading, setRecentItemsLoading] = useState(false);
   const [plcMetrics, setPlcMetrics] = useState(null);
   const [plcMetricsError, setPlcMetricsError] = useState('');
+  const showAdvancedRuntimeItems = false;
 
   useEffect(() => {
     let cancelled = false;
@@ -190,7 +190,7 @@ function RuntimeStatusPage() {
 
     if (isPolling) {
       load();
-      timerId = setInterval(load, DEFAULT_POLL_MS);
+      timerId = setInterval(load, RUNTIME_POLL_INTERVAL_MS);
     }
 
     return () => {
@@ -202,6 +202,8 @@ function RuntimeStatusPage() {
   useEffect(() => {
     let cancelled = false;
     let timerId;
+
+    if (!showAdvancedRuntimeItems) return () => {};
 
     async function loadRecentItems() {
       try {
@@ -230,7 +232,7 @@ function RuntimeStatusPage() {
     }
 
     loadRecentItems();
-    timerId = setInterval(loadRecentItems, DEFAULT_POLL_MS);
+    timerId = setInterval(loadRecentItems, RUNTIME_POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -266,7 +268,7 @@ function RuntimeStatusPage() {
     }
 
     loadPlcMetrics();
-    timerId = setInterval(loadPlcMetrics, DEFAULT_POLL_MS);
+    timerId = setInterval(loadPlcMetrics, RUNTIME_POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -552,73 +554,75 @@ function RuntimeStatusPage() {
         </div>
       </section>
 
-      <section className="dev-card live-mode-runtime-items-card">
-        <header className="live-mode-section-header">
-          <div>
-            <p className="dev-card-eyebrow">Recent runtime items</p>
-            <h3>Live item snapshots</h3>
-          </div>
-          <p className="live-mode-section-sub">
-            Last items seen by the runtime. Read-only; routing still follows Phase 0 simulation rules.
-          </p>
-        </header>
-        <div className="live-mode-runtime-items-body">
-          <p className="live-mode-runtime-items-meta">
-            {recentItemsLoading && 'Loading recent items…'}
-            {!recentItemsLoading && recentItemsError && (
-              <span className="live-mode-runtime-items-error">{recentItemsError}</span>
-            )}
-            {!recentItemsLoading && !recentItemsError && recentItems.length > 0 && (
-              <>
-                Showing latest <strong>{recentItems.length}</strong> items
-              </>
-            )}
-          </p>
-          <p className="live-mode-runtime-items-meta">
-            These are the last items seen in training mode. Weights are simulated – real scales come later.
-          </p>
-          <div className="live-mode-runtime-items-table-wrapper">
-            <table className="live-mode-runtime-items-table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Item ID</th>
-                  <th>Category</th>
-                  <th>Chute</th>
-                  <th>Status</th>
-                  <th>Weight (Simulated – Fake HW)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentItems.map((item) => {
-                  const weight = getEstimatedItemWeight(item);
-                  const formattedWeight = formatWeightKg(weight);
-                  const chuteId = getChuteId(item);
-                  const status = computePipelineStatusForItem(item);
+      {showAdvancedRuntimeItems && (
+        <section className="dev-card live-mode-runtime-items-card">
+          <header className="live-mode-section-header">
+            <div>
+              <p className="dev-card-eyebrow">Recent runtime items</p>
+              <h3>Live item snapshots</h3>
+            </div>
+            <p className="live-mode-section-sub">
+              Last items seen by the runtime. Read-only; routing still follows Phase 0 simulation rules.
+            </p>
+          </header>
+          <div className="live-mode-runtime-items-body">
+            <p className="live-mode-runtime-items-meta">
+              {recentItemsLoading && 'Loading recent items…'}
+              {!recentItemsLoading && recentItemsError && (
+                <span className="live-mode-runtime-items-error">{recentItemsError}</span>
+              )}
+              {!recentItemsLoading && !recentItemsError && recentItems.length > 0 && (
+                <>
+                  Showing latest <strong>{recentItems.length}</strong> items
+                </>
+              )}
+            </p>
+            <p className="live-mode-runtime-items-meta">
+              These are the last items seen in training mode. Weights are simulated – real scales come later.
+            </p>
+            <div className="live-mode-runtime-items-table-wrapper">
+              <table className="live-mode-runtime-items-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Item ID</th>
+                    <th>Category</th>
+                    <th>Chute</th>
+                    <th>Status</th>
+                    <th>Weight (Simulated – Fake HW)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentItems.map((item) => {
+                    const weight = getEstimatedItemWeight(item);
+                    const formattedWeight = formatWeightKg(weight);
+                    const chuteId = getChuteId(item);
+                    const status = computePipelineStatusForItem(item);
 
-                  return (
-                    <tr key={getItemId(item)}>
-                      <td>{formatShortTime(getItemSeenAt(item))}</td>
-                      <td>{getItemId(item)}</td>
-                      <td>{getCategory(item)}</td>
-                      <td>{chuteId ?? '—'}</td>
-                      <td>{status}</td>
-                      <td>{formattedWeight}</td>
-                    </tr>
-                  );
-                })}
-                {!recentItemsLoading &&
-                  !recentItemsError &&
-                  recentItems.length === 0 && (
-                    <tr>
-                      <td colSpan={6}>No items yet.</td>
-                    </tr>
-                  )}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={getItemId(item)}>
+                        <td>{formatShortTime(getItemSeenAt(item))}</td>
+                        <td>{getItemId(item)}</td>
+                        <td>{getCategory(item)}</td>
+                        <td>{chuteId ?? '—'}</td>
+                        <td>{status}</td>
+                        <td>{formattedWeight}</td>
+                      </tr>
+                    );
+                  })}
+                  {!recentItemsLoading &&
+                    !recentItemsError &&
+                    recentItems.length === 0 && (
+                      <tr>
+                        <td colSpan={6}>No items yet.</td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
     </div>
   );

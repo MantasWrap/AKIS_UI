@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/items.css';
 import { getRuntimeItems, getItemTrace } from '../api/client.js';
+import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 
 const HEALTH_FILTERS = [
   { id: 'all', label: 'All items' },
@@ -324,6 +325,7 @@ export default function MockItemsPage() {
   const [expandedItemIds, setExpandedItemIds] = useState(() => new Set());
   const [selectedId, setSelectedId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -370,6 +372,22 @@ export default function MockItemsPage() {
       cancelled = true;
     };
   }, [refreshKey]);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      if (!loadingRef.current) {
+        setRefreshKey((prev) => prev + 1);
+      }
+    }, RUNTIME_POLL_INTERVAL_MS);
+
+    return () => {
+      clearInterval(timerId);
+    };
+  }, []);
 
   const derivedOptions = useMemo(() => {
     const categories = new Set();
@@ -497,6 +515,9 @@ export default function MockItemsPage() {
                   <strong>{items.length}</strong> items
                 </>
               )}
+              <span>
+                Auto-refreshing every {Math.round(RUNTIME_POLL_INTERVAL_MS / 1000)}s
+              </span>
             </p>
           </header>
           <div className="items-filter-bar">
