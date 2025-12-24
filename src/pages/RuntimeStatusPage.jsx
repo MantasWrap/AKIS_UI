@@ -183,6 +183,7 @@ function RuntimeStatusPage() {
   const [plcMetrics, setPlcMetrics] = useState(null);
   const [plcMetricsError, setPlcMetricsError] = useState('');
   const showAdvancedRuntimeItems = false;
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,10 +309,11 @@ function RuntimeStatusPage() {
   const lineState = runtimeStatus?.line_state || 'UNKNOWN';
   const flags = runtimeStatus?.flags || {};
   const eStop = Boolean(flags.e_stop_active) || lineState === 'SAFE_STOP';
-  const safetyOk = flags.safety_ok !== false;
-  const runperm = flags.line_runperm !== false;
   const hasLineData = Boolean(runtimeStatus);
-  const { send: sendLineCommand, isSending, error: lineCommandError } = useLineCommand({
+  const isLinePaused = lineState === 'PAUSED';
+  const isLineStopped =
+    lineState === 'IDLE' || lineState === 'FAULT_STOP' || lineState === 'SAFE_STOP';
+  const { send: sendLineCommand, error: lineCommandError } = useLineCommand({
     siteId: runtimeStatus?.env?.site_id || null,
     lineId: runtimeStatus?.env?.line_id || null,
   });
@@ -339,31 +341,39 @@ function RuntimeStatusPage() {
         runtimeOffline,
       });
 
-      if (!isPhase0Fake) return card;
+      let nextCard = card;
 
-      if (card.id === 'jetsonLink' && card.status === 'ok') {
-        return {
-          ...card,
-          helper: `${card.helper} Simulated AI runner (no real camera). Good for testing and training.`,
-        };
-      }
-
-      if (card.id === 'plc') {
-        if (card.status === 'ok') {
-          return {
+      if (isPhase0Fake) {
+        if (card.id === 'jetsonLink' && card.status === 'ok') {
+          nextCard = {
             ...card,
-            helper: `${card.helper} Fake PLC – picks are simulated in software. Later this will be connected to a real PLC.`,
+            helper: `${card.helper} Simulated AI runner (no real camera). Good for testing and training.`,
           };
+        } else if (card.id === 'plc') {
+          if (card.status === 'ok') {
+            nextCard = {
+              ...card,
+              helper: `${card.helper} Fake PLC – picks are simulated in software. Later this will be connected to a real PLC.`,
+            };
+          } else {
+            nextCard = {
+              ...card,
+              helper: `${card.helper} Simulator is not producing PLC data. Check Jetson / runtime simulator.`,
+            };
+          }
         }
+      }
+
+      if (isLinePaused && (card.id === 'jetsonLink' || card.id === 'plc')) {
         return {
-          ...card,
-          helper: `${card.helper} Simulator is not producing PLC data. Check Jetson / runtime simulator.`,
+          ...nextCard,
+          helper: `${nextCard.helper} (line paused)`,
         };
       }
 
-      return card;
+      return nextCard;
     });
-  }, [runtimeStatus, transportDown, runtimeOffline, isPhase0Fake]);
+  }, [runtimeStatus, transportDown, runtimeOffline, isPhase0Fake, isLinePaused]);
 
   const lineStatus = useMemo(() => {
     if (!runtimeStatus || transportDown) {
@@ -384,25 +394,51 @@ function RuntimeStatusPage() {
     return '✅ Line is running normally.';
   }, [runtimeStatus, runtimeFlag, transportDown, signalCards]);
 
-  const lineStateLabel = useMemo(() => {
-    if (!hasLineData) return 'Line status is unavailable.';
-    if (eStop || lineState === 'SAFE_STOP') return 'Emergency stop is active.';
-    if (lineState === 'RUNNING') return 'Line is running.';
-    if (lineState === 'PAUSED') return 'Line is paused.';
-    if (lineState === 'FAULT_STOP') return 'Line is faulted.';
-    if (lineState === 'IDLE') return 'Line is idle.';
-    return `Line state: ${lineState}`;
-  }, [hasLineData, eStop, lineState]);
-
-  const startEnabled =
+  const canStart =
     hasLineData &&
     !eStop &&
-    safetyOk &&
-    runperm &&
     (lineState === 'IDLE' || lineState === 'PAUSED' || lineState === 'FAULT_STOP');
-  const pauseEnabled = hasLineData && !eStop && lineState === 'RUNNING';
-  const stopEnabled = hasLineData && !eStop && lineState === 'RUNNING';
-  const resetEnabled = hasLineData && !eStop && lineState === 'FAULT_STOP';
+  const canPause = hasLineData && !eStop && lineState === 'RUNNING';
+  const canStop = hasLineData && !eStop && lineState === 'RUNNING';
+  const canResetFault = hasLineData && !eStop && lineState === 'FAULT_STOP';
+
+  const handleAction = async (action) => {
+    if (!action || pendingAction) return;
+    setPendingAction(action);
+    try {
+      await sendLineCommand(action);
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const lineStateMessage = useMemo(() => {
+    if (!hasLineData) return 'Line status is unavailable.';
+    if (lineState === 'RUNNING') return 'Line is running.';
+    if (lineState === 'PAUSED') {
+      return 'Line is paused. No new items are being processed.';
+    }
+    if (lineState === 'SAFE_STOP') return 'Emergency stop is active on the line.';
+    if (lineState === 'FAULT_STOP') {
+      return 'Line stopped due to a fault. Reset fault to continue.';
+    }
+    if (lineState === 'IDLE') return 'Line is idle.';
+    return `Line state: ${lineState}`;
+  }, [hasLineData, lineState]);
+
+  const startButtonClass =
+    lineState === 'RUNNING'
+      ? 'live-mode-control-button is-success is-active'
+      : 'live-mode-control-button is-success is-outline';
+  const pauseButtonClass =
+    lineState === 'PAUSED'
+      ? 'live-mode-control-button is-warning is-active'
+      : 'live-mode-control-button is-warning is-outline';
+  const stopButtonClass =
+    lineState === 'RUNNING'
+      ? 'live-mode-control-button is-danger is-outline'
+      : 'live-mode-control-button is-danger is-outline';
+  const resetButtonClass = 'live-mode-control-button is-neutral';
 
   const streamStatus = useMemo(() => {
     if (!runtimeStatus) {
@@ -521,38 +557,38 @@ function RuntimeStatusPage() {
           <div className="live-mode-controls-buttons">
             <button
               type="button"
-              className="live-mode-control-button"
-              onClick={() => sendLineCommand('START')}
-              disabled={!startEnabled || isSending}
+              className={startButtonClass}
+              onClick={() => handleAction('START')}
+              disabled={!canStart || pendingAction === 'START'}
             >
-              Start
+              {pendingAction === 'START' ? 'Starting…' : 'Start'}
             </button>
             <button
               type="button"
-              className="live-mode-control-button"
-              onClick={() => sendLineCommand('PAUSE')}
-              disabled={!pauseEnabled || isSending}
+              className={pauseButtonClass}
+              onClick={() => handleAction('PAUSE')}
+              disabled={!canPause || pendingAction === 'PAUSE'}
             >
-              Pause
+              {pendingAction === 'PAUSE' ? 'Pausing…' : 'Pause'}
             </button>
             <button
               type="button"
-              className="live-mode-control-button"
-              onClick={() => sendLineCommand('STOP')}
-              disabled={!stopEnabled || isSending}
+              className={stopButtonClass}
+              onClick={() => handleAction('STOP')}
+              disabled={!canStop || pendingAction === 'STOP'}
             >
-              Stop
+              {pendingAction === 'STOP' ? 'Stopping…' : 'Stop'}
             </button>
             <button
               type="button"
-              className="live-mode-control-button"
-              onClick={() => sendLineCommand('RESET_FAULT')}
-              disabled={!resetEnabled || isSending}
+              className={resetButtonClass}
+              onClick={() => handleAction('RESET_FAULT')}
+              disabled={!canResetFault || pendingAction === 'RESET_FAULT'}
             >
-              Reset fault
+              {pendingAction === 'RESET_FAULT' ? 'Resetting…' : 'Reset fault'}
             </button>
           </div>
-          <p className="live-mode-controls-helper">{lineStateLabel}</p>
+          <p className="live-mode-controls-helper">{lineStateMessage}</p>
           {eStop && (
             <p className="live-mode-controls-warning">
               Emergency stop is active on the line. Release it on the panel and reset the PLC
@@ -577,6 +613,16 @@ function RuntimeStatusPage() {
             <p className="dev-card-eyebrow">Runtime health</p>
             <h3>Links &amp; components</h3>
           </div>
+          {isLinePaused && (
+            <span className="live-mode-section-badge">
+              Line paused – links are idle
+            </span>
+          )}
+          {!isLinePaused && isLineStopped && (
+            <span className="live-mode-section-badge">
+              Line stopped – links are idle
+            </span>
+          )}
         </header>
         <div className="live-mode-signals-grid">
           {signalCards.map((card) => (

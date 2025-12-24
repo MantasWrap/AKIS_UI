@@ -124,6 +124,58 @@
   cursor: not-allowed;
 }
 
+.live-mode-control-button.is-success {
+  border-color: rgba(22, 163, 74, 0.4);
+  color: #15803d;
+}
+
+.live-mode-control-button.is-success.is-active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.live-mode-control-button.is-success.is-outline:hover:not(:disabled) {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.6);
+}
+
+.live-mode-control-button.is-warning {
+  border-color: rgba(217, 119, 6, 0.45);
+  color: #b45309;
+}
+
+.live-mode-control-button.is-warning.is-active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #1f2937;
+}
+
+.live-mode-control-button.is-warning.is-outline:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+.live-mode-control-button.is-danger {
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #b91c1c;
+}
+
+.live-mode-control-button.is-danger.is-outline:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.7);
+}
+
+.live-mode-control-button.is-neutral {
+  border-color: rgba(71, 85, 105, 0.45);
+  color: #475569;
+}
+
+.live-mode-control-button.is-neutral:hover:not(:disabled) {
+  background: rgba(71, 85, 105, 0.08);
+  border-color: rgba(71, 85, 105, 0.65);
+}
+
 .live-mode-controls-helper {
   margin: 0;
   font-size: 0.9rem;
@@ -154,6 +206,17 @@
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 0.75rem;
+}
+
+.live-mode-section-badge {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.5);
 }
 
 .live-mode-section-sub {
