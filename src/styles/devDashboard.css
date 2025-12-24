@@ -44,6 +44,12 @@
   color: var(--dev-text-primary);
 }
 
+.system-overview-helper {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--dev-text-soft);
+}
+
 .system-overview-meta {
   margin: 0;
   font-size: 0.88rem;

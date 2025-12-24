@@ -278,6 +278,7 @@ function RuntimeStatusPage() {
   const transportDown = Boolean(fetchError) || !runtimeStatus;
   const runtimeOffline = Boolean(fetchError);
   const hardwareMode = runtimeStatus?.hardware_mode === 'REAL' ? 'REAL' : 'FAKE';
+  const isPhase0Fake = Boolean(runtimeStatus) && hardwareMode === 'FAKE';
 
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
@@ -295,14 +296,38 @@ function RuntimeStatusPage() {
       { id: 'plc', label: 'PLC / sorter connection', node: runtimeStatus?.plc },
     ];
 
-    return components.map((component) =>
-      buildComponentCard({
+    return components.map((component) => {
+      const card = buildComponentCard({
         ...component,
         transportDown,
         runtimeOffline,
-      }),
-    );
-  }, [runtimeStatus, transportDown, runtimeOffline]);
+      });
+
+      if (!isPhase0Fake) return card;
+
+      if (card.id === 'jetsonLink' && card.status === 'ok') {
+        return {
+          ...card,
+          helper: `${card.helper} Simulated AI runner (no real camera). Good for testing and training.`,
+        };
+      }
+
+      if (card.id === 'plc') {
+        if (card.status === 'ok') {
+          return {
+            ...card,
+            helper: `${card.helper} Fake PLC – picks are simulated in software. Later this will be connected to a real PLC.`,
+          };
+        }
+        return {
+          ...card,
+          helper: `${card.helper} Simulator is not producing PLC data. Check Jetson / runtime simulator.`,
+        };
+      }
+
+      return card;
+    });
+  }, [runtimeStatus, transportDown, runtimeOffline, isPhase0Fake]);
 
   const lineStatus = useMemo(() => {
     if (!runtimeStatus || transportDown) {
@@ -403,6 +428,12 @@ function RuntimeStatusPage() {
                 : 'Training mode · Fake hardware (Phase 0)'}
             </span>
           </div>
+          {isPhase0Fake && (
+            <p className="live-mode-hero-hint">
+              This is a fully simulated line. PLC and motors are fake – we use this mode for
+              development and operator training.
+            </p>
+          )}
           <p className="dev-card-subtitle">
             Jetson runtime, blowers and conveyor view for Phase 0 training with Fake hardware.
           </p>
@@ -459,6 +490,12 @@ function RuntimeStatusPage() {
             <h3>PLC &amp; conveyor</h3>
           </div>
         </header>
+        {isPhase0Fake && (
+          <p className="plc-lanes-helper">
+            These numbers come from the simulator. In production they will be driven by real PLC
+            feedback.
+          </p>
+        )}
         <div className="plc-lanes-grid">
           {plcMetricsError && (
             <p className="plc-lanes-helper is-error">{plcMetricsError}</p>

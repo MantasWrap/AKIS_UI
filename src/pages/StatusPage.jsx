@@ -119,11 +119,22 @@ export default function StatusPage() {
     runtimeMetrics?.hardware_mode === 'REAL'
       ? 'Production mode · Real PLC'
       : DEFAULT_PHASE_LABEL;
+  const isPhase0Fake = Boolean(runtimeMetrics) && runtimeMetrics?.hardware_mode !== 'REAL';
   const itemsSeen = runtimeCounters?.items_seen;
   const itemsSeenLabel =
     typeof itemsSeen === 'number' && Number.isFinite(itemsSeen) ? itemsSeen : '—';
   const picksLabel =
     typeof picksTotal === 'number' && Number.isFinite(picksTotal) ? picksTotal : '—';
+  const phase0StatusHelper = useMemo(() => {
+    if (!isPhase0Fake) return null;
+    if (lineStatus.includes('needs attention')) {
+      return 'Training mode with fake hardware. Check Live Mode for simulated issues.';
+    }
+    if (lineStatus.includes('not receiving data')) {
+      return 'Training mode with fake hardware. In production this will reflect real conveyor data.';
+    }
+    return 'Training mode with fake hardware – no real PLC or motors yet.';
+  }, [isPhase0Fake, lineStatus]);
   const attentionHint = needsAttention
     ? 'System needs attention – open Live Mode for details.'
     : 'Open Live Mode to see live stream and components.';
@@ -156,6 +167,9 @@ export default function StatusPage() {
           </div>
         </header>
         <p className="system-overview-status">{lineStatus}</p>
+        {phase0StatusHelper && (
+          <p className="system-overview-helper">{phase0StatusHelper}</p>
+        )}
         <p className="system-overview-meta">{phaseLabel}</p>
         <p className="system-overview-meta">
           Items in last 5 minutes: {itemsSeenLabel} · Picks in last 5 minutes: {picksLabel}
