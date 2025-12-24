@@ -551,3 +551,39 @@ export async function getRecentRuntimeItems(params = {}) {
     return { ok: false, error: err.message || 'Network error' };
   }
 }
+
+export async function postRuntimeLineCommand(params = {}) {
+  try {
+    const { siteId, lineId, action } = params || {};
+    const res = await fetch(`${API_BASE}/api/runtime/line/command`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getDebugHeaders(),
+      },
+      body: JSON.stringify({
+        site_id: siteId || null,
+        line_id: lineId || null,
+        action,
+      }),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message =
+        (data && data.error) ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${res.status}`;
+      return {
+        ok: false,
+        error: message || 'Request failed',
+        status: res.status,
+        data,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}

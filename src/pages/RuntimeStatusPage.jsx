@@ -4,8 +4,32 @@ import {
   getPlcLaneMetrics,
   getRecentRuntimeItems,
   getRuntimeStatus,
+  postRuntimeLineCommand,
 } from '../api/client.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
+
+function useLineCommand({ siteId, lineId }) {
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState('');
+
+  const send = async (action) => {
+    if (!action || isSending) return;
+    setIsSending(true);
+    setError('');
+    try {
+      const result = await postRuntimeLineCommand({ siteId, lineId, action });
+      if (result?.ok === false) {
+        setError(result.error || 'Failed to send line command.');
+      }
+    } catch (err) {
+      setError(err?.message || 'Failed to send line command.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return { send, isSending, error };
+}
 
 function formatAgeSeconds(ageS) {
   if (typeof ageS !== 'number' || !Number.isFinite(ageS) || ageS < 0) return '—';
@@ -281,6 +305,16 @@ function RuntimeStatusPage() {
   const runtimeOffline = Boolean(fetchError);
   const hardwareMode = runtimeStatus?.hardware_mode === 'REAL' ? 'REAL' : 'FAKE';
   const isPhase0Fake = Boolean(runtimeStatus) && hardwareMode === 'FAKE';
+  const lineState = runtimeStatus?.line_state || 'UNKNOWN';
+  const flags = runtimeStatus?.flags || {};
+  const eStop = Boolean(flags.e_stop_active) || lineState === 'SAFE_STOP';
+  const safetyOk = flags.safety_ok !== false;
+  const runperm = flags.line_runperm !== false;
+  const hasLineData = Boolean(runtimeStatus);
+  const { send: sendLineCommand, isSending, error: lineCommandError } = useLineCommand({
+    siteId: runtimeStatus?.env?.site_id || null,
+    lineId: runtimeStatus?.env?.line_id || null,
+  });
 
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
@@ -349,6 +383,26 @@ function RuntimeStatusPage() {
 
     return '✅ Line is running normally.';
   }, [runtimeStatus, runtimeFlag, transportDown, signalCards]);
+
+  const lineStateLabel = useMemo(() => {
+    if (!hasLineData) return 'Line status is unavailable.';
+    if (eStop || lineState === 'SAFE_STOP') return 'Emergency stop is active.';
+    if (lineState === 'RUNNING') return 'Line is running.';
+    if (lineState === 'PAUSED') return 'Line is paused.';
+    if (lineState === 'FAULT_STOP') return 'Line is faulted.';
+    if (lineState === 'IDLE') return 'Line is idle.';
+    return `Line state: ${lineState}`;
+  }, [hasLineData, eStop, lineState]);
+
+  const startEnabled =
+    hasLineData &&
+    !eStop &&
+    safetyOk &&
+    runperm &&
+    (lineState === 'IDLE' || lineState === 'PAUSED' || lineState === 'FAULT_STOP');
+  const pauseEnabled = hasLineData && !eStop && lineState === 'RUNNING';
+  const stopEnabled = hasLineData && !eStop && lineState === 'RUNNING';
+  const resetEnabled = hasLineData && !eStop && lineState === 'FAULT_STOP';
 
   const streamStatus = useMemo(() => {
     if (!runtimeStatus) {
@@ -452,6 +506,67 @@ function RuntimeStatusPage() {
           <p className="live-mode-stream-helper">{lineStatus}</p>
           {dbStatusHelper && (
             <p className="live-mode-stream-warning">{dbStatusHelper}</p>
+          )}
+        </div>
+      </section>
+
+      <section className="dev-card live-mode-controls-card">
+        <header className="live-mode-section-header">
+          <div>
+            <p className="dev-card-eyebrow">Line controls</p>
+            <h3>Start / Pause / Stop</h3>
+          </div>
+        </header>
+        <div className="live-mode-controls-body">
+          <div className="live-mode-controls-buttons">
+            <button
+              type="button"
+              className="live-mode-control-button"
+              onClick={() => sendLineCommand('START')}
+              disabled={!startEnabled || isSending}
+            >
+              Start
+            </button>
+            <button
+              type="button"
+              className="live-mode-control-button"
+              onClick={() => sendLineCommand('PAUSE')}
+              disabled={!pauseEnabled || isSending}
+            >
+              Pause
+            </button>
+            <button
+              type="button"
+              className="live-mode-control-button"
+              onClick={() => sendLineCommand('STOP')}
+              disabled={!stopEnabled || isSending}
+            >
+              Stop
+            </button>
+            <button
+              type="button"
+              className="live-mode-control-button"
+              onClick={() => sendLineCommand('RESET_FAULT')}
+              disabled={!resetEnabled || isSending}
+            >
+              Reset fault
+            </button>
+          </div>
+          <p className="live-mode-controls-helper">{lineStateLabel}</p>
+          {eStop && (
+            <p className="live-mode-controls-warning">
+              Emergency stop is active on the line. Release it on the panel and reset the PLC
+              before starting again.
+            </p>
+          )}
+          {lineCommandError && (
+            <p className="live-mode-controls-error">{lineCommandError}</p>
+          )}
+          {isPhase0Fake && (
+            <p className="live-mode-controls-meta">
+              In this training setup, these controls send commands to the simulator. In production,
+              they will be wired to the real PLC.
+            </p>
           )}
         </div>
       </section>
