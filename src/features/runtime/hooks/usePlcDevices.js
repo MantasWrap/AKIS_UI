@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../../api/client.js';
 
 function getDebugHeaders() {
@@ -35,6 +35,11 @@ export function usePlcDevices(siteId, lineId) {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +69,7 @@ export function usePlcDevices(siteId, lineId) {
       cancelled = true;
       controller.abort();
     };
-  }, [siteId, lineId]);
+  }, [siteId, lineId, refreshKey]);
 
-  return { data, isLoading, isError };
+  return { data, isLoading, isError, refetch };
 }
