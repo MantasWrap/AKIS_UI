@@ -9,6 +9,9 @@ import {
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 import { DebugPlcSimControls } from '../features/live/components/DebugPlcSimControls.jsx';
 import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
+import { RuntimeAlertsCard } from '../features/live/components/RuntimeAlertsCard.jsx';
+import { useRuntimeAlerts } from '../features/runtime/hooks/useRuntimeAlerts.js';
+import { usePlcDevices } from '../features/runtime/hooks/usePlcDevices.js';
 
 function useLineCommand({ siteId, lineId }) {
   const [isSending, setIsSending] = useState(false);
@@ -351,6 +354,11 @@ function RuntimeStatusPage() {
     siteId: runtimeStatus?.env?.site_id || null,
     lineId: runtimeStatus?.env?.line_id || null,
   });
+  const siteId = runtimeStatus?.env?.site_id || null;
+  const lineId = runtimeStatus?.env?.line_id || null;
+  const plcDevicesResult = usePlcDevices(siteId, lineId);
+  const plcDevices = plcDevicesResult?.data?.devices || [];
+  const runtimeAlerts = useRuntimeAlerts({ siteId, lineId }, runtimeStatus, plcDevices);
   const canShowDebugControls =
     process.env.NODE_ENV !== 'production' &&
     isPhase0Fake &&
@@ -649,6 +657,13 @@ function RuntimeStatusPage() {
         </section>
       )}
 
+      <RuntimeAlertsCard
+        health={runtimeAlerts.health}
+        events={runtimeAlerts.events}
+        isLoading={runtimeAlerts.isLoading}
+        isError={runtimeAlerts.isError}
+      />
+
       <section className="dev-card live-mode-controls-card">
         <header className="live-mode-section-header">
           <div>
@@ -891,10 +906,7 @@ function RuntimeStatusPage() {
         </div>
       </section>
 
-      <PlcDeviceListPanel
-        siteId={runtimeStatus?.env?.site_id || null}
-        lineId={runtimeStatus?.env?.line_id || null}
-      />
+      <PlcDeviceListPanel siteId={siteId} lineId={lineId} />
 
       {showAdvancedRuntimeItems && (
         <section className="dev-card live-mode-runtime-items-card">

@@ -4,6 +4,9 @@ import { getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
+import { RuntimeAlertsCard } from '../features/live/components/RuntimeAlertsCard.jsx';
+import { useRuntimeAlerts } from '../features/runtime/hooks/useRuntimeAlerts.js';
+import { usePlcDevices } from '../features/runtime/hooks/usePlcDevices.js';
 
 const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
 
@@ -207,6 +210,12 @@ export default function StatusPage() {
     }
     return null;
   }, [lineState, runtimeStatusError]);
+
+  const siteId = runtimeStatus?.env?.site_id || null;
+  const lineId = runtimeStatus?.env?.line_id || null;
+  const plcDevicesResult = usePlcDevices(siteId, lineId);
+  const plcDevices = plcDevicesResult?.data?.devices || [];
+  const runtimeAlerts = useRuntimeAlerts({ siteId, lineId }, runtimeStatus, plcDevices);
   const itemsSeen = runtimeCounters?.items_seen;
   const itemsSeenLabel =
     typeof itemsSeen === 'number' && Number.isFinite(itemsSeen) ? itemsSeen : '—';
@@ -314,6 +323,12 @@ export default function StatusPage() {
       )}
 
       <section className="dev-dashboard-grid">
+        <RuntimeAlertsCard
+          health={runtimeAlerts.health}
+          events={runtimeAlerts.events}
+          isLoading={runtimeAlerts.isLoading}
+          isError={runtimeAlerts.isError}
+        />
         <section className="dev-card dev-runtime-link-card">
           <header className="dev-dashboard-card-header">
             <div>
@@ -387,10 +402,7 @@ export default function StatusPage() {
             )}
           </div>
         </section>
-        <PlcDeviceListPanel
-          siteId={runtimeStatus?.env?.site_id || null}
-          lineId={runtimeStatus?.env?.line_id || null}
-        />
+        <PlcDeviceListPanel siteId={siteId} lineId={lineId} />
       </section>
     </div>
   );
