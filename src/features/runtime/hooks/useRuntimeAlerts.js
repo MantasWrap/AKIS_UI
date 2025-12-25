@@ -34,6 +34,28 @@ async function fetchRecentEvents(siteId, lineId, signal) {
   return { events: body.events || body.items || [] };
 }
 
+async function fetchPlcHealth(siteId, lineId, signal) {
+  const params = new URLSearchParams();
+  if (siteId) params.set('site_id', siteId);
+  if (lineId) params.set('line_id', lineId);
+  const url = `${API_BASE}/api/runtime/plc/health?${params.toString()}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      ...getDebugHeaders(),
+    },
+    signal,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to load PLC health: ${res.status}`);
+  }
+
+  const body = await res.json();
+  return body && body.health ? body.health : null;
+}
+
 export function deriveRuntimeHealth({
   lineState,
   eStopActive,
@@ -57,7 +79,9 @@ export function useRuntimeAlerts(input, status, plcDevices) {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [plcHealth, setPlcHealth] = useState(null);
 
+  // Poll recent SAFETY / FAULT / PLC_DEVICE events.
   useEffect(() => {
     if (!siteId || !lineId) {
       setEvents([]);
@@ -98,6 +122,37 @@ export function useRuntimeAlerts(input, status, plcDevices) {
     };
   }, [siteId, lineId]);
 
+  // Poll PLC connection health in the same cadence.
+  useEffect(() => {
+    if (!siteId || !lineId) {
+      setPlcHealth(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadPlcHealth() {
+      try {
+        const health = await fetchPlcHealth(siteId, lineId, controller.signal);
+        if (cancelled) return;
+        setPlcHealth(health);
+      } catch (error) {
+        if (cancelled || error?.name === 'AbortError') return;
+        // We keep plcHealth as-is on error; runtime events still work.
+      }
+    }
+
+    loadPlcHealth();
+    const timerId = setInterval(loadPlcHealth, RUNTIME_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearInterval(timerId);
+      controller.abort();
+    };
+  }, [siteId, lineId]);
+
   const health = useMemo(() => {
     const lineState = status?.line_state ?? null;
     const flags = status?.flags || {};
@@ -115,9 +170,36 @@ export function useRuntimeAlerts(input, status, plcDevices) {
     });
   }, [status, plcDevices]);
 
+  // Tiny "PLC connection health" surface: a synthetic alert when PLC config isn't clean.
+  const eventsWithPlc = useMemo(() => {
+    if (!plcHealth || !plcHealth.status || plcHealth.status === 'OK') {
+      return events;
+    }
+
+    const baseEvents = Array.isArray(events) ? events : [];
+
+    const plcStatus = String(plcHealth.status || '').toLowerCase();
+    const isSimulation =
+      plcHealth.is_simulation === true ||
+      String(plcHealth.connector || '').toUpperCase() === 'FAKE';
+
+    const summary = isSimulation
+      ? `PLC connection in simulation mode (${plcStatus || 'ok'})`
+      : `PLC connection status: ${plcStatus || 'unknown'}`;
+
+    const synthetic = {
+      id: 'plc-connection-health',
+      kind: 'PLC_CONN',
+      summary,
+      created_at: new Date().toISOString(),
+    };
+
+    return [synthetic, ...baseEvents];
+  }, [events, plcHealth]);
+
   return {
     health,
-    events,
+    events: eventsWithPlc,
     isLoading,
     isError,
   };
