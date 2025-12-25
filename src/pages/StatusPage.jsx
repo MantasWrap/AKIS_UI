@@ -3,6 +3,7 @@ import '../styles/devDashboard.css';
 import { getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
+import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
 
 const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
 
@@ -386,6 +387,10 @@ export default function StatusPage() {
             )}
           </div>
         </section>
+        <PlcDeviceListPanel
+          siteId={runtimeStatus?.env?.site_id || null}
+          lineId={runtimeStatus?.env?.line_id || null}
+        />
       </section>
     </div>
   );

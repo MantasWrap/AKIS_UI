@@ -497,6 +497,102 @@
   background: rgba(251, 191, 36, 0.15);
 }
 
+.live-mode-device-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.live-mode-device-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.live-mode-device-count {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-danger);
+}
+
+.live-mode-device-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.live-mode-device-item {
+  border: 1px solid var(--dev-border-subtle);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: var(--dev-bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.live-mode-device-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.live-mode-device-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.live-mode-device-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-id {
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-io {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.live-mode-device-io-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.live-mode-device-io-key {
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-io-value {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  color: var(--dev-text-primary);
+}
+
 .live-mode-errors-list {
   margin: 0;
   padding-left: 1.1rem;

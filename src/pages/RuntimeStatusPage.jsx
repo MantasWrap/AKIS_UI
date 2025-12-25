@@ -8,6 +8,7 @@ import {
 } from '../api/client.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 import { DebugPlcSimControls } from '../features/live/components/DebugPlcSimControls.jsx';
+import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
 
 function useLineCommand({ siteId, lineId }) {
   const [isSending, setIsSending] = useState(false);
@@ -20,10 +21,27 @@ function useLineCommand({ siteId, lineId }) {
     try {
       const result = await postRuntimeLineCommand({ siteId, lineId, action });
       if (result?.ok === false) {
-        setError(result.error || 'Failed to send line command.');
+        const errorCode = result?.data?.error || result?.error || '';
+        if (action === 'RESET_FAULT') {
+          if (errorCode === 'estop_active') {
+            setError('Cannot reset fault while emergency stop is active. Fix E-stop first.');
+          } else if (errorCode === 'no_fault_to_reset') {
+            setError('There is no active PLC fault to reset.');
+          } else if (errorCode) {
+            setError(`Could not reset fault: ${errorCode}`);
+          } else {
+            setError('Failed to reset PLC fault.');
+          }
+        } else {
+          setError(result.error || 'Failed to send line command.');
+        }
       }
     } catch (err) {
-      setError(err?.message || 'Failed to send line command.');
+      if (action === 'RESET_FAULT') {
+        setError(err?.message || 'Failed to reset PLC fault.');
+      } else {
+        setError(err?.message || 'Failed to send line command.');
+      }
     } finally {
       setIsSending(false);
     }
@@ -319,7 +337,11 @@ function RuntimeStatusPage() {
       plcMetricsSnapshot?.e_stop_active ??
       flags.e_stop_active,
   );
-  const faultActive = Boolean(plcStatus?.fault_active ?? plcMetricsSnapshot?.fault_active);
+  const faultActive = Boolean(
+    plcStatus?.fault_active ??
+      plcMetricsSnapshot?.fault_active ??
+      flags.fault_active,
+  );
   const faultCode = plcStatus?.fault_code ?? plcMetricsSnapshot?.fault_code ?? null;
   const hasLineData = Boolean(runtimeStatus);
   const isLinePaused = lineState === 'PAUSED';
@@ -415,10 +437,13 @@ function RuntimeStatusPage() {
   const canStart =
     hasLineData &&
     !eStopActive &&
-    (lineState === 'IDLE' || lineState === 'PAUSED' || lineState === 'FAULT_STOP');
+    (lineState === 'IDLE' ||
+      lineState === 'PAUSED' ||
+      (lineState === 'FAULT_STOP' && !faultActive));
   const canPause = hasLineData && !eStopActive && lineState === 'RUNNING';
   const canStop = hasLineData && !eStopActive && lineState === 'RUNNING';
-  const canResetFault = hasLineData && !eStopActive && lineState === 'FAULT_STOP';
+  const canResetFault =
+    hasLineData && !eStopActive && lineState === 'FAULT_STOP' && faultActive;
 
   const handleAction = async (action) => {
     if (!action || lineCommandLoading) return;
@@ -443,7 +468,17 @@ function RuntimeStatusPage() {
     }
     if (lineState === 'IDLE') return 'Line is idle.';
     return `Line state: ${lineState}`;
-  }, [hasLineData, lineState]);
+  }, [hasLineData, lineState, eStopActive]);
+
+  const lineControlWarning = useMemo(() => {
+    if (eStopActive || lineState === 'SAFE_STOP') {
+      return 'Emergency stop is active. Fix the physical E-stop and reset PLC. Line controls are disabled.';
+    }
+    if (lineState === 'FAULT_STOP') {
+      return 'PLC reports a fault. Investigate the line, then reset fault and start when it is safe.';
+    }
+    return null;
+  }, [eStopActive, lineState]);
 
   const startButtonClass =
     lineState === 'RUNNING'
@@ -481,7 +516,8 @@ function RuntimeStatusPage() {
       case 'RESET_FAULT':
         return {
           title: 'Reset line fault?',
-          description: 'Only do this after checking the physical line for issues.',
+          description:
+            'Only reset faults after checking the physical line for issues. This does not override any active emergency stop.',
           confirmLabel: 'Reset fault',
         };
       default:
@@ -667,27 +703,27 @@ function RuntimeStatusPage() {
                 'Stop'
               )}
             </button>
-            <button
-              type="button"
-              className={resetButtonClass}
-              onClick={() => setConfirmAction('RESET_FAULT')}
-              disabled={!canResetFault || lineCommandLoading !== null}
-            >
-              {lineCommandLoading === 'RESET_FAULT' ? (
-                <span className="live-mode-control-inline">
-                  <span className="live-mode-control-spinner" />
-                  Resetting…
-                </span>
-              ) : (
-                'Reset fault'
-              )}
-            </button>
+            {faultActive && !eStopActive && (
+              <button
+                type="button"
+                className={resetButtonClass}
+                onClick={() => setConfirmAction('RESET_FAULT')}
+                disabled={!canResetFault || lineCommandLoading !== null}
+              >
+                {lineCommandLoading === 'RESET_FAULT' ? (
+                  <span className="live-mode-control-inline">
+                    <span className="live-mode-control-spinner" />
+                    Resetting…
+                  </span>
+                ) : (
+                  'Reset fault'
+                )}
+              </button>
+            )}
           </div>
           <p className="live-mode-controls-helper">{lineStateMessage}</p>
-          {eStopActive && (
-            <p className="live-mode-controls-warning">
-              Emergency stop is active. Fix the physical E-stop and reset PLC.
-            </p>
+          {lineControlWarning && (
+            <p className="live-mode-controls-warning">{lineControlWarning}</p>
           )}
           {lineCommandError && (
             <p className="live-mode-controls-error">{lineCommandError}</p>
@@ -854,6 +890,11 @@ function RuntimeStatusPage() {
           )}
         </div>
       </section>
+
+      <PlcDeviceListPanel
+        siteId={runtimeStatus?.env?.site_id || null}
+        lineId={runtimeStatus?.env?.line_id || null}
+      />
 
       {showAdvancedRuntimeItems && (
         <section className="dev-card live-mode-runtime-items-card">
