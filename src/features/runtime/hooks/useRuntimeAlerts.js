@@ -170,22 +170,31 @@ export function useRuntimeAlerts(input, status, plcDevices) {
     });
   }, [status, plcDevices]);
 
-  // Tiny "PLC connection health" surface: a synthetic alert when PLC config isn't clean.
+  // Tiny "PLC connection health" surface: always show a synthetic alert row
+  // when we have plcHealth data.
   const eventsWithPlc = useMemo(() => {
-    if (!plcHealth || !plcHealth.status || plcHealth.status === 'OK') {
-      return events;
+    const baseEvents = Array.isArray(events) ? events : [];
+    if (!plcHealth) {
+      return baseEvents;
     }
 
-    const baseEvents = Array.isArray(events) ? events : [];
+    const statusRaw = plcHealth.status || '';
+    const plcStatus = String(statusRaw).toUpperCase();
 
-    const plcStatus = String(plcHealth.status || '').toLowerCase();
+    const connector = String(plcHealth.connector || '').toUpperCase();
     const isSimulation =
       plcHealth.is_simulation === true ||
-      String(plcHealth.connector || '').toUpperCase() === 'FAKE';
+      connector === 'FAKE' ||
+      plcStatus === 'SIMULATION';
 
-    const summary = isSimulation
-      ? `PLC connection in simulation mode (${plcStatus || 'ok'})`
-      : `PLC connection status: ${plcStatus || 'unknown'}`;
+    let summary;
+    if (isSimulation) {
+      summary = 'PLC connection in simulation mode';
+    } else if (plcStatus === 'REAL') {
+      summary = 'PLC connection in real-line mode';
+    } else {
+      summary = `PLC connection status: ${plcStatus.toLowerCase() || 'unknown'}`;
+    }
 
     const synthetic = {
       id: 'plc-connection-health',
