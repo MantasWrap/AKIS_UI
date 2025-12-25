@@ -182,6 +182,10 @@
   gap: 1.25rem;
 }
 
+.dev-dashboard-grid .dev-card + .dev-card {
+  margin-top: 0;
+}
+
 .live-mode-device-panel {
   display: flex;
   flex-direction: column;

@@ -49,6 +49,10 @@
   gap: 1.25rem;
 }
 
+.items-layout .dev-card + .dev-card {
+  margin-top: 0;
+}
+
 .items-filter-panel {
   border: 1px solid var(--dev-border-subtle);
   border-radius: 18px;
