@@ -186,6 +186,7 @@ function RuntimeStatusPage() {
   const showAdvancedRuntimeItems = false;
   const [lineCommandLoading, setLineCommandLoading] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [eStopOverride, setEStopOverride] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,7 +314,8 @@ function RuntimeStatusPage() {
   const plcStatus = runtimeStatus?.plc || {};
   const plcMetricsSnapshot = runtimeStatus?.plc_metrics || {};
   const eStopActive = Boolean(
-    plcStatus?.e_stop_active ??
+    eStopOverride ??
+      plcStatus?.e_stop_active ??
       plcMetricsSnapshot?.e_stop_active ??
       flags.e_stop_active,
   );
@@ -332,6 +334,7 @@ function RuntimeStatusPage() {
     isPhase0Fake &&
     runtimeStatus?.env?.site_id &&
     runtimeStatus?.env?.line_id;
+  const canShowLocalEStopToggle = process.env.NODE_ENV !== 'production';
 
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
@@ -745,13 +748,40 @@ function RuntimeStatusPage() {
             </div>
           ))}
         </div>
-        {canShowDebugControls && (
+        {(canShowLocalEStopToggle || canShowDebugControls) && (
           <div className="live-mode-debug-controls">
             <p className="live-mode-debug-label">Simulation controls (dev only)</p>
-            <DebugPlcSimControls
-              siteId={runtimeStatus.env.site_id}
-              lineId={runtimeStatus.env.line_id}
-            />
+            {canShowLocalEStopToggle && (
+              <div className="live-mode-debug-buttons">
+                <button
+                  type="button"
+                  className="live-mode-debug-button is-estop"
+                  onClick={() => setEStopOverride(true)}
+                >
+                  Force E-stop ON (local)
+                </button>
+                <button
+                  type="button"
+                  className="live-mode-debug-button is-estop"
+                  onClick={() => setEStopOverride(false)}
+                >
+                  Force E-stop OFF (local)
+                </button>
+                <button
+                  type="button"
+                  className="live-mode-debug-button"
+                  onClick={() => setEStopOverride(null)}
+                >
+                  Clear local override
+                </button>
+              </div>
+            )}
+            {canShowDebugControls && (
+              <DebugPlcSimControls
+                siteId={runtimeStatus.env.site_id}
+                lineId={runtimeStatus.env.line_id}
+              />
+            )}
           </div>
         )}
       </section>
