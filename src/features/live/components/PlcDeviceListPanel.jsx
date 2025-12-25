@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { API_BASE } from '../../../api/client.js';
 import { usePlcDevices } from '../../runtime/hooks/usePlcDevices.js';
+import { usePlcDeviceCommand } from '../../runtime/hooks/usePlcDeviceCommand.js';
 
 function getDebugHeaders() {
   const token =
@@ -32,6 +33,11 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
   const devices = Array.isArray(data?.devices) ? data.devices : [];
   const [busyKey, setBusyKey] = useState(null);
   const isDevMode = process.env.NODE_ENV !== 'production';
+  const deviceCommand = usePlcDeviceCommand(siteId, lineId, {
+    onSuccess: refetch,
+  });
+  const deviceCommandError = deviceCommand.error;
+  const canShowCommands = isDevMode && Boolean(siteId && lineId);
 
   const sendDeviceSim = async (deviceId, payload, actionKey) => {
     if (!deviceId || busyKey) return;
@@ -55,6 +61,11 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
       setBusyKey(null);
     }
   };
+
+  const commandBusyKey = useMemo(
+    () => (deviceCommand.isSending ? 'command' : null),
+    [deviceCommand.isSending],
+  );
 
   return (
     <section className="dev-card live-mode-device-panel">
@@ -104,8 +115,46 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                   ))}
                 </div>
               )}
+              {canShowCommands && device.device_type === 'CONVEYOR_SECTION' && (
+                <div className="live-mode-device-command">
+                  <p className="live-mode-device-command-label">Device controls</p>
+                  <div className="live-mode-device-actions">
+                    <button
+                      type="button"
+                      className="live-mode-device-action is-running"
+                      disabled={commandBusyKey !== null}
+                      onClick={() =>
+                        deviceCommand.send({
+                          deviceId: device.device_id,
+                          command: 'START_SECTION',
+                        })
+                      }
+                    >
+                      {commandBusyKey ? 'Sending…' : 'Start section'}
+                    </button>
+                    <button
+                      type="button"
+                      className="live-mode-device-action is-stopped"
+                      disabled={commandBusyKey !== null}
+                      onClick={() =>
+                        deviceCommand.send({
+                          deviceId: device.device_id,
+                          command: 'STOP_SECTION',
+                        })
+                      }
+                    >
+                      {commandBusyKey ? 'Sending…' : 'Stop section'}
+                    </button>
+                  </div>
+                  {deviceCommandError && (
+                    <p className="live-mode-device-command-error">{deviceCommandError}</p>
+                  )}
+                </div>
+              )}
               {canSimulate && (
-                <div className="live-mode-device-actions">
+                <div className="live-mode-device-sim">
+                  <p className="live-mode-device-command-label">Simulation controls</p>
+                  <div className="live-mode-device-actions">
                   <button
                     type="button"
                     className="live-mode-device-action is-running"
@@ -154,6 +203,7 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                       ? 'Setting fault…'
                       : 'Sim: Set fault'}
                   </button>
+                  </div>
                 </div>
               )}
             </div>

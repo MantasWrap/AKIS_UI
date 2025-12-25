@@ -634,6 +634,34 @@
   gap: 0.35rem;
 }
 
+.live-mode-device-command {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.live-mode-device-sim {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.live-mode-device-command-label {
+  margin: 0;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-device-command-error {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--dev-danger);
+}
+
 .live-mode-device-action {
   border-radius: 999px;
   padding: 0.2rem 0.6rem;
