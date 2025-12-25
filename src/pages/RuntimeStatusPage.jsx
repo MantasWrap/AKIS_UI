@@ -7,6 +7,7 @@ import {
   postRuntimeLineCommand,
 } from '../api/client.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
+import { DebugPlcSimControls } from '../features/live/components/DebugPlcSimControls.jsx';
 
 function useLineCommand({ siteId, lineId }) {
   const [isSending, setIsSending] = useState(false);
@@ -309,7 +310,15 @@ function RuntimeStatusPage() {
   const isPhase0Fake = Boolean(runtimeStatus) && hardwareMode === 'FAKE';
   const lineState = runtimeStatus?.line_state || 'UNKNOWN';
   const flags = runtimeStatus?.flags || {};
-  const eStop = Boolean(flags.e_stop_active) || lineState === 'SAFE_STOP';
+  const plcStatus = runtimeStatus?.plc || {};
+  const plcMetricsSnapshot = runtimeStatus?.plc_metrics || {};
+  const eStopActive = Boolean(
+    plcStatus?.e_stop_active ??
+      plcMetricsSnapshot?.e_stop_active ??
+      flags.e_stop_active,
+  );
+  const faultActive = Boolean(plcStatus?.fault_active ?? plcMetricsSnapshot?.fault_active);
+  const faultCode = plcStatus?.fault_code ?? plcMetricsSnapshot?.fault_code ?? null;
   const hasLineData = Boolean(runtimeStatus);
   const isLinePaused = lineState === 'PAUSED';
   const isLineStopped =
@@ -318,6 +327,11 @@ function RuntimeStatusPage() {
     siteId: runtimeStatus?.env?.site_id || null,
     lineId: runtimeStatus?.env?.line_id || null,
   });
+  const canShowDebugControls =
+    process.env.NODE_ENV !== 'production' &&
+    isPhase0Fake &&
+    runtimeStatus?.env?.site_id &&
+    runtimeStatus?.env?.line_id;
 
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
@@ -397,11 +411,11 @@ function RuntimeStatusPage() {
 
   const canStart =
     hasLineData &&
-    !eStop &&
+    !eStopActive &&
     (lineState === 'IDLE' || lineState === 'PAUSED' || lineState === 'FAULT_STOP');
-  const canPause = hasLineData && !eStop && lineState === 'RUNNING';
-  const canStop = hasLineData && !eStop && lineState === 'RUNNING';
-  const canResetFault = hasLineData && !eStop && lineState === 'FAULT_STOP';
+  const canPause = hasLineData && !eStopActive && lineState === 'RUNNING';
+  const canStop = hasLineData && !eStopActive && lineState === 'RUNNING';
+  const canResetFault = hasLineData && !eStopActive && lineState === 'FAULT_STOP';
 
   const handleAction = async (action) => {
     if (!action || lineCommandLoading) return;
@@ -415,6 +429,7 @@ function RuntimeStatusPage() {
 
   const lineStateMessage = useMemo(() => {
     if (!hasLineData) return 'Line status is unavailable.';
+    if (eStopActive) return 'Emergency stop is active on the line.';
     if (lineState === 'RUNNING') return 'Line is running.';
     if (lineState === 'PAUSED') {
       return 'Line is paused. No new items are being processed.';
@@ -586,6 +601,15 @@ function RuntimeStatusPage() {
         </div>
       </section>
 
+      {eStopActive && (
+        <section className="live-mode-estop-banner">
+          <div className="live-mode-estop-title">Emergency stop is active</div>
+          <div className="live-mode-estop-subtitle">
+            Check the physical line E-stop(s) and reset the PLC before attempting to start the line.
+          </div>
+        </section>
+      )}
+
       <section className="dev-card live-mode-controls-card">
         <header className="live-mode-section-header">
           <div>
@@ -657,10 +681,9 @@ function RuntimeStatusPage() {
             </button>
           </div>
           <p className="live-mode-controls-helper">{lineStateMessage}</p>
-          {eStop && (
+          {eStopActive && (
             <p className="live-mode-controls-warning">
-              Emergency stop is active on the line. Release it on the panel and reset the PLC
-              before starting again.
+              Emergency stop is active. Fix the physical E-stop and reset PLC.
             </p>
           )}
           {lineCommandError && (
@@ -699,7 +722,17 @@ function RuntimeStatusPage() {
               className={`live-mode-component-card live-mode-component-card--${card.status}`}
             >
               <div className="live-mode-component-card-header">
-                <span className="live-mode-component-card-label">{card.label}</span>
+                <div className="live-mode-component-card-label-row">
+                  <span className="live-mode-component-card-label">{card.label}</span>
+                  {card.id === 'plc' && eStopActive && (
+                    <span className="live-mode-plc-badge is-estop">E-stop ACTIVE</span>
+                  )}
+                  {card.id === 'plc' && !eStopActive && faultActive && (
+                    <span className="live-mode-plc-badge is-fault">
+                      PLC fault{faultCode ? ` ${faultCode}` : ''}
+                    </span>
+                  )}
+                </div>
                 <span
                   className={`live-mode-component-card-pill live-mode-component-card-pill--${card.status}`}
                 >
@@ -712,6 +745,15 @@ function RuntimeStatusPage() {
             </div>
           ))}
         </div>
+        {canShowDebugControls && (
+          <div className="live-mode-debug-controls">
+            <p className="live-mode-debug-label">Simulation controls (dev only)</p>
+            <DebugPlcSimControls
+              siteId={runtimeStatus.env.site_id}
+              lineId={runtimeStatus.env.line_id}
+            />
+          </div>
+        )}
       </section>
 
       <section className="dev-card live-mode-lanes-card">

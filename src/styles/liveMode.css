@@ -84,6 +84,27 @@
   color: var(--dev-text-muted);
 }
 
+.live-mode-estop-banner {
+  border-radius: 16px;
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(254, 226, 226, 0.7);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #991b1b;
+}
+
+.live-mode-estop-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.live-mode-estop-subtitle {
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
 .live-mode-controls-card {
   display: flex;
   flex-direction: column;
@@ -344,6 +365,13 @@
   gap: 0.75rem;
 }
 
+.live-mode-component-card-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
 .live-mode-component-card-label {
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -390,6 +418,83 @@
   margin: 0;
   font-size: 0.85rem;
   color: var(--dev-text-soft);
+}
+
+.live-mode-plc-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.live-mode-plc-badge.is-estop {
+  background: rgba(248, 113, 113, 0.2);
+  color: #991b1b;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+}
+
+.live-mode-plc-badge.is-fault {
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.6);
+}
+
+.live-mode-debug-controls {
+  margin-top: 0.75rem;
+  border-top: 1px dashed var(--dev-border-subtle);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.live-mode-debug-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dev-text-muted);
+}
+
+.live-mode-debug-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.live-mode-debug-button {
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--dev-border-subtle);
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.live-mode-debug-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.live-mode-debug-button.is-estop {
+  border-color: rgba(248, 113, 113, 0.6);
+  color: #b91c1c;
+}
+
+.live-mode-debug-button.is-estop:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.live-mode-debug-button.is-fault {
+  border-color: rgba(251, 191, 36, 0.6);
+  color: #92400e;
+}
+
+.live-mode-debug-button.is-fault:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.15);
 }
 
 .live-mode-errors-list {
