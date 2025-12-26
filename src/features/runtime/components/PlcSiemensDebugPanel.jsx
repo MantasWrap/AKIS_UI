@@ -33,7 +33,8 @@ async function fetchSiemensDebug(siteId, lineId) {
  *
  * Dev-only helper showing:
  *  - Current PLC connector type, hardware mode and IO mode.
- *  - SiemensS7Driver health (driverStatus, readOnlyEnabled, reasons).
+ *  - SiemensS7Driver health (driverStatus, readOnlyEnabled, nodes7Available,
+ *    timeouts/failure thresholds, reasons, lastError).
  *  - Resolved tag addresses for main E-stop, PLC fault and a couple of conveyors.
  *
  * This is meant for commissioning / debugging with PLC Pro and is not
@@ -84,6 +85,16 @@ export function PlcSiemensDebugPanel({ siteId, lineId }) {
 
   const driverStatus = driver?.driverStatus || 'n/a';
   const readOnlyEnabled = !!driver?.readOnlyEnabled;
+  const nodes7Available =
+    typeof driver?.nodes7Available === 'boolean' ? driver.nodes7Available : null;
+  const maxFailuresBeforeOffline =
+    typeof driver?.maxFailuresBeforeOffline === 'number'
+      ? driver.maxFailuresBeforeOffline
+      : null;
+  const readTimeoutMs =
+    typeof driver?.readTimeoutMs === 'number' ? driver.readTimeoutMs : null;
+  const lastError = driver?.lastError || null;
+
   const reasons =
     driver && Array.isArray(driver.reasons) && driver.reasons.length > 0
       ? driver.reasons
@@ -137,37 +148,75 @@ export function PlcSiemensDebugPanel({ siteId, lineId }) {
         </div>
 
         {isSiemens && (
-          <div className="runtime-plc-siemens-driver">
-            <div className="runtime-plc-siemens-row">
-              <span className="runtime-alerts-label">Driver status</span>
-              <span
-                className={[
-                  'runtime-alerts-pill',
-                  driverStatus === 'READY'
-                    ? 'is-ok'
-                    : 'is-unknown',
-                ].join(' ')}
-              >
-                {driverStatus}
-              </span>
-            </div>
-            <div className="runtime-plc-siemens-row">
-              <span className="runtime-alerts-label">Read-only enabled</span>
-              <span className="runtime-alerts-pill is-unknown">
-                {readOnlyEnabled ? 'YES' : 'NO'}
-              </span>
-            </div>
-            {reasons.length > 0 && (
+          <>
+            <div className="runtime-plc-siemens-driver">
               <div className="runtime-plc-siemens-row">
-                <span className="runtime-alerts-label">Reasons (disabled)</span>
-                <ul className="runtime-plc-siemens-reasons">
-                  {reasons.map((r) => (
-                    <li key={r}>{r}</li>
-                  ))}
-                </ul>
+                <span className="runtime-alerts-label">Driver status</span>
+                <span
+                  className={[
+                    'runtime-alerts-pill',
+                    driverStatus === 'READY'
+                      ? 'is-ok'
+                      : driverStatus === 'OFFLINE' || driverStatus === 'ERROR'
+                      ? 'is-alert'
+                      : 'is-unknown',
+                  ].join(' ')}
+                >
+                  {driverStatus}
+                </span>
               </div>
-            )}
-          </div>
+              <div className="runtime-plc-siemens-row">
+                <span className="runtime-alerts-label">Read-only enabled</span>
+                <span className="runtime-alerts-pill is-unknown">
+                  {readOnlyEnabled ? 'YES' : 'NO'}
+                </span>
+              </div>
+              <div className="runtime-plc-siemens-row">
+                <span className="runtime-alerts-label">nodes7 module</span>
+                <span className="runtime-alerts-pill is-unknown">
+                  {nodes7Available === null
+                    ? 'unknown'
+                    : nodes7Available
+                    ? 'AVAILABLE'
+                    : 'MISSING'}
+                </span>
+              </div>
+              <div className="runtime-plc-siemens-row">
+                <span className="runtime-alerts-label">Read timeout (ms)</span>
+                <span className="runtime-alerts-pill is-unknown">
+                  {readTimeoutMs != null ? readTimeoutMs : 'default'}
+                </span>
+              </div>
+              <div className="runtime-plc-siemens-row">
+                <span className="runtime-alerts-label">
+                  Max failures before OFFLINE
+                </span>
+                <span className="runtime-alerts-pill is-unknown">
+                  {maxFailuresBeforeOffline != null
+                    ? maxFailuresBeforeOffline
+                    : 'default'}
+                </span>
+              </div>
+              {lastError && (
+                <div className="runtime-plc-siemens-row">
+                  <span className="runtime-alerts-label">Last error</span>
+                  <span className="runtime-plc-siemens-last-error">
+                    {String(lastError)}
+                  </span>
+                </div>
+              )}
+              {reasons.length > 0 && (
+                <div className="runtime-plc-siemens-row">
+                  <span className="runtime-alerts-label">Reasons</span>
+                  <ul className="runtime-plc-siemens-reasons">
+                    {reasons.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {tags && (
