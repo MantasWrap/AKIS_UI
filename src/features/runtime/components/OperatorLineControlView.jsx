@@ -4,17 +4,6 @@ import { RuntimeAlertsCard } from './RuntimeAlertsCard.jsx';
 import { useLinePermissions } from '../hooks/useLinePermissions.js';
 import { useLineCommand } from '../hooks/useLineCommand.js';
 
-/**
- * OperatorLineControlView
- *
- * A simplified, tenant-facing view for controlling one line:
- *   - Shows runtime alerts (including PLC health).
- *   - Exposes Start / Pause / Stop / Reset fault buttons.
- *   - Respects roles (backend enforces; UI hides/disables buttons when
- *     /api/runtime/line/permissions says the action is not allowed).
- *
- * No dev-only debug elements (no PLC sim, no Siemens debug panel).
- */
 export function OperatorLineControlView() {
   const { siteId, lineId } = useCurrentSiteLine();
   const { role, allowed } = useLinePermissions();
@@ -27,6 +16,21 @@ export function OperatorLineControlView() {
 
   const handleCommand = (action) => {
     if (isSending) return;
+
+    if (action === 'STOP') {
+      const ok = window.confirm(
+        'Are you sure you want to STOP the line? Items on the conveyor will come to a controlled stop.',
+      );
+      if (!ok) return;
+    }
+
+    if (action === 'RESET_FAULT') {
+      const ok = window.confirm(
+        'Are you sure you want to RESET PLC fault for this line? Only do this after you have fixed the underlying issue.',
+      );
+      if (!ok) return;
+    }
+
     send({ action });
   };
 

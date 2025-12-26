@@ -10,7 +10,7 @@ function getDebugHeaders() {
   return { 'x-debug-token': token };
 }
 
-async function sendDeviceCommand({ siteId, lineId, deviceId, command }) {
+async function sendPlcDeviceCommand({ siteId, lineId, deviceId, command }) {
   const res = await fetch(`${API_BASE}/api/runtime/plc/device/command`, {
     method: 'POST',
     headers: {
@@ -25,19 +25,20 @@ async function sendDeviceCommand({ siteId, lineId, deviceId, command }) {
     }),
   });
 
+  const body = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     const error = new Error(
-      body.message || body.error || `Device command failed: ${res.status}`,
+      body.message || body.error || `PLC device command failed: ${res.status}`,
     );
     error.code = body.error;
     throw error;
   }
 
-  return res.json();
+  return body;
 }
 
-export function usePlcDeviceCommand(siteId, lineId, { onSuccess } = {}) {
+export function usePlcDeviceCommand(siteId, lineId) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,28 +48,28 @@ export function usePlcDeviceCommand(siteId, lineId, { onSuccess } = {}) {
       setIsSending(true);
       setError('');
       try {
-        await sendDeviceCommand({
-          siteId,
-          lineId,
-          deviceId,
-          command,
-        });
-        if (typeof onSuccess === 'function') {
-          onSuccess();
-        }
+        await sendPlcDeviceCommand({ siteId, lineId, deviceId, command });
       } catch (err) {
-        if (err?.code === 'device_command_not_allowed_for_role') {
-          setError('Your role is not allowed to send device commands.');
+        if (err?.code === 'line_device_command_not_allowed_for_role') {
+          setError('Your role is not allowed to control this device.');
+        } else if (err?.code === 'estop_active') {
+          setError('Emergency stop is active. Fix the physical E-stop before commands.');
+        } else if (err?.code === 'fault_active') {
+          setError('PLC fault is active. Reset the fault before starting this device.');
+        } else if (err?.code === 'plc_not_available') {
+          setError(
+            'PLC is not available for device commands (misconfigured or offline). Fix PLC config/connection before trying again.',
+          );
         } else if (err?.message) {
           setError(err.message);
         } else {
-          setError('Device command failed.');
+          setError('PLC device command failed.');
         }
       } finally {
         setIsSending(false);
       }
     },
-    [siteId, lineId, onSuccess, isSending],
+    [siteId, lineId, isSending],
   );
 
   return { send, isSending, error };

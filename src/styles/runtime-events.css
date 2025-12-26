@@ -1,0 +1,6 @@
+.runtime-events-tag-plc-conn {
+  /* PLC connection events: neutral but visible */
+  background-color: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.8);
+  color: #e5e7eb;
+}

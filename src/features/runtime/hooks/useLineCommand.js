@@ -55,6 +55,10 @@ export function useLineCommand(siteId, lineId) {
           setError('Emergency stop is active. Fix the physical E-stop before commands.');
         } else if (err?.code === 'fault_active') {
           setError('PLC fault is active. Reset the fault before starting the line.');
+        } else if (err?.code === 'plc_not_available') {
+          setError(
+            'PLC is not available for line control (misconfigured or offline). Fix PLC config/connection before trying again.',
+          );
         } else if (err?.message) {
           setError(err.message);
         } else {
