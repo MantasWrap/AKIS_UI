@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { API_BASE } from '../../../api/client.js';
 import { usePlcDevices } from '../../runtime/hooks/usePlcDevices.js';
 import { usePlcDeviceCommand } from '../../runtime/hooks/usePlcDeviceCommand.js';
+import { useLinePermissions } from '../../runtime/hooks/useLinePermissions.js';
 
 function getDebugHeaders() {
   const token =
@@ -33,11 +34,20 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
   const devices = Array.isArray(data?.devices) ? data.devices : [];
   const [busyKey, setBusyKey] = useState(null);
   const isDevMode = process.env.NODE_ENV !== 'production';
+
+  const { role, allowed } = useLinePermissions();
   const deviceCommand = usePlcDeviceCommand(siteId, lineId, {
     onSuccess: refetch,
   });
   const deviceCommandError = deviceCommand.error;
-  const canShowCommands = isDevMode && Boolean(siteId && lineId);
+
+  // If permissions endpoint fails or is not ready, default to "true" so dev is not blocked.
+  const canDeviceCommandForRole = allowed ? !!allowed.device_command : true;
+
+  // Device commands are visible only in dev mode, for a specific line, and if
+  // the current role is allowed to send device commands.
+  const canShowCommands =
+    isDevMode && Boolean(siteId && lineId) && canDeviceCommandForRole;
 
   const sendDeviceSim = async (deviceId, payload, actionKey) => {
     if (!deviceId || busyKey) return;
@@ -78,6 +88,14 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
           {isLoading ? 'Loading…' : `${devices.length} devices`}
         </p>
       </header>
+
+      {allowed && !canDeviceCommandForRole && (
+        <p className="live-mode-device-permission-note">
+          Device Start/Stop commands are disabled for your role
+          {role ? ` (${role})` : ''}. You can still inspect device status and IO.
+        </p>
+      )}
+
       {isError && (
         <p className="live-mode-device-error">Could not load PLC devices.</p>
       )}
@@ -94,118 +112,123 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
           return (
             <div key={device.device_id} className="live-mode-device-item">
               <div className="live-mode-device-row">
-                <span className="live-mode-device-name">
-                  {device.name || device.device_id}
-                </span>
-                <div className="live-mode-device-tags">
-                  <span className={badge.className}>{badge.label}</span>
-                  <span className="live-mode-device-type">
-                    {device.device_type || 'Unknown'}
-                  </span>
-                </div>
-              </div>
-              <div className="live-mode-device-id">ID: {device.device_id}</div>
-              {device.io && typeof device.io === 'object' && (
-                <div className="live-mode-device-io">
-                  {Object.entries(device.io).map(([key, value]) => (
-                    <div key={key} className="live-mode-device-io-row">
-                      <span className="live-mode-device-io-key">{key}</span>
-                      <span className="live-mode-device-io-value">{String(value)}</span>
+                <div className="live-mode-device-main">
+                  <div className="live-mode-device-header-row">
+                    <div className="live-mode-device-name">
+                      <span className={`device-badge ${badge.className}`}>{badge.label}</span>
+                      <span className="live-mode-device-title">{device.device_name}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-              {canShowCommands && device.device_type === 'CONVEYOR_SECTION' && (
-                <div className="live-mode-device-command">
-                  <p className="live-mode-device-command-label">Device controls</p>
-                  <div className="live-mode-device-actions">
-                    <button
-                      type="button"
-                      className="live-mode-device-action is-running"
-                      disabled={commandBusyKey !== null}
-                      onClick={() =>
-                        deviceCommand.send({
-                          deviceId: device.device_id,
-                          command: 'START_SECTION',
-                        })
-                      }
-                    >
-                      {commandBusyKey ? 'Sending…' : 'Start section'}
-                    </button>
-                    <button
-                      type="button"
-                      className="live-mode-device-action is-stopped"
-                      disabled={commandBusyKey !== null}
-                      onClick={() =>
-                        deviceCommand.send({
-                          deviceId: device.device_id,
-                          command: 'STOP_SECTION',
-                        })
-                      }
-                    >
-                      {commandBusyKey ? 'Sending…' : 'Stop section'}
-                    </button>
+                    <div className="live-mode-device-type">
+                      <span className="live-mode-device-type-label">Type</span>
+                      <span className="live-mode-device-type-value">
+                        {device.device_type || 'Unknown'}
+                      </span>
+                    </div>
                   </div>
-                  {deviceCommandError && (
-                    <p className="live-mode-device-command-error">{deviceCommandError}</p>
+                  <div className="live-mode-device-id">ID: {device.device_id}</div>
+                  {device.io && typeof device.io === 'object' && (
+                    <div className="live-mode-device-io">
+                      {Object.entries(device.io).map(([key, value]) => (
+                        <div key={key} className="live-mode-device-io-row">
+                          <span className="live-mode-device-io-key">{key}</span>
+                          <span className="live-mode-device-io-value">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {canShowCommands && device.device_type === 'CONVEYOR_SECTION' && (
+                    <div className="live-mode-device-command">
+                      <p className="live-mode-device-command-label">Device controls</p>
+                      <div className="live-mode-device-actions">
+                        <button
+                          type="button"
+                          className="live-mode-device-action is-running"
+                          disabled={commandBusyKey !== null}
+                          onClick={() =>
+                            deviceCommand.send({
+                              deviceId: device.device_id,
+                              command: 'START_SECTION',
+                            })
+                          }
+                        >
+                          {commandBusyKey ? 'Sending…' : 'Start section'}
+                        </button>
+                        <button
+                          type="button"
+                          className="live-mode-device-action is-stopped"
+                          disabled={commandBusyKey !== null}
+                          onClick={() =>
+                            deviceCommand.send({
+                              deviceId: device.device_id,
+                              command: 'STOP_SECTION',
+                            })
+                          }
+                        >
+                          {commandBusyKey ? 'Sending…' : 'Stop section'}
+                        </button>
+                      </div>
+                      {deviceCommandError && (
+                        <p className="live-mode-device-command-error">{deviceCommandError}</p>
+                      )}
+                    </div>
+                  )}
+                  {canSimulate && (
+                    <div className="live-mode-device-sim">
+                      <p className="live-mode-device-command-label">Simulation controls</p>
+                      <div className="live-mode-device-actions">
+                        <button
+                          type="button"
+                          className="live-mode-device-action is-running"
+                          disabled={busyKey === `${device.device_id}-run`}
+                          onClick={() =>
+                            sendDeviceSim(
+                              device.device_id,
+                              { running: true, fault: false },
+                              `${device.device_id}-run`,
+                            )
+                          }
+                        >
+                          {busyKey === `${device.device_id}-run`
+                            ? 'Setting running…'
+                            : 'Sim: Set running'}
+                        </button>
+                        <button
+                          type="button"
+                          className="live-mode-device-action is-stopped"
+                          disabled={busyKey === `${device.device_id}-stop`}
+                          onClick={() =>
+                            sendDeviceSim(
+                              device.device_id,
+                              { running: false, fault: false },
+                              `${device.device_id}-stop`,
+                            )
+                          }
+                        >
+                          {busyKey === `${device.device_id}-stop`
+                            ? 'Setting stopped…'
+                            : 'Sim: Set stopped'}
+                        </button>
+                        <button
+                          type="button"
+                          className="live-mode-device-action is-fault"
+                          disabled={busyKey === `${device.device_id}-fault`}
+                          onClick={() =>
+                            sendDeviceSim(
+                              device.device_id,
+                              { running: false, fault: true },
+                              `${device.device_id}-fault`,
+                            )
+                          }
+                        >
+                          {busyKey === `${device.device_id}-fault`
+                            ? 'Setting fault…'
+                            : 'Sim: Set fault'}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-              )}
-              {canSimulate && (
-                <div className="live-mode-device-sim">
-                  <p className="live-mode-device-command-label">Simulation controls</p>
-                  <div className="live-mode-device-actions">
-                  <button
-                    type="button"
-                    className="live-mode-device-action is-running"
-                    disabled={busyKey !== null}
-                    onClick={() =>
-                      sendDeviceSim(
-                        device.device_id,
-                        { running: true, fault: false },
-                        `${device.device_id}-running`,
-                      )
-                    }
-                  >
-                    {busyKey === `${device.device_id}-running`
-                      ? 'Setting running…'
-                      : 'Sim: Set running'}
-                  </button>
-                  <button
-                    type="button"
-                    className="live-mode-device-action is-stopped"
-                    disabled={busyKey !== null}
-                    onClick={() =>
-                      sendDeviceSim(
-                        device.device_id,
-                        { running: false, fault: false },
-                        `${device.device_id}-stopped`,
-                      )
-                    }
-                  >
-                    {busyKey === `${device.device_id}-stopped`
-                      ? 'Setting stopped…'
-                      : 'Sim: Set stopped'}
-                  </button>
-                  <button
-                    type="button"
-                    className="live-mode-device-action is-fault"
-                    disabled={busyKey !== null}
-                    onClick={() =>
-                      sendDeviceSim(
-                        device.device_id,
-                        { running: false, fault: true },
-                        `${device.device_id}-fault`,
-                      )
-                    }
-                  >
-                    {busyKey === `${device.device_id}-fault`
-                      ? 'Setting fault…'
-                      : 'Sim: Set fault'}
-                  </button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           );
         })}

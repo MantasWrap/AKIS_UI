@@ -57,7 +57,13 @@ export function usePlcDeviceCommand(siteId, lineId, { onSuccess } = {}) {
           onSuccess();
         }
       } catch (err) {
-        setError(err?.message || 'Device command failed.');
+        if (err?.code === 'device_command_not_allowed_for_role') {
+          setError('Your role is not allowed to send device commands.');
+        } else if (err?.message) {
+          setError(err.message);
+        } else {
+          setError('Device command failed.');
+        }
       } finally {
         setIsSending(false);
       }
