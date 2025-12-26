@@ -4,22 +4,15 @@ import { useCurrentSiteLine } from '../hooks/useCurrentSiteLine.js';
 /**
  * SiteLineSelectorDebug
  *
- * Tiny dev-only selector for current site/line.
- * Right now it renders a single option (SITE_LT_01 / LINE_01), but the
- * structure allows adding more in the future.
- *
- * It also shows the active site/line so you always know what the
- * runtime UI is targeting.
+ * Dev-only selector for current site/line.
+ * Phase-0: two lines on SITE_LT_01.
  */
 export function SiteLineSelectorDebug() {
   const { siteId, lineId, setSiteLine } = useCurrentSiteLine();
 
-  // For now we just expose a single option, but we keep the shape ready
-  // for more sites/lines.
   const options = [
-    { value: 'SITE_LT_01::LINE_01', label: 'SITE_LT_01 / LINE_01' },
-    // Future example:
-    // { value: 'SITE_LT_01::LINE_02', label: 'SITE_LT_01 / LINE_02' },
+    { value: 'SITE_LT_01::LINE_01', label: 'SITE_LT_01 / LINE_01 (main dev line)' },
+    { value: 'SITE_LT_01::LINE_02', label: 'SITE_LT_01 / LINE_02 (second dev line)' },
   ];
 
   const currentValue =
