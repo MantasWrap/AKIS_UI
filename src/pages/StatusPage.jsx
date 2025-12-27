@@ -142,7 +142,7 @@ export default function StatusPage() {
       </section>
 
       {/* 🔽 NEW: Site & line selection visible on the main page */}
-      <section className="dev-grid">
+      <section className="dev-dashboard-grid">
         <section className="dev-card">
           <header className="dev-card-header">
             <div>
@@ -180,7 +180,7 @@ export default function StatusPage() {
               <p className="runtime-alerts-error">{runtimeMetricsError}</p>
             )}
             {!runtimeMetricsError && !runtimeMetricsLoading && runtimeCounters && (
-              <dl className="dev-runtime-link">
+              <dl className="dev-runtime-link-grid">
                 <div className="dev-runtime-link-group">
                   <dt>Success</dt>
                   <dd>{runtimeCounters.picks_success ?? '—'}</dd>

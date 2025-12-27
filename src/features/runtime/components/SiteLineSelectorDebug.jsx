@@ -28,22 +28,25 @@ export function SiteLineSelectorDebug() {
   };
 
   return (
-    <div className="mb-3 flex flex-col gap-1 rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-xs text-slate-100">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold tracking-wide">
-          Site / line (dev debug)
-        </span>
-        <span className="inline-flex items-center rounded-full bg-slate-700 px-2 py-0.5 text-[11px] uppercase tracking-wide">
-          {siteId} · {lineId}
+    <div className="site-line-selector">
+      <div className="site-line-selector-row">
+        <div>
+          <p className="site-line-selector-label">Target line</p>
+          <p className="site-line-selector-note">
+            Applies to debug panels and PLC calls on this page.
+          </p>
+        </div>
+        <span className="runtime-alerts-pill is-unknown">
+          {siteId} / {lineId}
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <label className="text-[11px] text-slate-300" htmlFor="site-line-select">
-          Target line
+      <div className="site-line-selector-controls">
+        <label className="runtime-alerts-label" htmlFor="site-line-select">
+          Select
         </label>
         <select
           id="site-line-select"
-          className="flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] text-slate-50"
+          className="dev-select site-line-selector-select"
           value={currentValue}
           onChange={handleChange}
         >
