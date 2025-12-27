@@ -5,6 +5,7 @@ import { useCurrentSiteLine } from '../runtime/hooks/useCurrentSiteLine.js';
 import { SiteLineSelectorDebug } from '../runtime/components/SiteLineSelectorDebug.jsx';
 import { LinePermissionsDebugBanner } from '../runtime/components/LinePermissionsDebugBanner.jsx';
 import { PlcSiemensDebugPanel } from '../runtime/components/PlcSiemensDebugPanel.jsx';
+import { PlcSiemensTagProbePanel } from '../runtime/components/PlcSiemensTagProbePanel.jsx';
 import { RuntimeLineSummaryPanel } from '../runtime/components/RuntimeLineSummaryPanel.jsx';
 
 export function LiveModePage() {
@@ -26,6 +27,7 @@ export function LiveModePage() {
         <div className="live-mode-left">
           <RuntimeAlertsCard siteId={siteId} lineId={lineId} />
           <PlcSiemensDebugPanel siteId={siteId} lineId={lineId} />
+          <PlcSiemensTagProbePanel />
           <RuntimeLineSummaryPanel />
         </div>
         <div className="live-mode-right">
