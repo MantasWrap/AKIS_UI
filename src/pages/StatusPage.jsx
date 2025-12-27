@@ -14,15 +14,29 @@ import { LinePermissionsDebugBanner } from '../features/runtime/components/LineP
 
 const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
 
+function getMetricValue(...values) {
+  return values.find((value) => typeof value === 'number' && Number.isFinite(value));
+}
+
 function getPickCount(counters) {
   if (!counters || typeof counters !== 'object') return null;
-  const values = [
-    counters.picks_success,
-    counters.picks_reject,
-    counters.picks_timeout,
-  ].filter((v) => typeof v === 'number');
-  if (!values.length) return null;
-  return values.reduce((acc, v) => acc + v, 0);
+  const picksOk = getMetricValue(counters.picks_success, counters.picks_ok);
+  const picksMissed = getMetricValue(counters.picks_missed, counters.picks_reject);
+  const picksTimeout = getMetricValue(counters.picks_timeout);
+  const picksErrors = [counters.picks_error, counters.picks_cancelled].reduce(
+    (sum, value) =>
+      typeof value === 'number' && Number.isFinite(value) ? sum + value : sum,
+    0,
+  );
+
+  const hasAny =
+    typeof picksOk === 'number' ||
+    typeof picksMissed === 'number' ||
+    typeof picksTimeout === 'number' ||
+    picksErrors > 0;
+
+  if (!hasAny) return null;
+  return (picksOk || 0) + (picksMissed || 0) + (picksTimeout || 0) + picksErrors;
 }
 
 export default function StatusPage() {
@@ -43,6 +57,16 @@ export default function StatusPage() {
   const lineId = useMemo(() => runtimeStatus?.line_id || 'LINE_01', [runtimeStatus]);
 
   const pickCount = useMemo(() => getPickCount(runtimeCounters), [runtimeCounters]);
+  const itemsIngested = useMemo(
+    () =>
+      getMetricValue(runtimeCounters?.items_seen, runtimeCounters?.items_ingested),
+    [runtimeCounters],
+  );
+  const itemsHandled = useMemo(
+    () =>
+      getMetricValue(runtimeCounters?.items_routed, runtimeCounters?.items_decided),
+    [runtimeCounters],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -124,8 +148,14 @@ export default function StatusPage() {
             <span className="dev-hero-pill">Line: {lineId}</span>
             <span className="dev-hero-pill">Alerts: {alertCount}</span>
             <span className="dev-hero-pill">Devices: {deviceCount}</span>
+            <span className="dev-hero-pill">
+              Ingested: {itemsIngested ?? '—'}
+            </span>
+            <span className="dev-hero-pill">
+              Handled: {itemsHandled ?? '—'}
+            </span>
             {pickCount !== null && (
-              <span className="dev-hero-pill">Picks: {pickCount}</span>
+              <span className="dev-hero-pill">Picks total: {pickCount}</span>
             )}
           </div>
         </div>
@@ -182,16 +212,38 @@ export default function StatusPage() {
             {!runtimeMetricsError && !runtimeMetricsLoading && runtimeCounters && (
               <dl className="dev-runtime-link-grid">
                 <div className="dev-runtime-link-group">
-                  <dt>Success</dt>
-                  <dd>{runtimeCounters.picks_success ?? '—'}</dd>
+                  <dt>Items seen</dt>
+                  <dd>{runtimeCounters.items_seen ?? '—'}</dd>
                 </div>
                 <div className="dev-runtime-link-group">
-                  <dt>Reject</dt>
-                  <dd>{runtimeCounters.picks_reject ?? '—'}</dd>
+                  <dt>Items decided</dt>
+                  <dd>{runtimeCounters.items_decided ?? '—'}</dd>
                 </div>
                 <div className="dev-runtime-link-group">
-                  <dt>Timeout</dt>
+                  <dt>Items routed</dt>
+                  <dd>{runtimeCounters.items_routed ?? '—'}</dd>
+                </div>
+                <div className="dev-runtime-link-group">
+                  <dt>Picks OK</dt>
+                  <dd>{runtimeCounters.picks_success ?? runtimeCounters.picks_ok ?? '—'}</dd>
+                </div>
+                <div className="dev-runtime-link-group">
+                  <dt>Picks missed</dt>
+                  <dd>{runtimeCounters.picks_missed ?? runtimeCounters.picks_reject ?? '—'}</dd>
+                </div>
+                <div className="dev-runtime-link-group">
+                  <dt>Picks timeout</dt>
                   <dd>{runtimeCounters.picks_timeout ?? '—'}</dd>
+                </div>
+                <div className="dev-runtime-link-group">
+                  <dt>Picks errors</dt>
+                  <dd>
+                    {runtimeCounters.picks_error != null ||
+                    runtimeCounters.picks_cancelled != null
+                      ? (runtimeCounters.picks_error || 0) +
+                        (runtimeCounters.picks_cancelled || 0)
+                      : '—'}
+                  </dd>
                 </div>
               </dl>
             )}
