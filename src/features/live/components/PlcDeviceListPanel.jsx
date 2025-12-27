@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from '../../../api/client.js';
 import { usePlcDevices } from '../../runtime/hooks/usePlcDevices.js';
 import { usePlcDeviceCommand } from '../../runtime/hooks/usePlcDeviceCommand.js';
@@ -29,10 +29,43 @@ function deviceStatusBadge(status) {
   return { label: 'Unknown', className: 'device-badge is-unknown' };
 }
 
+async function fetchPlcModeSummary({ siteId, lineId }) {
+  const params = new URLSearchParams();
+  if (siteId) params.set('site_id', siteId);
+  if (lineId) params.set('line_id', lineId);
+
+  const query = params.toString();
+  const url = query
+    ? `${API_BASE}/api/debug/plc/siemens/metrics?${query}`
+    : `${API_BASE}/api/debug/plc/siemens/metrics`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...getDebugHeaders(),
+    },
+  }).catch(() => null);
+
+  if (!res || !res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  return {
+    connector: body.connector || null,
+    hardware_mode: body.hardware_mode || null,
+    real_io_mode: body.real_io_mode || null,
+  };
+}
+
+/**
+ * Full debug panel: can show commands + simulation when allowed.
+ * Used in Live Mode.
+ */
 export function PlcDeviceListPanel({ siteId, lineId }) {
   const { data, isLoading, isError, refetch } = usePlcDevices(siteId, lineId);
   const devices = Array.isArray(data?.devices) ? data.devices : [];
   const [busyKey, setBusyKey] = useState(null);
+  const [plcMode, setPlcMode] = useState(null);
+
   const isDevMode =
     import.meta.env?.DEV ??
     (typeof process !== 'undefined' &&
@@ -48,10 +81,27 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
   // If permissions endpoint fails or is not ready, default to "true" so dev is not blocked.
   const canDeviceCommandForRole = allowed ? !!allowed.device_command : true;
 
-  // Device commands are visible only in dev mode, for a specific line, and if
-  // the current role is allowed to send device commands.
+  // Determine if we are in a "read-only" PLC mode (Siemens REAL + READ_ONLY).
+  const isReadOnlyPlcMode = useMemo(() => {
+    if (!plcMode) return false;
+    const connector = (plcMode.connector || '').toUpperCase();
+    const hardware = (plcMode.hardware_mode || '').toUpperCase();
+    const realIo = (plcMode.real_io_mode || '').toUpperCase();
+    return connector === 'SIEMENS' && hardware === 'REAL' && realIo === 'READ_ONLY';
+  }, [plcMode]);
+
+  // Only allow real device commands when NOT in Siemens read-only mode.
   const canShowCommands =
-    isDevMode && Boolean(siteId && lineId) && canDeviceCommandForRole;
+    isDevMode &&
+    Boolean(siteId && lineId) &&
+    canDeviceCommandForRole &&
+    !isReadOnlyPlcMode;
+
+  // Simulation is always dev-only; we also hide it in Siemens real read-only mode.
+  const canSimulateForDevice = (device) => {
+    if (!isDevMode || isReadOnlyPlcMode) return false;
+    return device.device_type === 'CONVEYOR_SECTION' || device.device_type === 'CHUTE';
+  };
 
   const sendDeviceSim = async (deviceId, payload, actionKey) => {
     if (!deviceId || busyKey) return;
@@ -60,6 +110,7 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
       await fetch(`${API_BASE}/api/debug/plc/device/status`, {
         method: 'POST',
         headers: {
+          Accept: 'application/json',
           'Content-Type': 'application/json',
           ...getDebugHeaders(),
         },
@@ -81,6 +132,19 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
     [deviceCommand.isSending],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const mode = await fetchPlcModeSummary({ siteId, lineId });
+      if (!cancelled) setPlcMode(mode);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [siteId, lineId]);
+
   return (
     <section className="dev-card live-mode-device-panel">
       <header className="live-mode-device-header">
@@ -93,25 +157,42 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
         </p>
       </header>
 
+      {plcMode && (
+        <p className="live-mode-device-helper">
+          Connector: {plcMode.connector || 'unknown'} · Hardware:{' '}
+          {plcMode.hardware_mode || 'unknown'} · IO mode:{' '}
+          {plcMode.real_io_mode || 'unknown'}
+        </p>
+      )}
+
+      {isReadOnlyPlcMode && (
+        <p className="live-mode-device-helper">
+          PLC is in <strong>read-only</strong> mode. Device controls and simulation
+          are disabled; this panel shows what AKIS reads from PLC.
+        </p>
+      )}
+
       {allowed && !canDeviceCommandForRole && (
-        <p className="live-mode-device-permission-note">
-          Device Start/Stop commands are disabled for your role
-          {role ? ` (${role})` : ''}. You can still inspect device status and IO.
+        <p className="live-mode-device-helper">
+          Your role ({role || 'unknown'}) is not allowed to send device commands for
+          this line.
         </p>
       )}
 
       {isError && (
-        <p className="live-mode-device-error">Could not load PLC devices.</p>
+        <p className="live-mode-device-error">
+          Could not load devices for this line. Check debug token / backend logs.
+        </p>
       )}
+
       {!isError && !isLoading && devices.length === 0 && (
         <p className="live-mode-device-empty">No devices registered for this line yet.</p>
       )}
+
       <div className="live-mode-device-list">
         {devices.map((device) => {
           const badge = deviceStatusBadge(device.status);
-          const canSimulate =
-            isDevMode &&
-            (device.device_type === 'CONVEYOR_SECTION' || device.device_type === 'CHUTE');
+          const canSimulate = canSimulateForDevice(device);
 
           return (
             <div key={device.device_id} className="live-mode-device-item">
@@ -119,8 +200,12 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                 <div className="live-mode-device-main">
                   <div className="live-mode-device-header-row">
                     <div className="live-mode-device-name">
-                      <span className={`device-badge ${badge.className}`}>{badge.label}</span>
-                      <span className="live-mode-device-title">{device.device_name}</span>
+                      <span className={`device-badge ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                      <span className="live-mode-device-title">
+                        {device.device_name}
+                      </span>
                     </div>
                     <div className="live-mode-device-type">
                       <span className="live-mode-device-type-label">Type</span>
@@ -135,14 +220,19 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                       {Object.entries(device.io).map(([key, value]) => (
                         <div key={key} className="live-mode-device-io-row">
                           <span className="live-mode-device-io-key">{key}</span>
-                          <span className="live-mode-device-io-value">{String(value)}</span>
+                          <span className="live-mode-device-io-value">
+                            {String(value)}
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
+
                   {canShowCommands && device.device_type === 'CONVEYOR_SECTION' && (
                     <div className="live-mode-device-command">
-                      <p className="live-mode-device-command-label">Device controls</p>
+                      <p className="live-mode-device-command-label">
+                        Device controls (fake PLC / lab only)
+                      </p>
                       <div className="live-mode-device-actions">
                         <button
                           type="button"
@@ -172,13 +262,18 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                         </button>
                       </div>
                       {deviceCommandError && (
-                        <p className="live-mode-device-command-error">{deviceCommandError}</p>
+                        <p className="live-mode-device-command-error">
+                          {deviceCommandError}
+                        </p>
                       )}
                     </div>
                   )}
+
                   {canSimulate && (
                     <div className="live-mode-device-sim">
-                      <p className="live-mode-device-command-label">Simulation controls</p>
+                      <p className="live-mode-device-command-label">
+                        Simulation controls (no real PLC writes)
+                      </p>
                       <div className="live-mode-device-actions">
                         <button
                           type="button"
@@ -229,6 +324,82 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
                             : 'Sim: Set fault'}
                         </button>
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Read-only variant for StatusPage: only badges + IO, no controls.
+ */
+export function PlcDeviceListReadOnlyPanel({ siteId, lineId }) {
+  const { data, isLoading, isError } = usePlcDevices(siteId, lineId);
+  const devices = Array.isArray(data?.devices) ? data.devices : [];
+
+  return (
+    <section className="dev-card live-mode-device-panel">
+      <header className="live-mode-device-header">
+        <div>
+          <p className="dev-card-eyebrow">PLC inventory</p>
+          <h3>Devices on this line</h3>
+        </div>
+        <p className="live-mode-device-count">
+          {isLoading ? 'Loading…' : `${devices.length} devices`}
+        </p>
+      </header>
+
+      {isError && (
+        <p className="live-mode-device-error">
+          Could not load devices for this line. Check debug token / backend logs.
+        </p>
+      )}
+
+      {!isError && !isLoading && devices.length === 0 && (
+        <p className="live-mode-device-empty">No devices registered for this line yet.</p>
+      )}
+
+      <div className="live-mode-device-list">
+        {devices.map((device) => {
+          const badge = deviceStatusBadge(device.status);
+
+          return (
+            <div key={device.device_id} className="live-mode-device-item">
+              <div className="live-mode-device-row">
+                <div className="live-mode-device-main">
+                  <div className="live-mode-device-header-row">
+                    <div className="live-mode-device-name">
+                      <span className={`device-badge ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                      <span className="live-mode-device-title">
+                        {device.device_name}
+                      </span>
+                    </div>
+                    <div className="live-mode-device-type">
+                      <span className="live-mode-device-type-label">Type</span>
+                      <span className="live-mode-device-type-value">
+                        {device.device_type || 'Unknown'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="live-mode-device-id">ID: {device.device_id}</div>
+                  {device.io && typeof device.io === 'object' && (
+                    <div className="live-mode-device-io">
+                      {Object.entries(device.io).map(([key, value]) => (
+                        <div key={key} className="live-mode-device-io-row">
+                          <span className="live-mode-device-io-key">{key}</span>
+                          <span className="live-mode-device-io-value">
+                            {String(value)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

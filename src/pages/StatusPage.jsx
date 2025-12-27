@@ -3,7 +3,7 @@ import '../styles/devDashboard.css';
 import { getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
-import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
+import { PlcDeviceListReadOnlyPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
 import { RuntimeAlertsCard } from '../features/live/components/RuntimeAlertsCard.jsx';
 import { useRuntimeAlerts } from '../features/runtime/hooks/useRuntimeAlerts.js';
 import { usePlcDevices } from '../features/runtime/hooks/usePlcDevices.js';
@@ -162,7 +162,7 @@ export default function StatusPage() {
         <PlcSiemensDebugPanel siteId={siteId} lineId={lineId} />
         <PlcSiemensTagProbePanel />
 
-        <PlcDeviceListPanel siteId={siteId} lineId={lineId} />
+        <PlcDeviceListReadOnlyPanel siteId={siteId} lineId={lineId} />
 
         <section className="dev-card">
           <header className="dev-card-header">
