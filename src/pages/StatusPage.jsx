@@ -7,6 +7,8 @@ import { PlcDeviceListPanel } from '../features/live/components/PlcDeviceListPan
 import { RuntimeAlertsCard } from '../features/live/components/RuntimeAlertsCard.jsx';
 import { useRuntimeAlerts } from '../features/runtime/hooks/useRuntimeAlerts.js';
 import { usePlcDevices } from '../features/runtime/hooks/usePlcDevices.js';
+import { PlcSiemensDebugPanel } from '../features/runtime/components/PlcSiemensDebugPanel.jsx';
+import { PlcSiemensTagProbePanel } from '../features/runtime/components/PlcSiemensTagProbePanel.jsx';
 
 const DEFAULT_PHASE_LABEL = 'Phase 0 · Training mode · Fake hardware';
 
@@ -322,13 +324,15 @@ export default function StatusPage() {
         </section>
       )}
 
-      <section className="dev-dashboard-grid">
+      <section className="dev-dashboard-grid dev-grid">
         <RuntimeAlertsCard
           health={runtimeAlerts.health}
           events={runtimeAlerts.events}
           isLoading={runtimeAlerts.isLoading}
           isError={runtimeAlerts.isError}
         />
+        <PlcSiemensDebugPanel siteId={siteId} lineId={lineId} />
+        <PlcSiemensTagProbePanel />
         <section className="dev-card dev-runtime-link-card">
           <header className="dev-dashboard-card-header">
             <div>

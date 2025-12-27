@@ -38,11 +38,6 @@ async function postTagProbe({ siteId, lineId, tags }) {
 
 export function PlcSiemensTagProbePanel() {
   const { siteId, lineId } = useCurrentSiteLine();
-  const isDev =
-    import.meta.env?.DEV ??
-    (typeof process !== 'undefined' &&
-      process.env &&
-      process.env.NODE_ENV !== 'production');
 
   const defaults = useMemo(
     () => [
@@ -56,8 +51,6 @@ export function PlcSiemensTagProbePanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
-
-  if (!isDev) return null;
 
   const onProbe = async () => {
     setError('');
@@ -96,7 +89,7 @@ export function PlcSiemensTagProbePanel() {
     <section className="dev-card runtime-line-summary">
       <header className="dev-card-header">
         <div>
-          <p className="dev-card-eyebrow">PLC / Siemens debug</p>
+          <p className="dev-card-eyebrow">PLC / Siemens</p>
           <h3>Tag read probe</h3>
         </div>
         <div className="runtime-line-summary-badges">
