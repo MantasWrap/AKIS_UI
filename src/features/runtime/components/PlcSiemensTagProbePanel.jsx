@@ -39,9 +39,10 @@ async function postTagProbe({ siteId, lineId, tags }) {
 export function PlcSiemensTagProbePanel() {
   const { siteId, lineId } = useCurrentSiteLine();
   const isDev =
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production';
+    import.meta.env?.DEV ??
+    (typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV !== 'production');
 
   const defaults = useMemo(
     () => [

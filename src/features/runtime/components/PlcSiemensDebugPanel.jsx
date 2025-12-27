@@ -103,9 +103,10 @@ export function PlcSiemensDebugPanel({ siteId, lineId }) {
   const isSiemens = connector === 'SIEMENS';
 
   const isDev =
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production';
+    import.meta.env?.DEV ??
+    (typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV !== 'production');
 
   if (!isDev) {
     return null;

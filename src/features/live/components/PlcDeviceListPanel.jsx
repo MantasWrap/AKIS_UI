@@ -33,7 +33,11 @@ export function PlcDeviceListPanel({ siteId, lineId }) {
   const { data, isLoading, isError, refetch } = usePlcDevices(siteId, lineId);
   const devices = Array.isArray(data?.devices) ? data.devices : [];
   const [busyKey, setBusyKey] = useState(null);
-  const isDevMode = process.env.NODE_ENV !== 'production';
+  const isDevMode =
+    import.meta.env?.DEV ??
+    (typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV !== 'production');
 
   const { role, allowed } = useLinePermissions();
   const deviceCommand = usePlcDeviceCommand(siteId, lineId, {

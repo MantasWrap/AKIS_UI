@@ -6,9 +6,10 @@ export function DevDashboardLayout({ children }) {
   const isActive = (path) => location.pathname === path;
 
   const isDev =
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production';
+    import.meta.env?.DEV ??
+    (typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV !== 'production');
 
   return (
     <div className="dev-shell">

@@ -359,12 +359,17 @@ function RuntimeStatusPage() {
   const plcDevicesResult = usePlcDevices(siteId, lineId);
   const plcDevices = plcDevicesResult?.data?.devices || [];
   const runtimeAlerts = useRuntimeAlerts({ siteId, lineId }, runtimeStatus, plcDevices);
+  const isDev =
+    import.meta.env?.DEV ??
+    (typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV !== 'production');
   const canShowDebugControls =
-    process.env.NODE_ENV !== 'production' &&
+    isDev &&
     isPhase0Fake &&
     runtimeStatus?.env?.site_id &&
     runtimeStatus?.env?.line_id;
-  const canShowLocalEStopToggle = process.env.NODE_ENV !== 'production';
+  const canShowLocalEStopToggle = isDev;
 
   const dbStatusHelper = useMemo(() => {
     if (!runtimeStatus || runtimeFlag !== 'error') return null;
