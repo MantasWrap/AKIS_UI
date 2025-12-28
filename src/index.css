@@ -57,10 +57,10 @@ textarea {
   padding: 1.5rem 1.25rem 2rem;
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  position: relative;
+  min-height: 100vh;
   transition: width 0.2s ease, padding 0.2s ease;
+  overflow: visible;
 }
 
 .dev-sidebar-top {
@@ -130,8 +130,6 @@ textarea {
   gap: 1.25rem;
   padding-bottom: 0.5rem;
   transition: opacity 0.2s ease;
-  overflow-y: auto;
-  overflow-x: hidden;
   min-height: 0;
 }
 
@@ -192,7 +190,7 @@ textarea {
   flex-direction: column;
   gap: 0.4rem;
   overflow: hidden;
-  max-height: 460px;
+  max-height: 2000px;
   transition: max-height 0.22s ease, opacity 0.2s ease;
 }
 
