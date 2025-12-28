@@ -12,6 +12,28 @@ function resolveClassName(classId) {
   return CLASS_OPTIONS.find((option) => option.id === classId)?.label || classId;
 }
 
+function MediaStatusChip({ media, mediaError }) {
+  if (media && media.url) {
+    return (
+      <span className="ts-media-chip ts-media-chip-ok">
+        Media loaded
+      </span>
+    );
+  }
+  if (mediaError) {
+    return (
+      <span className="ts-media-chip ts-media-chip-error">
+        Media error
+      </span>
+    );
+  }
+  return (
+    <span className="ts-media-chip ts-media-chip-muted">
+      No media yet
+    </span>
+  );
+}
+
 function LiveItemsReview() {
   const [siteId, setSiteId] = useState('SITE_LT_01');
   const [lineId, setLineId] = useState('LINE_01');
@@ -23,6 +45,8 @@ function LiveItemsReview() {
   const [isIgnored, setIsIgnored] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [media, setMedia] = useState(null);
+  const [mediaError, setMediaError] = useState('');
 
   const { findActionForEvent } = useShortcutProfile();
 
@@ -43,19 +67,51 @@ function LiveItemsReview() {
     [siteId, lineId, cameraId],
   );
 
-  const applyItem = useCallback((item) => {
-    setCurrentItem(item);
-    if (!item) return;
-    setStatus(item.status || 'UNREVIEWED');
-    const labels = item.current_label_set?.labels || [];
-    if (labels.length > 0) {
-      setClassId(labels[0].class_id || CLASS_OPTIONS[0].id);
-      setIsIgnored(Boolean(labels[0].is_ignored));
-    } else {
-      setClassId(CLASS_OPTIONS[0].id);
-      setIsIgnored(false);
-    }
-  }, []);
+  const fetchMediaForItem = useCallback(
+    async (item) => {
+      if (!item) {
+        setMedia(null);
+        setMediaError('');
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/training-studio/items/live/${encodeURIComponent(
+            item.id,
+          )}/media`,
+        );
+        const body = await res.json();
+        if (!res.ok || body.status !== 'ok') {
+          throw new Error(body.error || 'Failed to load live item media');
+        }
+        setMedia(body.media || null);
+        setMediaError('');
+      } catch (e) {
+        setMedia(null);
+        setMediaError(e.message || 'Failed to load live item media');
+      }
+    },
+    [],
+  );
+
+  const applyItem = useCallback(
+    (item) => {
+      setCurrentItem(item);
+      fetchMediaForItem(item);
+      if (!item) return;
+      setStatus(item.status || 'UNREVIEWED');
+      const labels = item.current_label_set?.labels || [];
+      if (labels.length > 0) {
+        setClassId(labels[0].class_id || CLASS_OPTIONS[0].id);
+        setIsIgnored(Boolean(labels[0].is_ignored));
+      } else {
+        setClassId(CLASS_OPTIONS[0].id);
+        setIsIgnored(false);
+      }
+    },
+    [fetchMediaForItem],
+  );
 
   const fetchNext = useCallback(
     async (opts = {}) => {
@@ -133,84 +189,68 @@ function LiveItemsReview() {
       };
 
       const res = await fetch(
-        `${API_BASE}/api/training-studio/items/live/${currentItem.id}`,
+        `${API_BASE}/api/training-studio/items/live/${currentItem.id}/review`,
         {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         },
       );
       const body = await res.json();
       if (!res.ok || body.status !== 'ok') {
-        throw new Error(body.error || 'Failed to save live item');
+        throw new Error(body.error || 'Failed to save');
       }
-
-      setHistory((prev) => [...prev, currentItem.id].slice(-50));
-      await fetchNext({ afterItemId: currentItem.id });
+      const newHistory = [...history, currentItem];
+      setHistory(newHistory);
+      const lastItemId = currentItem.id;
+      await fetchNext({ afterItemId: lastItemId });
     } catch (e) {
-      setError(e.message || 'Failed to save live item');
+      setError(e.message || 'Failed to save');
     } finally {
       setLoading(false);
     }
   }
 
   async function handlePrev() {
-    if (!currentItem && history.length === 0) return;
-    const lastId = history[history.length - 1];
-    if (!lastId && currentItem) {
-      await fetchPrev({ beforeItemId: currentItem.id });
-      return;
-    }
-    if (!lastId) return;
-    setHistory((prev) => prev.slice(0, prev.length - 1));
-    await fetchPrev({ beforeItemId: lastId });
+    const last = history[history.length - 1];
+    if (!last) return;
+    setHistory(history.slice(0, -1));
+    await fetchPrev({ beforeItemId: last.id });
   }
 
-  useEffect(() => {
-    function onKeyDown(evt) {
-      const action = findActionForEvent(evt);
+  const handleKeyDown = useCallback(
+    (event) => {
+      const action = findActionForEvent(event);
       if (!action) return;
-
+      event.preventDefault();
       if (action === 'save_and_next') {
-        evt.preventDefault();
         handleSaveAndNext();
-        return;
       }
-      if (action === 'prev_item') {
-        evt.preventDefault();
+      if (action === 'prev') {
         handlePrev();
-        return;
       }
-      if (action.startsWith('set_class:')) {
-        evt.preventDefault();
-        const cls = action.split(':')[1];
-        setClassId(cls);
-        return;
-      }
-      if (action === 'toggle_ignore') {
-        evt.preventDefault();
-        setIsIgnored((prev) => !prev);
-      }
-    }
+    },
+    [findActionForEvent, handlePrev],
+  );
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [findActionForEvent, handlePrev, handleSaveAndNext]);
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   return (
     <section className="ts-panel">
       <header className="ts-panel-header">
         <div>
-          <h3>Live items - one-by-one review</h3>
+          <h2>Live Items</h2>
           <p className="ts-helper">
-            Items captured from Jetson during real conveyor operation. Save and
-            Next records your correction and jumps to the next matching item.
+            Phase E demo: items come from an in-memory store. Later this will
+            connect to Jetson + controller ingest.
           </p>
         </div>
-        <div className="ts-field-grid">
+        <div className="ts-panel-filters">
           <label className="ts-field">
             <span>Site</span>
             <input
@@ -238,7 +278,15 @@ function LiveItemsReview() {
         </div>
       </header>
 
-      {error && <p className="ts-error">{error}</p>}
+      {error && (
+        <p className="ts-error">
+          {error}
+        </p>
+      )}
+
+      {!error && !currentItem && loading && (
+        <p className="ts-helper">Loading live items…</p>
+      )}
       {!error && !currentItem && !loading && (
         <p className="ts-helper">
           No live items available for the current filters yet. In Phase E this
@@ -251,16 +299,38 @@ function LiveItemsReview() {
         <div className="ts-manual-layout">
           <div className="ts-manual-media">
             <div className="ts-media-placeholder">
-              <p>
-                Live item: {currentItem.site_id} / {currentItem.line_id} /{' '}
-                {currentItem.camera_id}
-              </p>
-              <p className="ts-helper">
-                Timestamp: {currentItem.timestamp || '—'}
-                <br />
-                Media preview and model overlays will be wired later to real
-                frames from Jetson/controller PC.
-              </p>
+              <div className="ts-media-placeholder-header">
+                <MediaStatusChip media={media} mediaError={mediaError} />
+              </div>
+              {media && media.url ? (
+                <>
+                  <img
+                    src={`${API_BASE}${media.url}`}
+                    alt={`Live item ${currentItem.id}`}
+                  />
+                  <p className="ts-helper">
+                    Live item: {currentItem.site_id} / {currentItem.line_id} /{' '}
+                    {currentItem.camera_id}{' '}
+                    {currentItem.timestamp ? `@ ${currentItem.timestamp}` : ''}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Live item: {currentItem.site_id} / {currentItem.line_id} /{' '}
+                    {currentItem.camera_id}
+                  </p>
+                  <p className="ts-helper">
+                    Timestamp: {currentItem.timestamp || '—'}
+                    <br />
+                    Media preview and model overlays will be wired later to real
+                    frames from Jetson/controller PC.
+                  </p>
+                  {mediaError && (
+                    <p className="ts-helper">{mediaError}</p>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -272,6 +342,9 @@ function LiveItemsReview() {
                 <option value="IN_PROGRESS">In progress</option>
                 <option value="REVIEWED">Reviewed</option>
               </select>
+              <p className="ts-helper">
+                This status is stored together with your HUMAN label set.
+              </p>
             </label>
 
             <label className="ts-field">
@@ -309,26 +382,16 @@ function LiveItemsReview() {
               </button>
               <button
                 type="button"
-                className="ts-btn"
+                className="ts-btn ts-btn-primary"
                 onClick={handleSaveAndNext}
-                disabled={loading || !currentItem}
+                disabled={loading}
               >
-                Save and Next
+                Save &amp; Next
               </button>
             </div>
-
-            <p className="ts-helper">
-              Keyboard shortcuts (default profile):
-              <br />
-              <code>S</code> - Save and Next, <code>Left</code> / <code>Right</code>
-              - Prev or Next, <code>1</code>/<code>2</code>/<code>3</code> - classes,
-              <code>X</code> - toggle ignore.
-            </p>
           </div>
         </div>
       )}
-
-      {loading && <p className="ts-helper">Loading...</p>}
     </section>
   );
 }
@@ -343,6 +406,8 @@ function ManualItemsReview() {
   const [isIgnored, setIsIgnored] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [media, setMedia] = useState(null);
+  const [mediaError, setMediaError] = useState('');
 
   const { findActionForEvent } = useShortcutProfile();
 
@@ -356,19 +421,17 @@ function ManualItemsReview() {
 
     async function loadDatasets() {
       try {
-        const res = await fetch(`${API_BASE}/api/training-studio/datasets`);
+        const res = await fetch(
+          `${API_BASE}/api/training-studio/datasets/manual`,
+        );
         const body = await res.json();
         if (!res.ok || body.status !== 'ok') {
           throw new Error(body.error || 'Failed to load datasets');
         }
-        const manual = (body.datasets || []).filter(
-          (dataset) => dataset.item_source === 'MANUAL' || !dataset.item_source,
-        );
-        if (!cancelled) {
-          setDatasets(manual);
-          if (manual.length > 0) {
-            setDatasetId((prev) => prev || manual[0].id);
-          }
+        if (cancelled) return;
+        setDatasets(body.datasets || []);
+        if (!datasetId && body.datasets && body.datasets.length > 0) {
+          setDatasetId(body.datasets[0].id);
         }
       } catch (e) {
         if (!cancelled) {
@@ -383,19 +446,51 @@ function ManualItemsReview() {
     };
   }, []);
 
-  const applyItem = useCallback((item) => {
-    setCurrentItem(item);
-    if (!item) return;
-    setStatus(item.status || 'UNREVIEWED');
-    const labels = item.current_label_set?.labels || [];
-    if (labels.length > 0) {
-      setClassId(labels[0].class_id || CLASS_OPTIONS[0].id);
-      setIsIgnored(Boolean(labels[0].is_ignored));
-    } else {
-      setClassId(CLASS_OPTIONS[0].id);
-      setIsIgnored(false);
-    }
-  }, []);
+  const fetchMediaForItem = useCallback(
+    async (item) => {
+      if (!item) {
+        setMedia(null);
+        setMediaError('');
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/training-studio/items/manual/${encodeURIComponent(
+            item.id,
+          )}/media`,
+        );
+        const body = await res.json();
+        if (!res.ok || body.status !== 'ok') {
+          throw new Error(body.error || 'Failed to load manual item media');
+        }
+        setMedia(body.media || null);
+        setMediaError('');
+      } catch (e) {
+        setMedia(null);
+        setMediaError(e.message || 'Failed to load manual item media');
+      }
+    },
+    [],
+  );
+
+  const applyItem = useCallback(
+    (item) => {
+      setCurrentItem(item);
+      fetchMediaForItem(item);
+      if (!item) return;
+      setStatus(item.status || 'UNREVIEWED');
+      const labels = item.current_label_set?.labels || [];
+      if (labels.length > 0) {
+        setClassId(labels[0].class_id || CLASS_OPTIONS[0].id);
+        setIsIgnored(Boolean(labels[0].is_ignored));
+      } else {
+        setClassId(CLASS_OPTIONS[0].id);
+        setIsIgnored(false);
+      }
+    },
+    [fetchMediaForItem],
+  );
 
   const fetchNext = useCallback(
     async (opts = {}) => {
@@ -453,11 +548,6 @@ function ManualItemsReview() {
     [applyItem, datasetId],
   );
 
-  useEffect(() => {
-    if (!datasetId) return;
-    fetchNext({ afterItemId: null });
-  }, [datasetId, fetchNext]);
-
   async function handleSaveAndNext() {
     if (!currentItem) return;
     setLoading(true);
@@ -483,112 +573,103 @@ function ManualItemsReview() {
       };
 
       const res = await fetch(
-        `${API_BASE}/api/training-studio/items/manual/${currentItem.id}`,
+        `${API_BASE}/api/training-studio/items/manual/${currentItem.id}/review`,
         {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         },
       );
       const body = await res.json();
       if (!res.ok || body.status !== 'ok') {
-        throw new Error(body.error || 'Failed to save item');
+        throw new Error(body.error || 'Failed to save');
       }
-
-      setHistory((prev) => [...prev, currentItem.id].slice(-20));
-      await fetchNext({ afterItemId: currentItem.id });
+      const newHistory = [...history, currentItem];
+      setHistory(newHistory);
+      const lastItemId = currentItem.id;
+      await fetchNext({ afterItemId: lastItemId });
     } catch (e) {
-      setError(e.message || 'Failed to save item');
+      setError(e.message || 'Failed to save');
     } finally {
       setLoading(false);
     }
   }
 
   async function handlePrev() {
-    if (!datasetId) return;
-    const lastId = history[history.length - 1];
-    if (!lastId && currentItem) {
-      await fetchPrev({ beforeItemId: currentItem.id });
-      return;
-    }
-    if (!lastId) return;
-    setHistory((prev) => prev.slice(0, prev.length - 1));
-    await fetchPrev({ beforeItemId: lastId });
+    const last = history[history.length - 1];
+    if (!last) return;
+    setHistory(history.slice(0, -1));
+    await fetchPrev({ beforeItemId: last.id });
   }
 
-  useEffect(() => {
-    function onKeyDown(evt) {
-      const action = findActionForEvent(evt);
+  const handleKeyDown = useCallback(
+    (event) => {
+      const action = findActionForEvent(event);
       if (!action) return;
-
+      event.preventDefault();
       if (action === 'save_and_next') {
-        evt.preventDefault();
         handleSaveAndNext();
-        return;
       }
-      if (action === 'prev_item') {
-        evt.preventDefault();
+      if (action === 'prev') {
         handlePrev();
-        return;
       }
-      if (action.startsWith('set_class:')) {
-        evt.preventDefault();
-        const cls = action.split(':')[1];
-        setClassId(cls);
-        return;
-      }
-      if (action === 'toggle_ignore') {
-        evt.preventDefault();
-        setIsIgnored((prev) => !prev);
-      }
-    }
+    },
+    [findActionForEvent, handlePrev],
+  );
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [findActionForEvent, handlePrev, handleSaveAndNext]);
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   return (
     <section className="ts-panel">
       <header className="ts-panel-header">
         <div>
-          <h3>Manual items - one-by-one review</h3>
+          <h2>Manual Items</h2>
           <p className="ts-helper">
-            Save and Next will persist your changes and immediately load the next
-            item in this dataset.
+            Phase A/B: items come from offline datasets recorded on the
+            controller PC.
           </p>
         </div>
-        <label className="ts-field">
-          <span>Dataset</span>
-          <select
-            value={datasetId}
-            onChange={(e) => {
-              setDatasetId(e.target.value);
-              setHistory([]);
-              setCurrentItem(null);
-            }}
-          >
-            {datasets.map((dataset) => (
-              <option key={dataset.id} value={dataset.id}>
-                {dataset.name} ({dataset.site_id}/{dataset.line_id})
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="ts-panel-filters">
+          <label className="ts-field">
+            <span>Dataset</span>
+            <select
+              value={datasetId}
+              onChange={(e) => setDatasetId(e.target.value)}
+            >
+              <option value="">Select dataset…</option>
+              {datasets.map((dataset) => (
+                <option key={dataset.id} value={dataset.id}>
+                  {dataset.name} ({dataset.site_id}/{dataset.line_id})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
-      {error && <p className="ts-error">{error}</p>}
+      {error && (
+        <p className="ts-error">
+          {error}
+        </p>
+      )}
+
+      {!error && !currentItem && loading && (
+        <p className="ts-helper">Loading items…</p>
+      )}
       {!error && !currentItem && !loading && datasetId && (
         <p className="ts-helper">
-          No manual items available yet. In Phase B this is backed by an in-memory
+          No items yet for this dataset. In Phase A/B items can be seeded via
           demo store. Later it will be real frames from imported media.
         </p>
       )}
       {!error && !currentItem && !loading && !datasetId && (
         <p className="ts-helper">
-          No manual datasets available yet. Create one in Datasets & Media.
+          No manual datasets available yet. Create one in Datasets &amp; Media.
         </p>
       )}
 
@@ -596,11 +677,31 @@ function ManualItemsReview() {
         <div className="ts-manual-layout">
           <div className="ts-manual-media">
             <div className="ts-media-placeholder">
-              <p>Item {currentItem.frame_index ?? currentItem.id}</p>
-              <p className="ts-helper">
-                Media preview will be wired later to real frames/video. For now
-                this is a placeholder.
-              </p>
+              <div className="ts-media-placeholder-header">
+                <MediaStatusChip media={media} mediaError={mediaError} />
+              </div>
+              {media && media.url ? (
+                <>
+                  <img
+                    src={`${API_BASE}${media.url}`}
+                    alt={`Manual item ${currentItem.id}`}
+                  />
+                  <p className="ts-helper">
+                    Item {currentItem.frame_index ?? currentItem.id}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>Item {currentItem.frame_index ?? currentItem.id}</p>
+                  <p className="ts-helper">
+                    Media preview will be wired later to real frames/video. For now
+                    this is a placeholder.
+                  </p>
+                  {mediaError && (
+                    <p className="ts-helper">{mediaError}</p>
+                  )}
+                </>
+              )}
             </div>
             <p className="ts-helper">
               Dataset: {activeDatasetLabel || 'n/a'}
@@ -656,61 +757,53 @@ function ManualItemsReview() {
               </button>
               <button
                 type="button"
-                className="ts-btn"
+                className="ts-btn ts-btn-primary"
                 onClick={handleSaveAndNext}
-                disabled={loading || !currentItem}
+                disabled={loading}
               >
-                Save and Next
+                Save &amp; Next
               </button>
             </div>
-
-            <p className="ts-helper">
-              Keyboard shortcuts (default profile):
-              <br />
-              <code>S</code> - Save and Next, <code>Left</code> / <code>Right</code>
-              - Prev or Next, <code>1</code>/<code>2</code>/<code>3</code> - classes,
-              <code>X</code> - toggle ignore.
-            </p>
           </div>
         </div>
       )}
-
-      {loading && <p className="ts-helper">Loading...</p>}
     </section>
   );
 }
 
-export function TrainingStudioItemsPage() {
+export default function TrainingStudioItemsPage() {
   const [activeTab, setActiveTab] = useState('live');
 
   return (
-    <section className="ts-page">
-      <header className="ts-page-header">
+    <section className="ts-items-page">
+      <header className="ts-subheader">
         <div>
-          <h2>Items</h2>
-          <p>Review items from live Jetson and manual datasets.</p>
+          <h1>Items</h1>
+          <p className="ts-helper">
+            Review items coming from the controller/Jetson and adjust labels
+            before training models.
+          </p>
         </div>
+        <div className="ts-tabs">
+          <button
+            className={activeTab === 'live' ? 'ts-tab is-active' : 'ts-tab'}
+            type="button"
+            onClick={() => setActiveTab('live')}
+          >
+            Live Items
+          </button>
+          <button
+            className={activeTab === 'manual' ? 'ts-tab is-active' : 'ts-tab'}
+            type="button"
+            onClick={() => setActiveTab('manual')}
+          >
+            Manual Items
+          </button>
+        </div>
+
+        {activeTab === 'live' && <LiveItemsReview />}
+        {activeTab === 'manual' && <ManualItemsReview />}
       </header>
-
-      <div className="ts-tab-strip">
-        <button
-          className={activeTab === 'live' ? 'ts-tab is-active' : 'ts-tab'}
-          type="button"
-          onClick={() => setActiveTab('live')}
-        >
-          Live Items
-        </button>
-        <button
-          className={activeTab === 'manual' ? 'ts-tab is-active' : 'ts-tab'}
-          type="button"
-          onClick={() => setActiveTab('manual')}
-        >
-          Manual Items
-        </button>
-      </div>
-
-      {activeTab === 'live' && <LiveItemsReview />}
-      {activeTab === 'manual' && <ManualItemsReview />}
     </section>
   );
 }
