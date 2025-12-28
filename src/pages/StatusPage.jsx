@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/devDashboard.css';
-import { getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
+import { API_BASE, getRuntimeLinkMetrics, getRuntimeStatus } from '../api/client';
 import { emitNavigation } from '../modules/navigationBus.js';
 import { RUNTIME_POLL_INTERVAL_MS } from '../features/runtime/hooks/useRuntimePollingConfig.js';
 import { PlcDeviceListReadOnlyPanel } from '../features/live/components/PlcDeviceListPanel.jsx';
@@ -39,6 +39,42 @@ function getPickCount(counters) {
   return (picksOk || 0) + (picksMissed || 0) + (picksTimeout || 0) + picksErrors;
 }
 
+function getDebugHeaders() {
+  const token =
+    import.meta.env.VITE_AKIS_DEBUG_TOKEN ||
+    import.meta.env.VITE_DEBUG_TOKEN ||
+    '';
+  if (!token) return {};
+  return { 'x-debug-token': token };
+}
+
+async function fetchPlcHealthSummary(siteId, lineId) {
+  const params = new URLSearchParams();
+  if (siteId) params.set('site_id', siteId);
+  if (lineId) params.set('line_id', lineId);
+
+  const url = `${API_BASE}/api/debug/plc/siemens/metrics?${params.toString()}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...getDebugHeaders(),
+    },
+  }).catch(() => null);
+
+  if (!res) return null;
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return null;
+  return body;
+}
+
+function normalizePlcStatusLevel(summary) {
+  const level = (summary?.status_level || '').toUpperCase();
+  if (!level) return 'UNKNOWN';
+  if (level === 'GREEN' || level === 'AMBER' || level === 'RED') return level;
+  return 'UNKNOWN';
+}
+
 export default function StatusPage() {
   const [runtimeStatus, setRuntimeStatus] = useState(null);
   const [runtimeStatusLoading, setRuntimeStatusLoading] = useState(true);
@@ -47,6 +83,8 @@ export default function StatusPage() {
   const [runtimeCounters, setRuntimeCounters] = useState(null);
   const [runtimeMetricsLoading, setRuntimeMetricsLoading] = useState(true);
   const [runtimeMetricsError, setRuntimeMetricsError] = useState('');
+
+  const [plcHealthSummary, setPlcHealthSummary] = useState(null);
 
   const mountedRef = useRef(true);
 
@@ -127,6 +165,36 @@ export default function StatusPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let pollTimer = null;
+
+    async function pollPlcHealth() {
+      try {
+        const body = await fetchPlcHealthSummary(siteId, lineId);
+        if (!mountedRef.current) return;
+        if (!body || body.status !== 'ok') {
+          setPlcHealthSummary(null);
+        } else {
+          setPlcHealthSummary(body.summary || null);
+        }
+      } catch (e) {
+        if (!mountedRef.current) return;
+        setPlcHealthSummary(null);
+      } finally {
+        if (!mountedRef.current) return;
+        pollTimer = setTimeout(pollPlcHealth, RUNTIME_POLL_INTERVAL_MS);
+      }
+    }
+
+    if (siteId && lineId) {
+      pollPlcHealth();
+    }
+
+    return () => {
+      if (pollTimer) clearTimeout(pollTimer);
+    };
+  }, [siteId, lineId]);
+
   const runtimeStatusText = useMemo(() => {
     if (runtimeStatusLoading) return 'Loading…';
     if (runtimeStatusError) return 'Error';
@@ -136,6 +204,7 @@ export default function StatusPage() {
 
   const alertCount = Array.isArray(alerts) ? alerts.length : 0;
   const deviceCount = Array.isArray(devices) ? devices.length : 0;
+  const plcStatusLevel = normalizePlcStatusLevel(plcHealthSummary);
 
   return (
     <div className="dev-page">
@@ -157,6 +226,14 @@ export default function StatusPage() {
             {pickCount !== null && (
               <span className="dev-hero-pill">Picks total: {pickCount}</span>
             )}
+            <span
+              className={[
+                'dev-hero-pill',
+                `is-${plcStatusLevel.toLowerCase()}`,
+              ].join(' ')}
+            >
+              PLC: {plcStatusLevel}
+            </span>
           </div>
         </div>
 

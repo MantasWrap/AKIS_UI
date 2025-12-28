@@ -89,8 +89,8 @@ export function PlcSiemensTagProbePanel() {
     <section className="dev-card runtime-line-summary">
       <header className="dev-card-header">
         <div>
-          <p className="dev-card-eyebrow">PLC / Siemens</p>
-          <h3>Tag read probe</h3>
+          <p className="dev-card-eyebrow">PLC / Siemens · Debug</p>
+          <h3>Tag read probe (read-only)</h3>
         </div>
         <div className="runtime-line-summary-badges">
           <button
@@ -104,6 +104,12 @@ export function PlcSiemensTagProbePanel() {
         </div>
       </header>
 
+      <p className="runtime-line-summary-note">
+        This panel is for <strong>debug only</strong>. It performs{' '}
+        <strong>read-only</strong> tag reads from Siemens PLC using the debug token – it
+        never writes to PLC.
+      </p>
+
       {error && <p className="runtime-alerts-error">{error}</p>}
 
       <div className="runtime-line-summary-body">
@@ -111,7 +117,10 @@ export function PlcSiemensTagProbePanel() {
           <h4>Tags (JSON)</h4>
           <p className="runtime-line-summary-note">
             Provide a JSON array. Each item may include <code>logical</code> or{' '}
-            <code>address</code>.
+            <code>address</code>. Example:{' '}
+            <code>
+              [{'{'} "key": "estop", "logical": "AKIS_SAFETY_ESTOP_MAIN_ACTIVE" {'}'}]
+            </code>
           </p>
           <textarea
             value={tagsJson}

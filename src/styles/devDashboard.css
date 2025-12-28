@@ -56,6 +56,30 @@
   color: var(--dev-text-soft);
 }
 
+.dev-hero-pill.is-green {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #065f46;
+}
+
+.dev-hero-pill.is-amber {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #92400e;
+}
+
+.dev-hero-pill.is-red {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #991b1b;
+}
+
+.dev-hero-pill.is-unknown {
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #475569;
+}
+
 .dev-hero-actions {
   display: flex;
   align-items: center;
