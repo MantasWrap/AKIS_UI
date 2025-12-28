@@ -810,7 +810,7 @@ function ManualItemsReview() {
   );
 }
 
-export function TrainingStudioItemsPage() {
+export default function TrainingStudioItemsPage() {
   const [activeTab, setActiveTab] = useState('live');
 
   return (
