@@ -29,7 +29,6 @@ const NAV_SECTIONS = NAV_SECTION_ORDER.map((sectionKey) => ({
 
 const FUTURE_NAV_ITEMS = [
   { key: 'plc', label: 'PLC / Conveyor' },
-  { key: 'training', label: 'Training Studio' },
   { key: 'analytics', label: 'Analytics & Reporting' },
   { key: 'alerts', label: 'Alarms & Alerts' },
 ];

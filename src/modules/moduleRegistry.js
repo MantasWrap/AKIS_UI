@@ -16,6 +16,7 @@ import AiOsCoreLogsPage from '../pages/aios/AiOsCoreLogsPage.jsx';
 import AiOsAboutUpdatesPage from '../pages/aios/AiOsAboutUpdatesPage.jsx';
 import OwnerApiDocsPage from '../pages/api/OwnerApiDocsPage.jsx';
 import AiOsTelemetryPage from '../pages/aios/AiOsTelemetryPage.jsx';
+import { TrainingStudioLayout } from '../features/trainingStudio/TrainingStudioLayout.jsx';
 
 import {
   ActivitySquare,
@@ -167,14 +168,14 @@ export const MODULES = [
   },
   {
     key: 'training',
-    label: 'Training',
-    component: RuntimeStatusPage,
+    label: 'Training Studio',
+    component: TrainingStudioLayout,
     icon: GraduationCap,
     pageMeta: {
-      title: 'Training',
-      subtitle: 'Operator and engineer training modules (future).',
+      title: 'Training Studio',
+      subtitle: 'Manual and live item training workspace.',
     },
-    enabled: resolveEnabled('training', false),
+    enabled: resolveEnabled('training', true),
     enabledRoles: ['OWNER', 'ENGINEER'],
     navSection: 'core',
   },
