@@ -7,7 +7,7 @@ import StatusPage from './pages/StatusPage.jsx';
 import { TrainingStudioLayout } from './features/trainingStudio/TrainingStudioLayout.jsx';
 import { TrainingStudioHomePage } from './features/trainingStudio/TrainingStudioHomePage.jsx';
 import { TrainingStudioDatasetsPage } from './features/trainingStudio/TrainingStudioDatasetsPage.jsx';
-import { TrainingStudioItemsPage } from './features/trainingStudio/TrainingStudioItemsPage.jsx';
+import TrainingStudioItemsPage from './features/trainingStudio/TrainingStudioItemsPage.jsx';
 import { TrainingStudioModelsPage } from './features/trainingStudio/TrainingStudioModelsPage.jsx';
 import { TrainingStudioLiveCameraPage } from './features/trainingStudio/TrainingStudioLiveCameraPage.jsx';
 

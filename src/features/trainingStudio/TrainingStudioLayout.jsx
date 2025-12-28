@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { NavLink, Outlet, useInRouterContext } from 'react-router-dom';
 import { TrainingStudioHomePage } from './TrainingStudioHomePage.jsx';
-import { TrainingStudioItemsPage } from './TrainingStudioItemsPage.jsx';
+import TrainingStudioItemsPage from './TrainingStudioItemsPage.jsx';
 import { TrainingStudioDatasetsPage } from './TrainingStudioDatasetsPage.jsx';
 import { TrainingStudioModelsPage } from './TrainingStudioModelsPage.jsx';
 import { TrainingStudioLiveCameraPage } from './TrainingStudioLiveCameraPage.jsx';
