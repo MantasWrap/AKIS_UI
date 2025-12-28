@@ -130,6 +130,9 @@ textarea {
   gap: 1.25rem;
   padding-bottom: 0.5rem;
   transition: opacity 0.2s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .dev-sidebar-nav {
@@ -138,6 +141,7 @@ textarea {
   flex: 1;
   gap: 1.2rem;
   padding: 0.2rem 0.15rem;
+  min-height: 0;
 }
 
 .dev-nav-section {
@@ -373,6 +377,7 @@ textarea {
   gap: 0.4rem;
   align-items: center;
   margin-top: auto;
+  flex-shrink: 0;
   transition: all 0.18s ease;
 }
 
