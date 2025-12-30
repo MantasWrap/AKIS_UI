@@ -5,6 +5,7 @@ import TrainingStudioItemsPage from './TrainingStudioItemsPage.jsx';
 import { TrainingStudioDatasetsPage } from './TrainingStudioDatasetsPage.jsx';
 import { TrainingStudioModelsPage } from './TrainingStudioModelsPage.jsx';
 import { TrainingStudioLiveCameraPage } from './TrainingStudioLiveCameraPage.jsx';
+import TrainingStudioPhotoboxItemsPage from './TrainingStudioPhotoboxItemsPage.jsx';
 import './trainingStudio.css';
 
 const NAV_ITEMS = [
@@ -19,6 +20,12 @@ const NAV_ITEMS = [
     label: 'Items',
     path: '/training-studio/items',
     component: TrainingStudioItemsPage,
+  },
+  {
+    key: 'photobox',
+    label: 'Photobox Items',
+    path: '/training-studio/photobox',
+    component: TrainingStudioPhotoboxItemsPage,
   },
   {
     key: 'datasets',

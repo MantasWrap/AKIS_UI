@@ -28,12 +28,6 @@ export function DevDashboardLayout({ children }) {
           >
             Live mode
           </Link>
-          <Link
-            to="/presort"
-            className={isActive('/presort') ? 'dev-nav-link is-active' : 'dev-nav-link'}
-          >
-            Pre-sort
-          </Link>
           {isDev && (
             <Link
               to="/operator/line"
@@ -46,6 +40,16 @@ export function DevDashboardLayout({ children }) {
               Operator view
             </Link>
           )}
+          <Link
+            to="/training-studio"
+            className={
+              location.pathname.startsWith('/training-studio')
+                ? 'dev-nav-link is-active'
+                : 'dev-nav-link'
+            }
+          >
+            Training Studio
+          </Link>
         </nav>
       </aside>
       <main className="dev-main">{children}</main>
