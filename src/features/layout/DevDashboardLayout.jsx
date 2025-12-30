@@ -28,6 +28,12 @@ export function DevDashboardLayout({ children }) {
           >
             Live mode
           </Link>
+          <Link
+            to="/presort"
+            className={isActive('/presort') ? 'dev-nav-link is-active' : 'dev-nav-link'}
+          >
+            Pre-sort
+          </Link>
           {isDev && (
             <Link
               to="/operator/line"

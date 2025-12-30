@@ -4,23 +4,21 @@ import { DevDashboardLayout } from './features/layout/DevDashboardLayout.jsx';
 import { LiveModePage } from './features/live/LiveModePage.jsx';
 import { OperatorLineControlView } from './features/runtime/components/OperatorLineControlView.jsx';
 import StatusPage from './pages/StatusPage.jsx';
+import PreSortMonitorPage from './pages/PreSortMonitorPage.jsx';
 import { TrainingStudioLayout } from './features/trainingStudio/TrainingStudioLayout.jsx';
 import { TrainingStudioHomePage } from './features/trainingStudio/TrainingStudioHomePage.jsx';
 import { TrainingStudioDatasetsPage } from './features/trainingStudio/TrainingStudioDatasetsPage.jsx';
-import TrainingStudioItemsPage from './features/trainingStudio/TrainingStudioItemsPage.jsx';
+import { TrainingStudioItemsPage } from './features/trainingStudio/TrainingStudioItemsPage.jsx';
 import { TrainingStudioModelsPage } from './features/trainingStudio/TrainingStudioModelsPage.jsx';
 import { TrainingStudioLiveCameraPage } from './features/trainingStudio/TrainingStudioLiveCameraPage.jsx';
 
 /**
- * AppRoutes
- *
- * Dev dashboard + Operator view.
- *
  * Routes:
- *   - /               -> dev status/dashboard
- *   - /live           -> Live mode (dev)
- *   - /operator/line  -> Operator line control view (tenant mode v0)
- *   - /training-studio -> Training Studio shell (Phase A)
+ *   - /                 -> dev status/dashboard
+ *   - /live             -> Live mode (dev)
+ *   - /presort          -> Pre-sort monitor (Option B)
+ *   - /operator/line    -> Operator line control view (tenant mode v0)
+ *   - /training-studio  -> Training Studio shell (Phase A)
  */
 export function AppRoutes() {
   return (
@@ -29,6 +27,7 @@ export function AppRoutes() {
         <Routes>
           <Route path="/" element={<StatusPage />} />
           <Route path="/live" element={<LiveModePage />} />
+          <Route path="/presort" element={<PreSortMonitorPage />} />
           <Route path="/operator/line" element={<OperatorLineControlView />} />
           <Route path="/training-studio" element={<TrainingStudioLayout />}>
             <Route index element={<TrainingStudioHomePage />} />

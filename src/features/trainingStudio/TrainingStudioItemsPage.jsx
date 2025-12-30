@@ -807,3 +807,5 @@ export default function TrainingStudioItemsPage() {
     </section>
   );
 }
+
+export { TrainingStudioItemsPage };
